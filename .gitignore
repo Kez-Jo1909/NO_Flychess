@@ -1,0 +1,19 @@
+# 忽略 IDE 配置文件
+.vscode/
+.idea/
+
+# 忽略编译输出目录
+build/
+flychess_game/build/
+
+# 忽略 Emscripten 编译生成的文件
+*.js
+*.wasm
+*.html
+
+# 但不忽略 frontend 目录下的 index.html
+!frontend/index.html
+
+# 忽略临时文件
+*.log
+*.tmp
