@@ -15,7 +15,7 @@ function drawMap() {
       }
     }
   
-    ctx.fillStyle = 'green';
+    ctx.fillStyle = 'yellow';
     ctx.fillRect(0, 0, size, size);
   
     ctx.fillStyle = 'red';
