@@ -23,7 +23,7 @@ T get_random(T min, T max) {
         std::uniform_real_distribution<T> dist(min, max);
         return dist(gen);
     } else {
-        static_assert(std::is_arithmetic<T>::value, "Only integral or floating point types are supported.");
+        static_assert(std::is_arithmetic<T>::value, "不支持的类型");
     }
 }
 
