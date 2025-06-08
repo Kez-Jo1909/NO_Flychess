@@ -10,29 +10,49 @@ FlyChessModule().then(Module => {
   function drawMap() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = '#555';
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        ctx.strokeRect(c * size, r * size, size, size);
-      }
+
+    // 画框
+    for (let c = 0; c < cols; c++) {
+      ctx.strokeRect(c * size, 0 * size, size, size);
+      ctx.strokeRect(c * size, (rows - 1) * size, size, size);
     }
-    ctx.fillStyle = 'yellow';
-    ctx.fillRect(0, 0, size, size);
+    for (let r = 1; r < rows - 1; r++) {
+      ctx.strokeRect(0 * size, r * size, size, size);
+      ctx.strokeRect((cols - 1) * size, r * size, size, size);
+    }
+
+    // 以下角点
     ctx.fillStyle = 'red';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(0, (rows - 1) * size, size, size);
+    ctx.fillStyle = 'green';
     ctx.fillRect((cols - 1) * size, (rows - 1) * size, size, size);
+    ctx.fillStyle = 'yellow';
+    ctx.fillRect((cols - 1) * size, 0, size, size);
   }
 
   // 显示随机数
   function showRandomNumber() {
-    // 调用 wasm 的 GetRandom 函数（函数名带下划线）
     const random = Module._GetRandom();
-    // 显示到页面 p 标签
     document.getElementById('random-number').innerText = `掷骰子点数：${random}`;
+  
+    // 只清除原来文字所在区域
+    const x = 0;
+    const y = 0; // 上移一点，确保文字完全清除
+    const w = 600;
+    const h = 600;
+    ctx.clearRect(x, y, w, h);
+    
+    // 重新绘制地图
+    drawMap();
 
-    // 也可以画到 Canvas 上
+    // 重新绘制文字
     ctx.font = '24px sans-serif';
     ctx.fillStyle = 'black';
-    ctx.fillText(`点数: ${random}`, 10, canvas.height - 20);
+    ctx.fillText(`点数: ${random}`, 220, 300);
   }
+  
 
   // 初始化页面绘制
   drawMap();

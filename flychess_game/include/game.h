@@ -28,11 +28,19 @@ extern "C"{
 
 int GetRandom();
 
+void GameProcess();
+
 /**
  * @name GameProcessLink
  * @brief 游戏主循环函数接口
  */
 void GameProcessLink();
+
+/**
+ * @name FrontendTest
+ * @brief 前端测试函数接口
+ */
+void FrontendTest();
 
 #ifdef __cplusplus
 }

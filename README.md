@@ -14,7 +14,7 @@ cd emsdk
 source ./emsdk_env.sh
 ```
 
-若当前zsh主题设置为**Powerlevel10k**，可能导致*[WARNING]: Console output during zsh initialization detected*，此时将~/.zshrc中改为
+若当前zsh主题设置为**Powerlevel10k**，可能导致`[WARNING]: Console output during zsh initialization detected`，此时将~/.zshrc中改为
 
 ```bash
 export EMSDK_QUIET=1

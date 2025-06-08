@@ -36,6 +36,10 @@ namespace flychess_game {
             std::cerr << "Warning: No players initialized in FlyChessGame." << std::endl;
         }
     }
+
+    void GameProcess(){
+        
+    }
     
 }
 
@@ -53,6 +57,11 @@ extern "C"{
 
     EMSCRIPTEN_KEEPALIVE
     void GameProcessLink(){
+        GameProcess();
+    }
+
+    EMSCRIPTEN_KEEPALIVE
+    void FrontendTest(){
 
     }
 
