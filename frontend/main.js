@@ -51,6 +51,8 @@ FlyChessModule().then(Module => {
     ctx.font = '24px sans-serif';
     ctx.fillStyle = 'black';
     ctx.fillText(`点数: ${random}`, 220, 300);
+
+    Module._GameProcessLink();
   }
   
 

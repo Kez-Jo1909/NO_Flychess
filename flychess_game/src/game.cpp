@@ -38,7 +38,32 @@ namespace flychess_game {
     }
 
     void GameProcess(){
+        std::cout << "GameProcess started." << std::endl;
         
+        // 创建游戏实例
+        // TODO : 这里可以根据需要传入玩家数量和机器玩家数量
+        FlyChessGame game(1, 0); // 假设有1个玩家和0个机器玩家(测试用)
+        std::cout << "GameProcess initialized with " << game.GetPlayerCount() << " players." << std::endl;
+
+        // 游戏主循环逻辑
+        while (!game.IsGameOver()) {
+            // TODO : 这里可以添加游戏逻辑
+            std::cout << "Game is running..." << std::endl;
+            // 模拟游戏进行
+            game.SetGameOver(); // 这里为了测试，直接结束游戏
+        }
+
+        std::cout << "GameProcess ended." << std::endl;
+
+        // 清理资源
+        game.DeleteGame(); // 调用删除游戏资源的函数
+
+        // TODO : 这里可以添加游戏结束后的处理逻辑
+        std::cout << "GameProcess completed." << std::endl;
+
+        // 删除游戏实例
+        // warning：如果使用了new创建的对象，需要手动delete
+        // delete &game; // 这里不需要，因为game是栈对象，不需要手动删除
     }
     
 }
@@ -57,7 +82,7 @@ extern "C"{
 
     EMSCRIPTEN_KEEPALIVE
     void GameProcessLink(){
-        GameProcess();
+        flychess_game::GameProcess();
     }
 
     EMSCRIPTEN_KEEPALIVE
