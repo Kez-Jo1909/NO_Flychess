@@ -20,6 +20,16 @@ enum class PlayerState {
     FINISHED = 2
 };
 
+class ChessPiece{
+public:
+private:
+    int id = -1; // 棋子ID
+    Color color = Color::UNDEFINED; // 棋子颜色
+    int position = 0; // 棋子位置
+    bool isHome = true; // 是否在家
+    bool isFinished = false; // 是否完成游戏
+};
+
 class Player {
 public:
     Player() = default;
@@ -32,6 +42,10 @@ public:
             player_color = Color::UNDEFINED;
             std::cerr << "Invalid color value. Setting to UNDEFINED." << std::endl;
         }
+    }
+
+    inline Color GetColor() const {
+        return player_color;
     }
 private:
     Color player_color = Color::UNDEFINED;
