@@ -5,12 +5,32 @@
   <title>飞行棋</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="./src/favicon.ico" type="image/x-icon" />
+  <style>
+    #game-container {
+      display: none;
+    }
+
+    #start-btn {
+      font-size: 20px;
+      padding: 10px 20px;
+      margin-top: 200px;
+    }
+
+    body {
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-  <canvas id="flychess-map" width="600" height="600"></canvas>
-  <p id="random-number"></p>  <!-- 用来显示随机数 -->
-  <button id="roll-btn">掷骰子</button>
+  <!-- 开始游戏按钮 -->
+  <button id="start-btn">开始游戏</button>
 
+  <!-- 游戏主界面 -->
+  <div id="game-container">
+    <canvas id="flychess-map" width="600" height="600"></canvas>
+    <p id="random-number"></p> <!-- 用来显示随机数 -->
+    <button id="roll-btn">掷骰子</button>
+  </div>
   <script src="game.js"></script>
   <script src="main.js"></script>
 </body>

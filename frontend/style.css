@@ -18,3 +18,13 @@ body {
   font-size: 24px;
   color: rgb(60, 176, 147);
 } */
+
+#game-container {
+  display: none;
+}
+
+#start-btn {
+  font-size: 20px;
+  padding: 10px 20px;
+  margin-top: 200px;
+}
