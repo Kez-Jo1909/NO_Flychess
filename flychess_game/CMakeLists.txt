@@ -21,6 +21,6 @@ add_executable(game ${SOURCES})
 
 # Emscripten 编译相关 flags（生成 .js 和 .wasm）
 set_target_properties(game PROPERTIES
-    LINK_FLAGS "--bind -s WASM=1 -s MODULARIZE=1 -s EXPORT_NAME=\"FlyChessModule\" -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_RUNTIME_METHODS='[\"cwrap\", \"ccall\"]'"
+    LINK_FLAGS "--bind -s WASM=1 -s MODULARIZE=1 -s EXPORT_NAME=\"FlyChessModule\" -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_RUNTIME_METHODS='[\"cwrap\", \"ccall\", \"HEAP32\"]'"
 )
 

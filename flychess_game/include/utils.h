@@ -7,6 +7,14 @@
 
 namespace game_utils {
 
+enum class Color {
+    UNDEFINED = -1,
+    RED = 0,
+    BLUE = 1,
+    GREEN = 2,
+    YELLOW = 3
+};
+
 /**
  * @name get_random
  * @brief Generates a random number within the specified range.

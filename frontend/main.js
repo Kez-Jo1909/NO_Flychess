@@ -18,34 +18,59 @@ function initGame() {
     const canvas = document.getElementById('flychess-map');
     const ctx = canvas.getContext('2d');
 
-    const size = 40; // 格子大小
-    const rows = 15;
-    const cols = 15;
+    const GridType = {
+      0: "NORMAL",
+      1: "START",
+      2: "HOME",
+      3: "GOAL",
+      4: "BRIDGE",
+      5: "TURN"
+    };
+    
+    const Color = {
+      0: { name: "UNDEFINED", draw: "gray" },
+      1: { name: "RED",       draw: "red" },
+      2: { name: "BLUE",      draw: "blue" },
+      3: { name: "GREEN",     draw: "green" },
+      4: { name: "YELLOW",    draw: "yellow" }
+    };
+    
+    
 
     // 画地图函数
     function drawMap() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.strokeStyle = '#555';
 
-      // 画框
-      for (let c = 0; c < cols; c++) {
-        ctx.strokeRect(c * size, 0 * size, size, size);
-        ctx.strokeRect(c * size, (rows - 1) * size, size, size);
-      }
-      for (let r = 1; r < rows - 1; r++) {
-        ctx.strokeRect(0 * size, r * size, size, size);
-        ctx.strokeRect((cols - 1) * size, r * size, size, size);
-      }
+      const grid_num = Module._GetGridCount();
+      for(let i = 0; i < grid_num; i++) {
+        // 调用 C++ 获取结构体指针
+        const ptr = Module._GetGridInfo(i);
 
-      // 以下角点
-      ctx.fillStyle = 'red';
-      ctx.fillRect(0, 0, size, size);
-      ctx.fillStyle = 'blue';
-      ctx.fillRect(0, (rows - 1) * size, size, size);
-      ctx.fillStyle = 'green';
-      ctx.fillRect((cols - 1) * size, (rows - 1) * size, size, size);
-      ctx.fillStyle = 'yellow';
-      ctx.fillRect((cols - 1) * size, 0, size, size);
+        if(ptr != 0){
+          const HEAP32 = Module.HEAP32;
+          const base = ptr >> 2; // 转换为 32-bit 索引, 因为 HEAP32 是按 4 字节对齐的，所以除以 4
+
+          const type       = HEAP32[base + 0]; // GridType
+          const position_x = HEAP32[base + 1];
+          const position_y = HEAP32[base + 2];
+          const id         = HEAP32[base + 3];
+          const width      = HEAP32[base + 4];
+          const height     = HEAP32[base + 5];
+          const color      = HEAP32[base + 6];
+          
+          const colorInfo = Color[color + 1];
+          const colorName = colorInfo ? colorInfo.name : "UNDEFINED";
+          const fillColor = colorInfo ? colorInfo.draw : "gray";
+
+          console.log(`格子信息: 类型=${GridType[type]}, 坐标=(${position_x},${position_y}), ID=${id}, 宽=${width}, 高=${height}, 颜色=${colorName}`);
+
+          // 绘制格子
+          ctx.fillStyle = fillColor;
+          ctx.fillRect(position_x, position_y, width, height);
+          ctx.strokeRect(position_x, position_y, width, height);
+        }
+      }
     }
 
     // 掷骰子按钮绑定
