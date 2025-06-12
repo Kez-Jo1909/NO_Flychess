@@ -64,11 +64,65 @@ function initGame() {
           const fillColor = colorInfo ? colorInfo.draw : "gray";
 
           console.log(`格子信息: 类型=${GridType[type]}, 坐标=(${position_x},${position_y}), ID=${id}, 宽=${width}, 高=${height}, 颜色=${colorName}`);
+          
+          if(type == 0 || type == 2){
+            // 绘制格子
+            ctx.fillStyle = fillColor;
+            ctx.fillRect(position_x, position_y, width, height);
+            ctx.strokeRect(position_x, position_y, width, height);
+          }
+          else if(type == 3){
+            // 不同类型的三角格子
+            ctx.beginPath();
+            ctx.moveTo(position_x, position_y);// 顶点
+            if(height == 0){
+              ctx.lineTo(position_x - width, position_y - width);
+              ctx.lineTo(position_x + width, position_y - width);
+            }
+            else if(height == 1){
+              ctx.lineTo(position_x + width, position_y - width);
+              ctx.lineTo(position_x + width, position_y + width);
+            }
+            else if(height == 2){
+              ctx.lineTo(position_x - width, position_y + width);
+              ctx.lineTo(position_x + width, position_y + width);
+            }
+            else if(height == 3){
+              ctx.lineTo(position_x - width, position_y + width);
+              ctx.lineTo(position_x - width, position_y - width);
+            }
+            ctx.closePath();
 
-          // 绘制格子
-          ctx.fillStyle = fillColor;
-          ctx.fillRect(position_x, position_y, width, height);
-          ctx.strokeRect(position_x, position_y, width, height);
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+            ctx.stroke();
+          }
+          else{
+            // 绘制三角形格子
+            ctx.beginPath();
+            ctx.moveTo(position_x, position_y);// 顶点
+            if(height == 0){
+              ctx.lineTo(position_x + width, position_y);
+              ctx.lineTo(position_x, position_y + width);
+            }
+            else if(height == 1){
+              ctx.lineTo(position_x - width, position_y);
+              ctx.lineTo(position_x, position_y + width);
+            }
+            else if(height == 2){
+              ctx.lineTo(position_x, position_y - width);
+              ctx.lineTo(position_x - width, position_y);
+            }
+            else if(height == 3){
+              ctx.lineTo(position_x, position_y - width);
+              ctx.lineTo(position_x + width, position_y);
+            }
+            ctx.closePath();
+
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+            ctx.stroke();
+          }
         }
       }
     }
