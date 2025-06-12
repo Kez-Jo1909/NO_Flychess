@@ -30,8 +30,8 @@ function initGame() {
     const Color = {
       0: { name: "UNDEFINED", draw: "gray" },
       1: { name: "RED",       draw: "red" },
-      2: { name: "BLUE",      draw: "blue" },
-      3: { name: "GREEN",     draw: "green" },
+      2: { name: "BLUE",      draw: "#6666ff" },
+      3: { name: "GREEN",     draw: "#66ff66" },
       4: { name: "YELLOW",    draw: "yellow" }
     };
     
