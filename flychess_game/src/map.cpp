@@ -76,12 +76,12 @@ namespace flychess_map{
 extern "C"{
 
     EMSCRIPTEN_KEEPALIVE
-    const flychess_map::Grid* GetGridInfo(int index){
+    const flychess_map::GridInfo* GetGridInfo(int index){
         if (index < 0 || index >= flychess_map::gameMap.getGridsize()) {
             std::cerr << "Index out of bounds: " << index << std::endl;
             return nullptr; // 返回空指针表示索引越界
         }
-        return &flychess_map::gameMap.getGrid(index);
+        return &flychess_map::gameMap.getGrid(index).getGridInfo();
     }
 
     EMSCRIPTEN_KEEPALIVE

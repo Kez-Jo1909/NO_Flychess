@@ -17,7 +17,7 @@ enum class GridType {
     TURN      // 转角点
 };
 
-struct Grid {
+struct GridInfo {
     int type;
     int position_x;
     int position_y;
@@ -26,8 +26,20 @@ struct Grid {
     int height;
     int color;
 
-    Grid(int type, int x, int y, int id, int width, int height, int color)
+    GridInfo(int type, int x, int y, int id, int width, int height, int color)
         : type(type), position_x(x), position_y(y), id(id), width(width), height(height), color(color) {}
+};
+
+class Grid{
+public:
+    Grid(int type, int x, int y, int id, int width, int height, int color)
+        : grid_info(type, x, y, id, width, height, color) {};
+
+    inline const GridInfo& getGridInfo() const {
+        return grid_info;
+    }
+private:
+    GridInfo grid_info; // 格子信息
 };
 
 
@@ -44,7 +56,7 @@ public:
     }
 
     inline const Grid& getGrid(int index) const {
-        return grids[index]; // 返回第一个格子作为示例
+        return grids[index];
     }
 
 private:
@@ -71,7 +83,7 @@ extern "C"{
 #endif
 
 // 返回地图格子信息
-const flychess_map::Grid* GetGridInfo(int index);
+const flychess_map::GridInfo* GetGridInfo(int index);
 
 int GetGridCount();
 
