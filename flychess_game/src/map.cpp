@@ -4,11 +4,16 @@ namespace flychess_map{
     Map::Map() {
         // 初始化地图
         grids.clear();
+
         // HOME
-        grids.push_back(Grid(static_cast<int>(GridType::HOME), 0, 0, -1, grid_size * 2, grid_size * 2, static_cast<int>(game_utils::Color::RED)));
-        grids.push_back(Grid(static_cast<int>(GridType::HOME), map_size - grid_size * 2, 0, -1, grid_size * 2, grid_size * 2, static_cast<int>(game_utils::Color::BLUE)));
-        grids.push_back(Grid(static_cast<int>(GridType::HOME), map_size - grid_size * 2, map_size - grid_size * 2, -1, grid_size * 2, grid_size * 2, static_cast<int>(game_utils::Color::GREEN)));
-        grids.push_back(Grid(static_cast<int>(GridType::HOME), 0, map_size - grid_size * 2, -1, grid_size * 2, grid_size * 2, static_cast<int>(game_utils::Color::YELLOW)));
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++){
+                grids.push_back(Grid(static_cast<int>(GridType::HOME), i * grid_size, j * grid_size, -1, grid_size, grid_size, static_cast<int>(game_utils::Color::RED)));
+                grids.push_back(Grid(static_cast<int>(GridType::HOME), map_size - grid_size * 2 + i * grid_size, j * grid_size, -1, grid_size, grid_size, static_cast<int>(game_utils::Color::BLUE)));
+                grids.push_back(Grid(static_cast<int>(GridType::HOME), map_size - grid_size * 2 + i * grid_size, map_size - grid_size * 2 + j * grid_size, -1, grid_size, grid_size, static_cast<int>(game_utils::Color::GREEN)));
+                grids.push_back(Grid(static_cast<int>(GridType::HOME), i * grid_size, map_size - grid_size * 2 + j * grid_size, -1, grid_size, grid_size, static_cast<int>(game_utils::Color::YELLOW)));
+            }
+        }
 
         // NORMAL
         for (int i = 0; i < 5; i++){

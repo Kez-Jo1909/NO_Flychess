@@ -43,6 +43,7 @@ function initGame() {
       ctx.strokeStyle = '#555';
 
       const grid_num = Module._GetGridCount();
+      const radius = canvas.width / 51; // 半径为宽高的四分之一
       for(let i = 0; i < grid_num; i++) {
         // 调用 C++ 获取结构体指针
         const ptr = Module._GetGridInfo(i);
@@ -70,6 +71,15 @@ function initGame() {
             ctx.fillStyle = fillColor;
             ctx.fillRect(position_x, position_y, width, height);
             ctx.strokeRect(position_x, position_y, width, height);
+
+            // 绘制空心圆
+            let center_x = position_x + width / 2;
+            let center_y = position_y + height / 2;
+            ctx.beginPath();
+            ctx.arc(center_x, center_y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = "white"; // 圆的填充颜色
+            ctx.fill();
+            ctx.stroke();
           }
           else if(type == 3){
             // 不同类型的三角格子
@@ -96,30 +106,76 @@ function initGame() {
             ctx.fillStyle = fillColor;
             ctx.fill();
             ctx.stroke();
+
+            let center_x = position_x;
+            let center_y = position_y;
+
+            // 按照方向修正中心点位置
+            if (height == 0) {
+              center_y -= width / 1.5;
+            } else if (height == 1) {
+              center_x += width / 1.5;
+            } else if (height == 2) {
+              center_y += width / 1.5;
+            } else if (height == 3) {
+              center_x -= width / 1.5;
+            }
+
+            ctx.beginPath();
+            ctx.arc(center_x, center_y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            ctx.stroke();
           }
           else{
-            // 绘制三角形格子
             ctx.beginPath();
-            ctx.moveTo(position_x, position_y);// 顶点
-            if(height == 0){
-              ctx.lineTo(position_x + width, position_y);
-              ctx.lineTo(position_x, position_y + width);
+            ctx.moveTo(position_x, position_y); // 顶点
+            
+            let x1 = position_x, y1 = position_y;
+            let x2, y2, x3, y3;
+            
+            if (height == 0) {
+              x2 = position_x + width;
+              y2 = position_y;
+              x3 = position_x;
+              y3 = position_y + width;
             }
-            else if(height == 1){
-              ctx.lineTo(position_x - width, position_y);
-              ctx.lineTo(position_x, position_y + width);
+            else if (height == 1) {
+              x2 = position_x - width;
+              y2 = position_y;
+              x3 = position_x;
+              y3 = position_y + width;
             }
-            else if(height == 2){
-              ctx.lineTo(position_x, position_y - width);
-              ctx.lineTo(position_x - width, position_y);
+            else if (height == 2) {
+              x2 = position_x;
+              y2 = position_y - width;
+              x3 = position_x - width;
+              y3 = position_y;
             }
-            else if(height == 3){
-              ctx.lineTo(position_x, position_y - width);
-              ctx.lineTo(position_x + width, position_y);
+            else if (height == 3) {
+              x2 = position_x;
+              y2 = position_y - width;
+              x3 = position_x + width;
+              y3 = position_y;
             }
+            
+            ctx.lineTo(x2, y2);
+            ctx.lineTo(x3, y3);
             ctx.closePath();
-
+            
+            // 画三角形
             ctx.fillStyle = fillColor;
+            ctx.fill();
+            ctx.stroke();
+            
+            // 计算三角形中心点（圆心）
+            let cx = (x1 + x2 + x3) / 3;
+            let cy = (y1 + y2 + y3) / 3;
+            
+            // 画圆
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fillStyle = "white";
             ctx.fill();
             ctx.stroke();
           }

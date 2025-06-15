@@ -30,6 +30,10 @@ cd frontend
 npx http-server
 ```
 
+## TODO
+
+- [ ] JS图形绘制封装
+
 ## 组件逻辑
 
 ```mathematica
