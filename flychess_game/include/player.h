@@ -13,14 +13,35 @@ enum class PlayerState {
     FINISHED = 2
 };
 
-class ChessPiece{
-public:
-private:
+struct ChessPieceInfo{
     int id = -1; // 棋子ID
     game_utils::Color color = game_utils::Color::UNDEFINED; // 棋子颜色
-    int position = 0; // 棋子位置
-    bool isHome = true; // 是否在家
-    bool isFinished = false; // 是否完成游戏
+    int position = -1; // 棋子位置
+};
+
+class ChessPiece{
+public:
+    ChessPiece() = default;
+
+    ChessPiece(int id, game_utils::Color color, int position = -1) {
+        piece_info.id = id;
+        piece_info.color = color;
+        piece_info.position = position;
+    }
+
+    inline void SetId(int new_id) {
+        piece_info.id = new_id;
+    }
+
+    inline void SetColor(game_utils::Color new_color) {
+        piece_info.color = new_color;
+    }
+
+    inline const ChessPieceInfo& GetInfo() const {
+        return piece_info;
+    }
+private:
+    ChessPieceInfo piece_info;
 };
 
 class Player {
@@ -28,13 +49,10 @@ public:
     Player() = default;
     // TODO : 构造函数分为ai和玩家两种
 
-    inline void SetColor(int color){
-        if (color >= 0 && color <= 3) {
-            player_color = static_cast<game_utils::Color>(color);
-        } else {
-            player_color = game_utils::Color::UNDEFINED;
-            std::cerr << "Invalid color value. Setting to UNDEFINED." << std::endl;
-        }
+    Player(game_utils::Color color, int chess_piece_count = 4);
+
+    inline void SetColor(game_utils::Color color){
+        player_color = color;
     }
 
     inline game_utils::Color GetColor() const {
@@ -43,6 +61,7 @@ public:
 private:
     game_utils::Color player_color = game_utils::Color::UNDEFINED;
     PlayerState player_state = PlayerState::UNDEFINED;
+    std::vector<ChessPiece> chess_pieces; // 棋子列表
 };
 
 }

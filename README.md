@@ -33,6 +33,7 @@ npx http-server
 ## TODO
 
 - [ ] JS图形绘制封装
+- [ ] 将grid类重构为基类，派生出其余格子
 
 ## 组件逻辑
 

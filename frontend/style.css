@@ -10,15 +10,6 @@ body {
   display: block;
 }
 
-/* #random-number {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 24px;
-  color: rgb(60, 176, 147);
-} */
-
 #game-container {
   display: none;
 }

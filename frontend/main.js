@@ -35,8 +35,6 @@ function initGame() {
       4: { name: "YELLOW",    draw: "yellow" }
     };
     
-    
-
     // 画地图函数
     function drawMap() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -192,6 +190,7 @@ function initGame() {
 
     function showRandomNumber() {
       const randomNumber = Module._rollDice();
+      console.log(`掷骰子结果: ${randomNumber}`);
       document.getElementById('random-number').textContent = randomNumber;
     }
   });

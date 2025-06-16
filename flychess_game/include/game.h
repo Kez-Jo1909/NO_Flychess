@@ -7,7 +7,15 @@
 #include "../include/player.h"
 
 namespace flychess_game {
+class FlychessGame {
+public:
+    FlychessGame() = default;
 
+    // 添加玩家
+    void AddNewPlayer(game_utils::Color color, int chess_piece_count = 4);
+private:
+    std::vector<Player> players; // 玩家列表
+};
 
 }
 
