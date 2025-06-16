@@ -7,16 +7,25 @@
   <link rel="icon" href="./src/favicon.ico" type="image/x-icon" />
 </head>
 <body>
-  <!-- 开始游戏按钮 -->
-  <button id="start-btn">开始游戏</button>
+  <div id="menu-container">
+    <button id="start-btn">开始游戏</button>
 
-  <!-- 人数选择
-  <div id="player-count-select">
-    <button data-player="1">1人</button>
-    <button data-player="2">2人</button>
-    <button data-player="3">3人</button>
-    <button data-player="4">4人</button>
-  </div> -->
+    <div id="player-count-select">
+      <p>请选择玩家人数：</p>
+      <button data-player="1">1人</button>
+      <button data-player="2">2人</button>
+      <button data-player="3">3人</button>
+      <button data-player="4">4人</button>
+    </div>
+
+    <div id="chess-count-select">
+      <p>请选择每个玩家的棋子数：</p>
+      <button data-chess="1">1</button>
+      <button data-chess="2">2</button>
+      <button data-chess="3">3</button>
+      <button data-chess="4">4</button>
+    </div>
+  </div>
 
   <!-- 游戏主界面 -->
   <div id="game-container">

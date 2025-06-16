@@ -10,11 +10,14 @@ namespace flychess_game {
         player_color = color;
         player_state = PlayerState::WAITING;
 
-        if (chess_pieces.size() > 0 && chess_piece_count > 0) {
+        if (chess_pieces.size() > 0) {
             chess_pieces.clear();
-            for(int i = 0; i < chess_piece_count; i++){
-                chess_pieces.push_back(ChessPiece(i, color, -1));
-            }
         }
+
+        for(int i = 0; i < chess_piece_count; i++){
+            chess_pieces.push_back(ChessPiece(i, color, -1));
+        }
+
+        std::cout<< "Player created with color: " << static_cast<int>(color) << " and " << chess_piece_count << " chess pieces." << std::endl;
     }
 }

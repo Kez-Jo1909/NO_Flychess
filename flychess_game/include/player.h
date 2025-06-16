@@ -27,6 +27,7 @@ public:
         piece_info.id = id;
         piece_info.color = color;
         piece_info.position = position;
+        std::cout << "ChessPiece created with ID: " << id << ", Color: " << static_cast<int>(color) << ", Position: " << position << std::endl;
     }
 
     inline void SetId(int new_id) {
@@ -44,6 +45,8 @@ private:
     ChessPieceInfo piece_info;
 };
 
+
+
 class Player {
 public:
     Player() = default;
@@ -57,6 +60,10 @@ public:
 
     inline game_utils::Color GetColor() const {
         return player_color;
+    }
+
+    inline const int GetChessPieceCount() const {
+        return chess_pieces.size();
     }
 private:
     game_utils::Color player_color = game_utils::Color::UNDEFINED;

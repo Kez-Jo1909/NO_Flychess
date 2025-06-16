@@ -13,9 +13,22 @@ public:
 
     // 添加玩家
     void AddNewPlayer(game_utils::Color color, int chess_piece_count = 4);
+    // 重设游戏状态
+    void Reset();
+
+    inline const int GetPlayerCount() const {
+        return players.size();
+    }
+
+    const int GetChessPieceCount() const {
+        if (players.empty()) return -1;
+        return players.back().GetChessPieceCount();
+    }
 private:
     std::vector<Player> players; // 玩家列表
 };
+
+FlychessGame& get_instance();
 
 }
 
@@ -28,11 +41,10 @@ extern "C"{
 
 int rollDice();
 
-/**
- * @name FrontendTest
- * @brief 前端测试函数接口
- */
-void FrontendTest();
+void GameInit(int player_count, int chess_piece_count);
+
+int GetPlayerCount();
+int GetChessPieceCount();
 
 #ifdef __cplusplus
 }

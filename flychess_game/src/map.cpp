@@ -86,7 +86,7 @@ extern "C"{
 
     EMSCRIPTEN_KEEPALIVE
     int GetGridCount() {
-        std::cout<<flychess_map::gameMap.getGridsize()<<std::endl;
+        // std::cout<<flychess_map::gameMap.getGridsize()<<std::endl;
         return flychess_map::gameMap.getGridsize();
     }
         
