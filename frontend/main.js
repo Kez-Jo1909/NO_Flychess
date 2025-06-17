@@ -55,7 +55,7 @@ const Color = {
 
 function initGame(playerCount, chess_per_player) {
   FlyChessModule().then(Module => {
-    console.log(`初始化游戏，玩家人数: ${playerCount}`);
+    // console.log(`初始化游戏，玩家人数: ${playerCount}`);
     Module._GameInit(playerCount, chess_per_player);
 
     drawMap(Module); // 初始绘制地图
@@ -67,7 +67,7 @@ function initGame(playerCount, chess_per_player) {
 function gameProcess(Module, playerCount, chess_per_player) {
   let actual_playerCount = Module._GetPlayerCount();
   let actual_chess_per_player = Module._GetChessPieceCount();
-  console.log(`实际玩家人数: ${actual_playerCount}, 每人棋子数: ${actual_chess_per_player}`);
+  // console.log(`实际玩家人数: ${actual_playerCount}, 每人棋子数: ${actual_chess_per_player}`);
 
   // 检查实际玩家人数和棋子数是否与预期一致
   if (actual_playerCount !== playerCount || actual_chess_per_player !== chess_per_player) {
