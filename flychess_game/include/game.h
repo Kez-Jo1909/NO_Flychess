@@ -5,6 +5,7 @@
 #include <iostream>
 #include "../include/utils.h"
 #include "../include/player.h"
+#include "../include/map.h"
 
 namespace flychess_game {
 class FlychessGame {
@@ -23,6 +24,12 @@ public:
     const int GetChessPieceCount() const {
         if (players.empty()) return -1;
         return players.back().GetChessPieceCount();
+    }
+
+    Player& GetPlayer(int player_id);
+
+    const ChessPieceInfo& GetPlayerChess(int player_id, int chess_id) {
+        return players[player_id].GetChessPieceInfo(chess_id);
     }
 private:
     std::vector<Player> players; // 玩家列表
@@ -45,6 +52,8 @@ void GameInit(int player_count, int chess_piece_count);
 
 int GetPlayerCount();
 int GetChessPieceCount();
+
+const flychess_map::GridInfo* DrawChessPiece(int player_id, int chess_id);
 
 #ifdef __cplusplus
 }

@@ -13,7 +13,7 @@ enum class PlayerState {
     FINISHED = 2
 };
 
-struct ChessPieceInfo{
+struct ChessPieceInfo {
     int id = -1; // 棋子ID
     game_utils::Color color = game_utils::Color::UNDEFINED; // 棋子颜色
     int position = -1; // 棋子位置
@@ -38,7 +38,7 @@ public:
         piece_info.color = new_color;
     }
 
-    inline const ChessPieceInfo& GetInfo() const {
+    inline const ChessPieceInfo& GetChessPieceInfo() const {
         return piece_info;
     }
 private:
@@ -65,6 +65,12 @@ public:
     inline const int GetChessPieceCount() const {
         return chess_pieces.size();
     }
+
+    inline const ChessPieceInfo& GetChessPieceInfo(int index) const {
+        return chess_pieces[index].GetChessPieceInfo();
+    }
+
+    int GameTurn();
 private:
     game_utils::Color player_color = game_utils::Color::UNDEFINED;
     PlayerState player_state = PlayerState::UNDEFINED;

@@ -15,6 +15,10 @@ namespace flychess_game {
     FlychessGame& get_instance() {
         return static_flychess_game;
     }
+
+    Player& FlychessGame::GetPlayer(int player_id) {
+        return players[player_id];
+    }
 }
 
 
@@ -66,6 +70,28 @@ extern "C"{
     EMSCRIPTEN_KEEPALIVE
     int GetChessPieceCount() {
         return flychess_game::get_instance().GetChessPieceCount();
+    }
+
+    EMSCRIPTEN_KEEPALIVE
+    const flychess_map::GridInfo* DrawChessPiece(int player_id, int chess_id) {
+        if (player_id < 0 || player_id >= flychess_game::get_instance().GetPlayerCount()) {
+            std::cerr << "Invalid player ID: " << player_id << std::endl;
+            return nullptr;
+        }
+        auto chess_piece_to_draw = flychess_game::get_instance().GetPlayerChess(player_id, chess_id);
+
+        if (chess_id != chess_piece_to_draw.id) {
+            std::cerr << "Error: Chess ID does not match: " << chess_id << " != " << chess_piece_to_draw.id << std::endl;
+            return nullptr;
+        }
+
+        if (flychess_game::get_instance().GetPlayer(player_id).GetColor() != chess_piece_to_draw.color) {
+            std::cerr << "Error: Chess color does not match player color." << std::endl;
+            return nullptr;
+        }
+
+        auto current_grid_info = flychess_map::getGameMap().searchGridInfo(chess_piece_to_draw.position, static_cast<int>(chess_piece_to_draw.position), chess_id);
+
     }
 
 }

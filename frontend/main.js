@@ -64,7 +64,7 @@ function initGame(playerCount, chess_per_player) {
   });
 }
 
-function gameProcess(Module, playerCount, chess_per_player) {
+ function gameProcess(Module, playerCount, chess_per_player) {
   let actual_playerCount = Module._GetPlayerCount();
   let actual_chess_per_player = Module._GetChessPieceCount();
   // console.log(`实际玩家人数: ${actual_playerCount}, 每人棋子数: ${actual_chess_per_player}`);
@@ -90,6 +90,7 @@ function gameProcess(Module, playerCount, chess_per_player) {
 
 // 画地图函数
 function drawMap(Module) {
+  console.log(`绘制地图...`);
   const canvas = document.getElementById('flychess-map');
   const ctx = canvas.getContext('2d');
 

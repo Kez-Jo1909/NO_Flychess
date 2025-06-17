@@ -59,6 +59,8 @@ public:
         return grids[index];
     }
 
+    const GridInfo& searchGridInfo(int position_id, int color, int chess_id);
+
 private:
     const int grid_size = 80;  // 地图宽度
     const int map_size = 680;
@@ -72,7 +74,10 @@ private:
     std::vector<Grid> grids; // 存储地图格子
 };
 
-static Map gameMap; // 全局地图对象
+inline Map& getGameMap() {
+    static Map instance;
+    return instance;
+}
 
 }
 
