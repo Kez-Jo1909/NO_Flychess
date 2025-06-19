@@ -38,6 +38,8 @@ namespace flychess_map{
             grids.push_back(Grid(static_cast<int>(GridType::NORMAL), grid_size + i * grid_size / 2, grid_size * 2, 7 - i, grid_size / 2, grid_size, (i + 3) % 4));
         }
 
+        std::cout<<"NORMAL区域初始化完成,size = " << grids.size() << std::endl;
+
         // NORMAL,终点前路径
         for (int i = 0; i < 5; i++){
             grids.push_back(Grid(static_cast<int>(GridType::NORMAL), grid_size * 4, grid_size + i * grid_size / 2, 53 + i, grid_size / 2, grid_size / 2, 0));
@@ -46,7 +48,7 @@ namespace flychess_map{
             grids.push_back(Grid(static_cast<int>(GridType::NORMAL), grid_size + i * grid_size / 2, grid_size * 4, 53 + i, grid_size / 2, grid_size / 2, 3));
         }
 
-        std::cout<<"NORMAL区域初始化完成,size = " << grids.size() << std::endl;
+        std::cout<<"终点前路径初始化完成,size = " << grids.size() << std::endl;
 
         // TURN
         // 也用Grid结构体表示，发送直角三角形直角点坐标，width发送直角边长，height发送类型，即正方形左上角0，右上角1，右下角2，左下角3
@@ -96,20 +98,47 @@ namespace flychess_map{
 
         // 开始匹配棋子位置
         std::cout<<"Searching for grid with position_id: " << position_id << ", color: " << color << ", chess_id: " << chess_id << std::endl;
-        if (chess_id == -1) {
+        if (position_id == -1) {// HOME
+            std::cout<<"Searching for HOME grid"<<std::endl;
             int index = color * 4 + chess_id;
             return grids[index].getGridInfo();
         }
-        else if (position_id == 58) {
+        else if (position_id == 58) {// GOAL
+            std::cout<<"Searching for GOAL grid"<<std::endl;
             int index = color + 88;
             return grids[index].getGridInfo();
         }
-        else if (position_id == 0) {
+        else if (position_id == 0) {// START
+            std::cout<<"Searching for START grid"<<std::endl;
             int index = 92 + color;
             return grids[index].getGridInfo();
         }
-        else if (position_id >= 1 && position_id <= 58) {
-            // TODO
+        else if (position_id >= 1 && position_id <= 52) {
+            // NORMAL
+            std::cout<<"Searching for NORMAL grid"<<std::endl;
+            // md不管了直接遍历
+            // md只能写常规遍历
+            int start_index = 16;
+            int end_index = 87;
+            for (int i = start_index; i <= end_index; i++) {
+                if (i > 52 && i < 58) {
+                    // 跳过终点前路径
+                    continue;
+                }
+
+                if (grids[i].getGridInfo().id == position_id && grids[i].getGridInfo().color == color) {
+                    std::cout<<"Found grid at index: " << i << std::endl;
+                    return grids[i].getGridInfo();
+                }
+            }
+            std::cout<<"Searching failed in normal situation"<<std::endl;
+            throw std::runtime_error("Search failed: non-exist grid");
+        }
+        else if(position_id > 52 && position_id < 58){
+            // 终点前路径
+            std::cout<<"Searching for pre-goal path grid"<<std::endl;
+            int index = 52 + color * 5 + (position_id - 53);
+            return grids[index].getGridInfo();
         }
         else{
             std::cout<<"Searching failed"<<std::endl;

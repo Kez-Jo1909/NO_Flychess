@@ -89,8 +89,7 @@ extern "C"{
             return nullptr;
         }
 
-        auto current_grid_info = flychess_map::getGameMap().searchGridInfo(chess_piece_to_draw.position, static_cast<int>(chess_piece_to_draw.position), chess_id);
-
+        return &flychess_map::getGameMap().searchGridInfo(chess_piece_to_draw.position, static_cast<int>(chess_piece_to_draw.color), chess_id);
     }
 
 }

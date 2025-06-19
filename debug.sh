@@ -1,2 +1,2 @@
 cd frontend
-http-server
+npx http-server
