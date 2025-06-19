@@ -81,6 +81,12 @@ npx http-server
 | GOAL        | 88-91              | 58     | 4种       |
 | START       | 92-95              | 0      | UNDEFINED |
 
+> [!WARNING]
+>
+> 终点前区域，vector内是先4个53，4个54...
+
+
+
 ## Color结构体定义
 
 | Color     | Utils内定义 | Js内定义 | 具体颜色 |

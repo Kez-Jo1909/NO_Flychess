@@ -18,7 +18,7 @@ namespace flychess_game {
             chess_pieces.push_back(ChessPiece(i, color, -1));
         }
 
-        std::cout<< "Player created with color: " << static_cast<int>(color) << " and " << chess_piece_count << " chess pieces." << std::endl;
+        // std::cout<< "Player created with color: " << static_cast<int>(color) << " and " << chess_piece_count << " chess pieces." << std::endl;
     }
 
     int Player::GameTurn(){

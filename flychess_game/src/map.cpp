@@ -15,7 +15,7 @@ namespace flychess_map{
             }
         }
 
-        std::cout<<"HOME区域初始化完成,size = " << grids.size() << std::endl;
+        // std::cout<<"HOME区域初始化完成,size = " << grids.size() << std::endl;
 
         // NORMAL
         for (int i = 0; i < 5; i++){
@@ -38,7 +38,7 @@ namespace flychess_map{
             grids.push_back(Grid(static_cast<int>(GridType::NORMAL), grid_size + i * grid_size / 2, grid_size * 2, 7 - i, grid_size / 2, grid_size, (i + 3) % 4));
         }
 
-        std::cout<<"NORMAL区域初始化完成,size = " << grids.size() << std::endl;
+        // std::cout<<"NORMAL区域初始化完成,size = " << grids.size() << std::endl;
 
         // NORMAL,终点前路径
         for (int i = 0; i < 5; i++){
@@ -48,7 +48,7 @@ namespace flychess_map{
             grids.push_back(Grid(static_cast<int>(GridType::NORMAL), grid_size + i * grid_size / 2, grid_size * 4, 53 + i, grid_size / 2, grid_size / 2, 3));
         }
 
-        std::cout<<"终点前路径初始化完成,size = " << grids.size() << std::endl;
+        // std::cout<<"终点前路径初始化完成,size = " << grids.size() << std::endl;
 
         // TURN
         // 也用Grid结构体表示，发送直角三角形直角点坐标，width发送直角边长，height发送类型，即正方形左上角0，右上角1，右下角2，左下角3
@@ -69,7 +69,7 @@ namespace flychess_map{
         grids.push_back(Grid(static_cast<int>(GridType::BRIDGE), grid_size * 2, grid_size * 3, 5, grid_size, 3, 1));
         grids.push_back(Grid(static_cast<int>(GridType::BRIDGE), grid_size * 3, grid_size * 2, 4, grid_size, 1, 2));
 
-        std::cout<<"TURN区域初始化完成,size = " << grids.size() << std::endl;
+        // std::cout<<"TURN区域初始化完成,size = " << grids.size() << std::endl;
 
         // GOAL
         int goal_x = map_size / 2;
@@ -79,14 +79,14 @@ namespace flychess_map{
         grids.push_back(Grid(static_cast<int>(GridType::GOAL), goal_x, goal_y, 58, grid_size * 0.75, 2, 2));
         grids.push_back(Grid(static_cast<int>(GridType::GOAL), goal_x, goal_y, 58, grid_size * 0.75, 3, 3));
 
-        std::cout<<"GOAL区域初始化完成,size = " << grids.size() << std::endl;
+        // std::cout<<"GOAL区域初始化完成,size = " << grids.size() << std::endl;
 
         //START
         grids.push_back(Grid(static_cast<int>(GridType::START), grid_size * 2, 0, 0, grid_size, 0, static_cast<int>(game_utils::Color::UNDEFINED)));
         grids.push_back(Grid(static_cast<int>(GridType::START), map_size, grid_size * 2, 0, grid_size, 1, static_cast<int>(game_utils::Color::UNDEFINED)));
         grids.push_back(Grid(static_cast<int>(GridType::START), map_size - grid_size * 2, map_size, 0, grid_size, 2, static_cast<int>(game_utils::Color::UNDEFINED)));
         grids.push_back(Grid(static_cast<int>(GridType::START), 0, map_size - grid_size * 2, 0, grid_size, 3, static_cast<int>(game_utils::Color::UNDEFINED)));
-        std::cout<<"START区域初始化完成,size = " << grids.size() << std::endl;
+        // std::cout<<"START区域初始化完成,size = " << grids.size() << std::endl;
     }
 
     const GridInfo& Map::searchGridInfo(int position_id, int color, int chess_id) {
@@ -99,23 +99,23 @@ namespace flychess_map{
         // 开始匹配棋子位置
         std::cout<<"Searching for grid with position_id: " << position_id << ", color: " << color << ", chess_id: " << chess_id << std::endl;
         if (position_id == -1) {// HOME
-            std::cout<<"Searching for HOME grid"<<std::endl;
+            // std::cout<<"Searching for HOME grid"<<std::endl;
             int index = color * 4 + chess_id;
             return grids[index].getGridInfo();
         }
         else if (position_id == 58) {// GOAL
-            std::cout<<"Searching for GOAL grid"<<std::endl;
+            // std::cout<<"Searching for GOAL grid"<<std::endl;
             int index = color + 88;
             return grids[index].getGridInfo();
         }
         else if (position_id == 0) {// START
-            std::cout<<"Searching for START grid"<<std::endl;
+            // std::cout<<"Searching for START grid"<<std::endl;
             int index = 92 + color;
             return grids[index].getGridInfo();
         }
         else if (position_id >= 1 && position_id <= 52) {
             // NORMAL
-            std::cout<<"Searching for NORMAL grid"<<std::endl;
+            // std::cout<<"Searching for NORMAL grid"<<std::endl;
             // md不管了直接遍历
             // md只能写常规遍历
             int start_index = 16;
@@ -126,7 +126,7 @@ namespace flychess_map{
                     continue;
                 }
 
-                if (grids[i].getGridInfo().id == position_id && grids[i].getGridInfo().color == color) {
+                if (grids[i].getGridInfo().id == position_id) {
                     std::cout<<"Found grid at index: " << i << std::endl;
                     return grids[i].getGridInfo();
                 }
@@ -136,8 +136,9 @@ namespace flychess_map{
         }
         else if(position_id > 52 && position_id < 58){
             // 终点前路径
-            std::cout<<"Searching for pre-goal path grid"<<std::endl;
-            int index = 52 + color * 5 + (position_id - 53);
+            // std::cout<<"Searching for pre-goal path grid"<<std::endl;
+            // std::cout<<"color: " << color << std::endl;
+            int index = 52 + color + (position_id - 53) * 4;
             return grids[index].getGridInfo();
         }
         else{

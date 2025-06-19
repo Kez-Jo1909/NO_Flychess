@@ -125,7 +125,7 @@ function drawChessPieces(Module, player_count, chess_per_player) {
         const height     = HEAP32[base + 5];
         const color      = HEAP32[base + 6];
         
-        const fillColor = ChessColor[color + 1] || "gray";
+        const fillColor = ChessColor[i + 1] || "gray";
 
         // 计算棋子中心位置
         let center_x = position_x + width / 2;
@@ -140,6 +140,8 @@ function drawChessPieces(Module, player_count, chess_per_player) {
         }
         else if (type == 3) {
             // 按照方向修正中心点位置
+            let center_x = position_x;
+            let center_y = position_y;
             if (height == 0) {
               center_y -= width / 1.5;
             } else if (height == 1) {
