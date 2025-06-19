@@ -10,9 +10,8 @@ namespace flychess_game {
         std::cout << "Game state has been reset." << std::endl;
     }
 
-    static FlychessGame static_flychess_game;
-
     FlychessGame& get_instance() {
+        static FlychessGame static_flychess_game;
         return static_flychess_game;
     }
 

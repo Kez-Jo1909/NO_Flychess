@@ -95,13 +95,26 @@ namespace flychess_map{
         }
 
         // 开始匹配棋子位置
+        std::cout<<"Searching for grid with position_id: " << position_id << ", color: " << color << ", chess_id: " << chess_id << std::endl;
         if (chess_id == -1) {
             int index = color * 4 + chess_id;
             return grids[index].getGridInfo();
         }
-        // else if (position_id == 58) {
-
-        // }
+        else if (position_id == 58) {
+            int index = color + 88;
+            return grids[index].getGridInfo();
+        }
+        else if (position_id == 0) {
+            int index = 92 + color;
+            return grids[index].getGridInfo();
+        }
+        else if (position_id >= 1 && position_id <= 58) {
+            // TODO
+        }
+        else{
+            std::cout<<"Searching failed"<<std::endl;
+            throw std::runtime_error("Search failed: Invalid position_id or chess_id");
+        }
     }
 }
 

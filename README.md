@@ -1,4 +1,4 @@
-# README
+README
 
 ![version](https://img.shields.io/badge/version-0.0.1-black)
 
@@ -70,3 +70,24 @@ npx http-server
 | `EMSCRIPTEN_KEEPALIVE` | 保留 C++ 函数供 JS 调用     | `EMSCRIPTEN_KEEPALIVE int f()`   |
 | `Module.cwrap()`       | 从 JS 调用 C++ 函数         | `Module.cwrap("roll_dice", ...)` |
 | `Module.ccall()`       | 直接调用（比 cwrap 更底层） | `Module.ccall("get_score", ...)` |
+
+## MapGrid备注
+
+| 类型   | vector引导 | ID     | COLOR     | 备注 |
+| ------ | ---------- | ------ | --------- | ---- |
+| HOME   | 0-15       | -1     | 4种       |      |
+| NORMAL | 16-71      | 1-57中 | 4种       |      |
+| TURN   | 72-87      | 1-52中 | 4种       |      |
+| GOAL   | 88-91      | 58     | 4种       |      |
+| START  | 92-95      | 0      | UNDEFINED |      |
+
+## Color结构体定义
+
+| Color     | Utils内定义 | Js内定义 | 具体颜色 |
+| --------- | ----------- | -------- | -------- |
+| UNDEFINED | -1          | 0        | gray     |
+| RED       | 0           | 1        | red      |
+| BLUE      | 1           | 2        | #6666ff  |
+| GREEN     | 2           | 3        | #66ff66  |
+| YELLOW    | 3           | 4        | yellow   |
+
