@@ -100,7 +100,7 @@ namespace flychess_map{
         std::cout<<"Searching for grid with position_id: " << position_id << ", color: " << color << ", chess_id: " << chess_id << std::endl;
         if (position_id == -1) {// HOME
             // std::cout<<"Searching for HOME grid"<<std::endl;
-            int index = color * 4 + chess_id;
+            int index = color + chess_id * 4;
             return grids[index].getGridInfo();
         }
         else if (position_id == 58) {// GOAL

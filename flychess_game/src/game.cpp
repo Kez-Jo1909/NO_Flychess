@@ -89,19 +89,19 @@ extern "C"{
             return nullptr;
         }
 
-        // Debug代码
-        if (player_id == 0) {
-            return &flychess_map::getGameMap().searchGridInfo(58, static_cast<int>(chess_piece_to_draw.color), chess_id);
-        }
-        else if(player_id == 1){
-            return &flychess_map::getGameMap().searchGridInfo(58, static_cast<int>(chess_piece_to_draw.color), chess_id);
-        }
-        else if(player_id == 2){
-            return &flychess_map::getGameMap().searchGridInfo(58, static_cast<int>(chess_piece_to_draw.color), chess_id);
-        }
-        else if(player_id == 3){
-            return &flychess_map::getGameMap().searchGridInfo(58, static_cast<int>(chess_piece_to_draw.color), chess_id);
-        }
+        // // Debug代码
+        // if (player_id == 0) {
+        //     return &flychess_map::getGameMap().searchGridInfo(58, static_cast<int>(chess_piece_to_draw.color), chess_id);
+        // }
+        // else if(player_id == 1){
+        //     return &flychess_map::getGameMap().searchGridInfo(58, static_cast<int>(chess_piece_to_draw.color), chess_id);
+        // }
+        // else if(player_id == 2){
+        //     return &flychess_map::getGameMap().searchGridInfo(58, static_cast<int>(chess_piece_to_draw.color), chess_id);
+        // }
+        // else if(player_id == 3){
+        //     return &flychess_map::getGameMap().searchGridInfo(58, static_cast<int>(chess_piece_to_draw.color), chess_id);
+        // }
 
         return &flychess_map::getGameMap().searchGridInfo(chess_piece_to_draw.position, static_cast<int>(chess_piece_to_draw.color), chess_id);
     }
