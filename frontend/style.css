@@ -20,6 +20,11 @@ body {
   transform: translate(-50%, -50%);
 }
 
+#debug-toggle {
+  width: 90px;
+  text-align: center;
+}
+
 #menu-container {
   position: absolute;
   top: 0;

@@ -1,3 +1,7 @@
+let mouseX = -1;
+let mouseY = -1;
+let mouseClicked = false;
+
 document.addEventListener('DOMContentLoaded', () => {
   const startBtn = document.getElementById('start-btn');
   const gameContainer = document.getElementById('game-container');
@@ -34,6 +38,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+});
+
+const canvas = document.getElementById('flychess-map');
+
+let debugMode = false;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const debugBtn = document.createElement('button');
+  debugBtn.id = 'debug-toggle';
+  debugBtn.textContent = 'Debug: OFF';
+  debugBtn.style.position = 'fixed';
+  debugBtn.style.top = '10px';
+  debugBtn.style.right = '10px';
+  debugBtn.style.zIndex = 10000;
+  document.body.appendChild(debugBtn);
+
+  const mouseCoord = document.getElementById('mouse-coord');
+  if (mouseCoord) mouseCoord.style.display = 'none'; // 默认隐藏坐标显示
+
+  debugBtn.addEventListener('click', () => {
+    debugMode = !debugMode;
+    debugBtn.textContent = `Debug: ${debugMode ? 'ON' : 'OFF'}`;
+    if (mouseCoord) mouseCoord.style.display = debugMode ? 'block' : 'none';
+  });
+
+  const canvas = document.getElementById('flychess-map');
+
+  // 鼠标移动监听
+  canvas.addEventListener('mousemove', (e) => {
+    if (!debugMode) return; // debug 关闭时不显示
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = Math.round(e.clientX - rect.left);
+    const mouseY = Math.round(e.clientY - rect.top);
+
+    if (mouseCoord) {
+      mouseCoord.textContent = `鼠标坐标：(${mouseX}, ${mouseY})`;
+    }
+  });
+
+  // 你原有的鼠标点击事件监听
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = Math.round(e.clientX - rect.left);
+    const mouseY = Math.round(e.clientY - rect.top);
+    console.log(`鼠标点击位置：(${mouseX}, ${mouseY})`);
+  });
+
+  // 鼠标离开画布，隐藏坐标
+  canvas.addEventListener('mouseleave', () => {
+    if (mouseCoord) mouseCoord.textContent = `鼠标坐标：(-1, -1)`;
+  });
 });
 
 const GridType = {
@@ -103,7 +159,7 @@ function drawChessPieces(Module, player_count, chess_per_player) {
   // 刷新方式待定
   drawMap(Module); // 重新绘制地图
 
-  const canvas = document.getElementById('flychess-map');
+  // const canvas = document.getElementById('flychess-map');
   const ctx = canvas.getContext('2d');
 
   // 填满预留的圆
@@ -208,7 +264,7 @@ function drawChessPieces(Module, player_count, chess_per_player) {
 // 画地图函数
 function drawMap(Module) {
   console.log(`绘制地图...`);
-  const canvas = document.getElementById('flychess-map');
+  // const canvas = document.getElementById('flychess-map');
   const ctx = canvas.getContext('2d');
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
