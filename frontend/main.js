@@ -298,78 +298,13 @@ function drawChessPieces(Module, player_count, chess_per_player) {
         
         const fillColor = ChessColor[i + 1] || "gray";
 
-        // 计算棋子中心位置
-        let center_x = position_x + width / 2;
-        let center_y = position_y + height / 2;
+        const [cx, cy] = getGridCircleCenter(position_x, position_y, type, width, height);
         
-        if (type == 0 || type == 2){
-          ctx.beginPath();
-          ctx.arc(center_x, center_y, radius, 0, Math.PI * 2);
-          ctx.fillStyle = fillColor; // 圆的填充颜色
-          ctx.fill();
-          ctx.stroke();
-        }
-        else if (type == 3) {
-            // 按照方向修正中心点位置
-            let center_x = position_x;
-            let center_y = position_y;
-            if (height == 0) {
-              center_y -= width / 1.5;
-            } else if (height == 1) {
-              center_x += width / 1.5;
-            } else if (height == 2) {
-              center_y += width / 1.5;
-            } else if (height == 3) {
-              center_x -= width / 1.5;
-            }
-
-            ctx.beginPath();
-            ctx.arc(center_x, center_y, radius, 0, Math.PI * 2);
-            ctx.fillStyle = fillColor; // 圆的填充颜色
-            ctx.fill();
-            ctx.stroke();
-        }
-        else {
-          let x1 = position_x, y1 = position_y;
-          let x2, y2, x3, y3;
-          
-          if (height == 0) {
-            x2 = position_x + width;
-            y2 = position_y;
-            x3 = position_x;
-            y3 = position_y + width;
-          }
-          else if (height == 1) {
-            x2 = position_x - width;
-            y2 = position_y;
-            x3 = position_x;
-            y3 = position_y + width;
-          }
-          else if (height == 2) {
-            x2 = position_x;
-            y2 = position_y - width;
-            x3 = position_x - width;
-            y3 = position_y;
-          }
-          else if (height == 3) {
-            x2 = position_x;
-            y2 = position_y - width;
-            x3 = position_x + width;
-            y3 = position_y;
-          }
-          
-          // 计算三角形中心点（圆心）
-          let cx = (x1 + x2 + x3) / 3;
-          let cy = (y1 + y2 + y3) / 3;
-          
-          // 画圆
-          ctx.beginPath();
-          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-          ctx.fillStyle = fillColor; // 圆的填充颜色
-          ctx.fill();
-          ctx.stroke();
-        }
-        
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fillStyle = fillColor; // 圆的填充颜色
+        ctx.fill();
+        ctx.stroke();
       }
     }
   }
