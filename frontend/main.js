@@ -1,6 +1,7 @@
 let mouseX = -1;
 let mouseY = -1;
 let mouseClicked = false;
+let GlobalModule = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   const startBtn = document.getElementById('start-btn');
@@ -70,8 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!debugMode) return; // debug 关闭时不显示
 
     const rect = canvas.getBoundingClientRect();
-    const mouseX = Math.round(e.clientX - rect.left);
-    const mouseY = Math.round(e.clientY - rect.top);
+    mouseX = Math.round(e.clientX - rect.left);
+    mouseY = Math.round(e.clientY - rect.top);
 
     if (mouseCoord) {
       mouseCoord.textContent = `鼠标坐标：(${mouseX}, ${mouseY})`;
@@ -81,9 +82,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // 你原有的鼠标点击事件监听
   canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect();
-    const mouseX = Math.round(e.clientX - rect.left);
-    const mouseY = Math.round(e.clientY - rect.top);
-    console.log(`鼠标点击位置：(${mouseX}, ${mouseY})`);
+    mouseX = Math.round(e.clientX - rect.left);
+    mouseY = Math.round(e.clientY - rect.top);
+    // console.log(`鼠标点击位置：(${mouseX}, ${mouseY})`);
+    mouseClickHandle();
   });
 
   // 鼠标离开画布，隐藏坐标
@@ -91,6 +93,117 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mouseCoord) mouseCoord.textContent = `鼠标坐标：(-1, -1)`;
   });
 });
+
+function mouseClickHandle(){
+  if (mouseX < 0 || mouseY < 0) {
+    console.log("鼠标位置无效");
+    return;
+  }
+
+  if (GlobalModule == null) {
+    console.error("GlobalModule 未初始化，请先调用 initGame()");
+    return;
+  }
+
+  let actual_playerCount = GlobalModule._GetPlayerCount();
+  let actual_chess_per_player = GlobalModule._GetChessPieceCount();
+
+  // 遍历所有棋子，检查是否点击在某个棋子上
+  for (let i = 0; i < actual_playerCount; i++) {
+    for (let j= 0; j < actual_chess_per_player; j++) {
+      // 获取棋子位置
+      const ptr = GlobalModule._DrawChessPiece(i, j);
+      if (ptr != 0) {
+        const HEAP32 = GlobalModule.HEAP32;
+        const base = ptr >> 2; // 转换为 32-bit 索引, 因为 HEAP32 是按 4 字节对齐的，所以除以 4
+
+        const type       = HEAP32[base + 0]; // GridType
+        const position_x = HEAP32[base + 1];
+        const position_y = HEAP32[base + 2];
+        const id         = HEAP32[base + 3];
+        const width      = HEAP32[base + 4];
+        const height     = HEAP32[base + 5];
+        const color      = HEAP32[base + 6];
+
+        const [cx, cy] = getGridCircleCenter(position_x, position_y, type, width, height);
+        const radius = canvas.width / 51; // 半径为宽高的四分之一
+
+        // 检查鼠标点击位置是否在棋子圆内
+        const dx = mouseX - cx;
+        const dy = mouseY - cy;
+        if (dx * dx + dy * dy <= radius * radius) {
+          // 点击在棋子上
+          console.log(`点击了棋子: 玩家 ${i + 1}, 棋子 ${j + 1}, 类型 ${GridType[type]}, ID ${id}, 坐标 (${position_x}, ${position_y})`);
+          // 在这里可以添加更多逻辑，比如移动棋子、显示信息等
+          return; // 找到一个棋子后就返回
+        }
+      }
+    }
+  }
+  // 如果没有点击到任何棋子
+  console.log(`点击位置：(${mouseX}, ${mouseY}) 没有点击到任何棋子`);
+}
+
+function getGridCircleCenter(position_x, position_y, type, width, height){
+  // 计算棋子中心位置
+  let center_x = position_x + width / 2;
+  let center_y = position_y + height / 2;
+  
+  if (type == 0 || type == 2){
+    return [center_x, center_y];
+  }
+  else if (type == 3) {
+      // 按照方向修正中心点位置
+      let center_x = position_x;
+      let center_y = position_y;
+      if (height == 0) {
+        center_y -= width / 1.5;
+      } else if (height == 1) {
+        center_x += width / 1.5;
+      } else if (height == 2) {
+        center_y += width / 1.5;
+      } else if (height == 3) {
+        center_x -= width / 1.5;
+      }
+
+      return [center_x, center_y];
+  }
+  else {
+    let x1 = position_x, y1 = position_y;
+    let x2, y2, x3, y3;
+    
+    if (height == 0) {
+      x2 = position_x + width;
+      y2 = position_y;
+      x3 = position_x;
+      y3 = position_y + width;
+    }
+    else if (height == 1) {
+      x2 = position_x - width;
+      y2 = position_y;
+      x3 = position_x;
+      y3 = position_y + width;
+    }
+    else if (height == 2) {
+      x2 = position_x;
+      y2 = position_y - width;
+      x3 = position_x - width;
+      y3 = position_y;
+    }
+    else if (height == 3) {
+      x2 = position_x;
+      y2 = position_y - width;
+      x3 = position_x + width;
+      y3 = position_y;
+    }
+    
+    // 计算三角形中心点（圆心）
+    let cx = (x1 + x2 + x3) / 3;
+    let cy = (y1 + y2 + y3) / 3;
+    
+    return [cx, cy];
+  }
+}
 
 const GridType = {
   0: "NORMAL",
@@ -119,6 +232,8 @@ const ChessColor = {
 
 function initGame(playerCount, chess_per_player) {
   FlyChessModule().then(Module => {
+    GlobalModule = Module;
+
     // console.log(`初始化游戏，玩家人数: ${playerCount}`);
     Module._GameInit(playerCount, chess_per_player);
 

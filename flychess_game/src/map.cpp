@@ -97,7 +97,7 @@ namespace flychess_map{
         }
 
         // 开始匹配棋子位置
-        std::cout<<"Searching for grid with position_id: " << position_id << ", color: " << color << ", chess_id: " << chess_id << std::endl;
+        // std::cout<<"Searching for grid with position_id: " << position_id << ", color: " << color << ", chess_id: " << chess_id << std::endl;
         if (position_id == -1) {// HOME
             // std::cout<<"Searching for HOME grid"<<std::endl;
             int index = color + chess_id * 4;
