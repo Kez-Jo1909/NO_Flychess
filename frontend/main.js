@@ -3,6 +3,11 @@ let mouseY = -1;
 let mouseClicked = false;
 let GlobalModule = null;
 
+// 棋子选择全局变量
+let awaitingPieceSelection = false;
+let selectedPieceId = -1; // 当前选中的棋子
+let selectedPlayerId = -1; // 当前要选的玩家
+
 document.addEventListener('DOMContentLoaded', () => {
   const startBtn = document.getElementById('start-btn');
   const gameContainer = document.getElementById('game-container');
@@ -105,6 +110,11 @@ function mouseClickHandle(){
     return;
   }
 
+  if (awaitingPieceSelection != true) {
+    console.log("非棋子选择状态，请先投骰子");
+    return;
+  }
+
   let actual_playerCount = GlobalModule._GetPlayerCount();
   let actual_chess_per_player = GlobalModule._GetChessPieceCount();
 
@@ -134,6 +144,13 @@ function mouseClickHandle(){
         if (dx * dx + dy * dy <= radius * radius) {
           // 点击在棋子上
           console.log(`点击了棋子: 玩家 ${i + 1}, 棋子 ${j + 1}, 类型 ${GridType[type]}, ID ${id}, 坐标 (${position_x}, ${position_y})`);
+          if (i !== selectedPlayerId) {
+            console.log(`当前玩家是 ${selectedPlayerId + 1}，无法选择玩家 ${i + 1} 的棋子`);
+            return; // 如果点击的棋子不是当前玩家的棋子，忽略
+          }
+          // 记录选中的棋子
+          selectedPieceId = id; // 记录选中的棋子ID
+          awaitingPieceSelection = false; // 取消棋子选择状态
           // 在这里可以添加更多逻辑，比如移动棋子、显示信息等
           return; // 找到一个棋子后就返回
         }
@@ -258,16 +275,62 @@ function initGame(playerCount, chess_per_player) {
   // 绘制棋子
   drawChessPieces(Module, playerCount, chess_per_player);
 
-  // 掷骰子按钮绑定
-  document.getElementById('roll-btn').onclick = () => {
-    showRandomNumber();
+  // 当前轮到的玩家
+  let currentPlayerIndex = 0;
+  let roundIndex = 0;
+  let diceRolled = false;
+
+  const rollBtn = document.getElementById('roll-btn');
+  const numberDisplay = document.getElementById('random-number');
+
+  rollBtn.textContent = `玩家 1 投骰子`;
+  numberDisplay.innerHTML = '';
+
+  rollBtn.onclick = () => {
+    if (diceRolled) {
+      console.log(`玩家 ${currentPlayerIndex + 1} 已经投过骰子，请等待下一位玩家。`);
+      return; // 防止一个玩家多投
+    }
+
+    const randomNumber = Module._rollDice();
+    diceRolled = true;
+    console.log(`玩家 ${currentPlayerIndex + 1} 掷骰子结果: ${randomNumber}`);
+    numberDisplay.innerHTML = `玩家 ${currentPlayerIndex + 1} 掷骰子结果：${randomNumber}<br>请选择棋子`;
+
+    rollBtn.textContent = `玩家 ${currentPlayerIndex + 1}结束`;// 等待2s再进入下一位玩家
+    rollBtn.disabled = true; // 禁用按钮，等待下一位玩家
+
+    // 等待选择棋子
+    awaitingPieceSelection = true;
+    selectedPieceId = -1; // 重置选中的棋子ID
+    selectedPlayerId = currentPlayerIndex; // 记录当前玩家ID
+
+    setTimeout(() => {
+      currentPlayerIndex++;
+
+      if (currentPlayerIndex < playerCount) {
+        rollBtn.disabled = false; // 允许下一位玩家投骰子
+        rollBtn.textContent = `玩家 ${currentPlayerIndex + 1} 投骰子`;
+        numberDisplay.innerHTML = '';
+        diceRolled = false;
+      } else {
+        rollBtn.textContent = `一轮结束`;
+        rollBtn.disabled = true;
+        console.log("所有玩家已完成本轮投骰子。");
+        setTimeout(() => {
+          currentPlayerIndex = 0;
+          roundIndex++;
+          rollBtn.disabled = false; // 允许下一轮投骰子
+          diceRolled = false;
+          rollBtn.textContent = `玩家 1 投骰子`;
+          numberDisplay.innerHTML = '';
+          console.log(`开始第 ${roundIndex + 1} 轮`);
+        },500);
+      }
+    }, 2000); // 等待2秒再继续
   };
 
-  function showRandomNumber() {
-    const randomNumber = Module._rollDice();
-    console.log(`掷骰子结果: ${randomNumber}`);
-    document.getElementById('random-number').textContent = randomNumber;
-  }
+
 }
 
 function drawChessPieces(Module, player_count, chess_per_player) {
