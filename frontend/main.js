@@ -50,117 +50,6 @@ const canvas = document.getElementById('flychess-map');
 
 let debugMode = false;
 
-document.addEventListener('DOMContentLoaded', () => {
-  const debugBtn = document.createElement('button');
-  debugBtn.id = 'debug-toggle';
-  debugBtn.textContent = 'Debug: OFF';
-  debugBtn.style.position = 'fixed';
-  debugBtn.style.top = '10px';
-  debugBtn.style.right = '10px';
-  debugBtn.style.zIndex = 10000;
-  document.body.appendChild(debugBtn);
-
-  const mouseCoord = document.getElementById('mouse-coord');
-  if (mouseCoord) mouseCoord.style.display = 'none'; // 默认隐藏坐标显示
-
-  debugBtn.addEventListener('click', () => {
-    debugMode = !debugMode;
-    debugBtn.textContent = `Debug: ${debugMode ? 'ON' : 'OFF'}`;
-    if (mouseCoord) mouseCoord.style.display = debugMode ? 'block' : 'none';
-  });
-
-  const canvas = document.getElementById('flychess-map');
-
-  // 鼠标移动监听
-  canvas.addEventListener('mousemove', (e) => {
-    if (!debugMode) return; // debug 关闭时不显示
-
-    const rect = canvas.getBoundingClientRect();
-    mouseX = Math.round(e.clientX - rect.left);
-    mouseY = Math.round(e.clientY - rect.top);
-
-    if (mouseCoord) {
-      mouseCoord.textContent = `鼠标坐标：(${mouseX}, ${mouseY})`;
-    }
-  });
-
-  // 你原有的鼠标点击事件监听
-  canvas.addEventListener('click', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    mouseX = Math.round(e.clientX - rect.left);
-    mouseY = Math.round(e.clientY - rect.top);
-    // console.log(`鼠标点击位置：(${mouseX}, ${mouseY})`);
-    mouseClickHandle();
-  });
-
-  // 鼠标离开画布，隐藏坐标
-  canvas.addEventListener('mouseleave', () => {
-    if (mouseCoord) mouseCoord.textContent = `鼠标坐标：(-1, -1)`;
-  });
-});
-
-function mouseClickHandle(){
-  if (mouseX < 0 || mouseY < 0) {
-    console.log("鼠标位置无效");
-    return;
-  }
-
-  if (GlobalModule == null) {
-    console.error("GlobalModule 未初始化，请先调用 initGame()");
-    return;
-  }
-
-  if (awaitingPieceSelection != true) {
-    console.log("非棋子选择状态，请先投骰子");
-    return;
-  }
-
-  let actual_playerCount = GlobalModule._GetPlayerCount();
-  let actual_chess_per_player = GlobalModule._GetChessPieceCount();
-
-  // 遍历所有棋子，检查是否点击在某个棋子上
-  for (let i = 0; i < actual_playerCount; i++) {
-    for (let j= 0; j < actual_chess_per_player; j++) {
-      // 获取棋子位置
-      const ptr = GlobalModule._DrawChessPiece(i, j);
-      if (ptr != 0) {
-        const HEAP32 = GlobalModule.HEAP32;
-        const base = ptr >> 2; // 转换为 32-bit 索引, 因为 HEAP32 是按 4 字节对齐的，所以除以 4
-
-        const type       = HEAP32[base + 0]; // GridType
-        const position_x = HEAP32[base + 1];
-        const position_y = HEAP32[base + 2];
-        const id         = HEAP32[base + 3];
-        const width      = HEAP32[base + 4];
-        const height     = HEAP32[base + 5];
-        const color      = HEAP32[base + 6];
-
-        const [cx, cy] = getGridCircleCenter(position_x, position_y, type, width, height);
-        const radius = canvas.width / 51; // 半径为宽高的四分之一
-
-        // 检查鼠标点击位置是否在棋子圆内
-        const dx = mouseX - cx;
-        const dy = mouseY - cy;
-        if (dx * dx + dy * dy <= radius * radius) {
-          // 点击在棋子上
-          console.log(`点击了棋子: 玩家 ${i + 1}, 棋子 ${j + 1}, 类型 ${GridType[type]}, ID ${id}, 坐标 (${position_x}, ${position_y})`);
-          if (i !== selectedPlayerId) {
-            console.log(`当前玩家是 ${selectedPlayerId + 1}，无法选择玩家 ${i + 1} 的棋子`);
-            return; // 如果点击的棋子不是当前玩家的棋子，忽略
-          }
-          // 记录选中的棋子
-          selectedPieceId = id; // 记录选中的棋子ID
-          awaitingPieceSelection = false; // 取消棋子选择状态
-          // 在这里可以添加更多逻辑，比如移动棋子、显示信息等
-          return; // 找到一个棋子后就返回
-        }
-      }
-    }
-  }
-  // 如果没有点击到任何棋子
-  console.log(`点击位置：(${mouseX}, ${mouseY}) 没有点击到任何棋子`);
-}
-
 function getGridCircleCenter(position_x, position_y, type, width, height){
   // 计算棋子中心位置
   let center_x = position_x + width / 2;
@@ -260,22 +149,20 @@ function initGame(playerCount, chess_per_player) {
   });
 }
 
- function gameProcess(Module, playerCount, chess_per_player) {
+function gameProcess(Module, playerCount, chess_per_player) {
+  GlobalModule = Module;
+
   let actual_playerCount = Module._GetPlayerCount();
   let actual_chess_per_player = Module._GetChessPieceCount();
-  // console.log(`实际玩家人数: ${actual_playerCount}, 每人棋子数: ${actual_chess_per_player}`);
 
-  // 检查实际玩家人数和棋子数是否与预期一致
   if (actual_playerCount !== playerCount || actual_chess_per_player !== chess_per_player) {
     console.error("实际玩家人数或棋子数与预期不一致，请检查初始化参数。");
     return;
   }
-  console.log(`游戏正式开始,玩家人数: ${playerCount},每人棋子数: ${chess_per_player}`);
 
-  // 绘制棋子
+  console.log(`游戏正式开始, 玩家人数: ${playerCount}, 每人棋子数: ${chess_per_player}`);
   drawChessPieces(Module, playerCount, chess_per_player);
 
-  // 当前轮到的玩家
   let currentPlayerIndex = 0;
   let roundIndex = 0;
   let diceRolled = false;
@@ -287,50 +174,122 @@ function initGame(playerCount, chess_per_player) {
   numberDisplay.innerHTML = '';
 
   rollBtn.onclick = () => {
-    if (diceRolled) {
-      console.log(`玩家 ${currentPlayerIndex + 1} 已经投过骰子，请等待下一位玩家。`);
-      return; // 防止一个玩家多投
+    if (diceRolled || awaitingPieceSelection) {
+      console.log("当前状态不能投骰子，请等待操作完成");
+      return;
     }
 
-    const randomNumber = Module._rollDice();
+    currentDiceNumber = Module._rollDice();
     diceRolled = true;
-    console.log(`玩家 ${currentPlayerIndex + 1} 掷骰子结果: ${randomNumber}`);
-    numberDisplay.innerHTML = `玩家 ${currentPlayerIndex + 1} 掷骰子结果：${randomNumber}<br>请选择棋子`;
-
-    rollBtn.textContent = `玩家 ${currentPlayerIndex + 1}结束`;// 等待2s再进入下一位玩家
-    rollBtn.disabled = true; // 禁用按钮，等待下一位玩家
-
-    // 等待选择棋子
     awaitingPieceSelection = true;
-    selectedPieceId = -1; // 重置选中的棋子ID
-    selectedPlayerId = currentPlayerIndex; // 记录当前玩家ID
+    selectedPieceId = -1;
+    selectedPlayerId = currentPlayerIndex;
 
-    setTimeout(() => {
-      currentPlayerIndex++;
+    console.log(`玩家 ${currentPlayerIndex + 1} 掷骰子结果: ${currentDiceNumber}`);
+    numberDisplay.innerHTML = `玩家 ${currentPlayerIndex + 1} 掷骰子结果：${currentDiceNumber}<br>请选择棋子`;
 
-      if (currentPlayerIndex < playerCount) {
-        rollBtn.disabled = false; // 允许下一位玩家投骰子
-        rollBtn.textContent = `玩家 ${currentPlayerIndex + 1} 投骰子`;
-        numberDisplay.innerHTML = '';
-        diceRolled = false;
-      } else {
-        rollBtn.textContent = `一轮结束`;
-        rollBtn.disabled = true;
-        console.log("所有玩家已完成本轮投骰子。");
-        setTimeout(() => {
-          currentPlayerIndex = 0;
-          roundIndex++;
-          rollBtn.disabled = false; // 允许下一轮投骰子
-          diceRolled = false;
-          rollBtn.textContent = `玩家 1 投骰子`;
-          numberDisplay.innerHTML = '';
-          console.log(`开始第 ${roundIndex + 1} 轮`);
-        },500);
-      }
-    }, 2000); // 等待2秒再继续
+    rollBtn.textContent = `等待玩家 ${currentPlayerIndex + 1} 选择棋子`;
+    rollBtn.disabled = true;
   };
 
+  // 鼠标监听器注册
+  const canvas = document.getElementById('flychess-map');
+  canvas.addEventListener('mousemove', (e) => {
+    if (!debugMode) return;
+    const rect = canvas.getBoundingClientRect();
+    mouseX = Math.round(e.clientX - rect.left);
+    mouseY = Math.round(e.clientY - rect.top);
+    // const mouseCoord = document.getElementById('mouse-coord');
+    // if (mouseCoord) {
+    //   mouseCoord.textContent = `鼠标坐标：(${mouseX}, ${mouseY})`;
+    // }
+  });
 
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mouseX = Math.round(e.clientX - rect.left);
+    mouseY = Math.round(e.clientY - rect.top);
+    mouseClickHandle();
+  });
+
+  // 鼠标离开canvas
+  // 如果需要调试鼠标坐标，可以取消注释以下代码
+  canvas.addEventListener('mouseleave', () => {
+    // const mouseCoord = document.getElementById('mouse-coord');
+    // if (mouseCoord) mouseCoord.textContent = `鼠标坐标：(-1, -1)`;
+  });
+
+  // 鼠标点击处理函数
+  function mouseClickHandle() {
+    if (!awaitingPieceSelection) return;
+
+    let actual_playerCount = Module._GetPlayerCount();
+    let actual_chess_per_player = Module._GetChessPieceCount();
+
+    for (let i = 0; i < actual_playerCount; i++) {
+      for (let j = 0; j < actual_chess_per_player; j++) {
+        const ptr = Module._DrawChessPiece(i, j);
+        if (ptr !== 0) {
+          const HEAP32 = Module.HEAP32;
+          const base = ptr >> 2;
+
+          const type       = HEAP32[base + 0];
+          const position_x = HEAP32[base + 1];
+          const position_y = HEAP32[base + 2];
+          const id         = HEAP32[base + 3];
+          const width      = HEAP32[base + 4];
+          const height     = HEAP32[base + 5];
+          const color      = HEAP32[base + 6];
+
+          const [cx, cy] = getGridCircleCenter(position_x, position_y, type, width, height);
+          const radius = canvas.width / 51;
+
+          const dx = mouseX - cx;
+          const dy = mouseY - cy;
+          if (dx * dx + dy * dy <= radius * radius) {
+            if (i !== selectedPlayerId) {
+              console.log(`当前是玩家 ${selectedPlayerId + 1} 的回合，不能操作玩家 ${i + 1} 的棋子`);
+              return;
+            }
+
+            console.log(`玩家 ${i + 1} 选择了棋子 ${j + 1}`);
+            awaitingPieceSelection = false;
+
+            // TODO : 棋子移动接口
+            // Module._movePiece(selectedPlayerId, id, currentDiceNumber);
+
+            // 延迟继续下一位玩家
+            setTimeout(() => {
+              currentPlayerIndex++;
+              if (currentPlayerIndex < playerCount) {
+                diceRolled = false;
+                rollBtn.disabled = false;
+                rollBtn.textContent = `玩家 ${currentPlayerIndex + 1} 投骰子`;
+                numberDisplay.innerHTML = '';
+              } else {
+                rollBtn.textContent = `一轮结束`;
+                rollBtn.disabled = true;
+                console.log("所有玩家已完成本轮投骰子。");
+                setTimeout(() => {
+                  currentPlayerIndex = 0;
+                  roundIndex++;
+                  diceRolled = false;
+                  rollBtn.disabled = false;
+                  rollBtn.textContent = `玩家 1 投骰子`;
+                  numberDisplay.innerHTML = '';
+                  console.log(`开始第 ${roundIndex + 1} 轮`);
+                }, 1000);
+              }
+            }, 500);
+
+            return;
+          }
+        }
+      }
+    }
+
+    console.log(`点击位置 (${mouseX}, ${mouseY}) 未点击到任何棋子`);
+  }
 }
 
 function drawChessPieces(Module, player_count, chess_per_player) {
