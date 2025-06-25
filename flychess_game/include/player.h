@@ -48,6 +48,7 @@ public:
 
     inline void SimpleMove(int steps) {
         piece_info.position += steps;
+        std::cout<< "Chess piece " << piece_info.id << " moved to position: " << piece_info.position << std::endl;
     }
 
     void preGoalMove(int steps, int pre_goal_position);

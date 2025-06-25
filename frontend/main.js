@@ -294,8 +294,8 @@ function gameProcess(Module, playerCount, chess_per_player) {
 
             // TODO : 棋子移动接口
             console.log('移动棋子...');
-            console.log('传入参数：', selectedPlayerId, j + 1, currentDiceNumber);
-            Module._MoveChessPiece(selectedPlayerId, j + 1, currentDiceNumber);
+            console.log('传入参数：', selectedPlayerId, j, currentDiceNumber);
+            Module._MoveChessPiece(selectedPlayerId, j, currentDiceNumber);
             drawChessPieces(Module, playerCount, chess_per_player);
 
             // 延迟继续下一位玩家

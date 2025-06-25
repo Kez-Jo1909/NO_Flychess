@@ -85,6 +85,8 @@ extern "C"{
         }
 
         if (flychess_game::get_instance().GetPlayer(player_id).GetColor() != chess_piece_to_draw.color) {
+            std::cout<< "chess color: " << static_cast<int>(chess_piece_to_draw.color) << std::endl;
+            std::cout<< "player color: " << static_cast<int>(flychess_game::get_instance().GetPlayer(player_id).GetColor()) << std::endl;
             std::cerr << "Error: Chess color does not match player color." << std::endl;
             return nullptr;
         }
