@@ -149,6 +149,10 @@ function initGame(playerCount, chess_per_player) {
   });
 }
 
+function MoveChess(player_id, steps){
+  
+}
+
 function gameProcess(Module, playerCount, chess_per_player) {
   GlobalModule = Module;
 
@@ -187,6 +191,39 @@ function gameProcess(Module, playerCount, chess_per_player) {
 
     console.log(`玩家 ${currentPlayerIndex + 1} 掷骰子结果: ${currentDiceNumber}`);
     numberDisplay.innerHTML = `玩家 ${currentPlayerIndex + 1} 掷骰子结果：${currentDiceNumber}<br>请选择棋子`;
+
+    let started_chess_count = Module._GetStartedChessCount(selectedPlayerId);
+    if(started_chess_count <= 0 && currentDiceNumber !== 6) {
+      console.log(`玩家 ${currentPlayerIndex + 1} 没有棋子在起点,必须掷出6才能开始游戏`);
+      awaitingPieceSelection = false;
+      rollBtn.textContent = `玩家 ${currentPlayerIndex + 1} 投骰子`;
+      rollBtn.disabled = true;
+    
+      setTimeout(() => {
+        currentPlayerIndex++;
+        if (currentPlayerIndex < playerCount) {
+          diceRolled = false;
+          rollBtn.disabled = false;
+          rollBtn.textContent = `玩家 ${currentPlayerIndex + 1} 投骰子`;
+          numberDisplay.innerHTML = '';
+        } else {
+          rollBtn.textContent = `一轮结束`;
+          rollBtn.disabled = true;
+          console.log("所有玩家已完成本轮投骰子。");
+          setTimeout(() => {
+            currentPlayerIndex = 0;
+            roundIndex++;
+            diceRolled = false;
+            rollBtn.disabled = false;
+            rollBtn.textContent = `玩家 1 投骰子`;
+            numberDisplay.innerHTML = '';
+            console.log(`开始第 ${roundIndex + 1} 轮`);
+          }, 1000);
+        }
+      }, 500);
+    
+      return;
+    }
 
     rollBtn.textContent = `等待玩家 ${currentPlayerIndex + 1} 选择棋子`;
     rollBtn.disabled = true;
@@ -256,7 +293,10 @@ function gameProcess(Module, playerCount, chess_per_player) {
             awaitingPieceSelection = false;
 
             // TODO : 棋子移动接口
-            // Module._movePiece(selectedPlayerId, id, currentDiceNumber);
+            console.log('移动棋子...');
+            console.log('传入参数：', selectedPlayerId, j + 1, currentDiceNumber);
+            Module._MoveChessPiece(selectedPlayerId, j + 1, currentDiceNumber);
+            drawChessPieces(Module, playerCount, chess_per_player);
 
             // 延迟继续下一位玩家
             setTimeout(() => {

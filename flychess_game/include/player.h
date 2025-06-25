@@ -41,6 +41,16 @@ public:
     inline const ChessPieceInfo& GetChessPieceInfo() const {
         return piece_info;
     }
+
+    inline void MoveToStart() {
+        piece_info.position = 0;
+    }
+
+    inline void SimpleMove(int steps) {
+        piece_info.position += steps;
+    }
+
+    void preGoalMove(int steps, int pre_goal_position);
 private:
     ChessPieceInfo piece_info;
 };
@@ -71,10 +81,31 @@ public:
     }
 
     int GameTurn();
+
+    int GetStartedChessPieceCount() const {
+        int count = 0;
+        for (const auto& chess_piece : chess_pieces) {
+            if (chess_piece.GetChessPieceInfo().position >= 0) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+
+    /**
+     * @name MoveChessPiece
+     * @brief 移动棋子
+     * @param chess_id 棋子ID
+     * @param steps 移动步数
+     * @return 返回值：1表示成功，0表示棋子未在棋盘上，-1表示参数错误
+     */
+    int MoveChessPiece(int chess_id, int steps);
 private:
     game_utils::Color player_color = game_utils::Color::UNDEFINED;
     PlayerState player_state = PlayerState::UNDEFINED;
     std::vector<ChessPiece> chess_pieces; // 棋子列表
+    int pregoal_position = 52; // 预设目标位置
 };
 
 }

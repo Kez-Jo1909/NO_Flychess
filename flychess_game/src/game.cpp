@@ -106,4 +106,24 @@ extern "C"{
         return &flychess_map::getGameMap().searchGridInfo(chess_piece_to_draw.position, static_cast<int>(chess_piece_to_draw.color), chess_id);
     }
 
+    EMSCRIPTEN_KEEPALIVE
+    int MoveChessPiece(int player_id, int chess_id, int steps) {
+        if (player_id < 0 || player_id >= flychess_game::get_instance().GetPlayerCount()) {
+            std::cerr << "Invalid player ID: " << player_id << std::endl;
+            return -2;
+        }
+
+        auto& player = flychess_game::get_instance().GetPlayer(player_id);
+        int ret = player.MoveChessPiece(chess_id, steps);
+        return ret;
+    }
+
+    EMSCRIPTEN_KEEPALIVE
+    int GetStartedChessCount(int player_id) {
+        if (player_id < 0 || player_id >= flychess_game::get_instance().GetPlayerCount()) {
+            std::cerr << "Invalid player ID: " << player_id << std::endl;
+            return -1;
+        }
+        return flychess_game::get_instance().GetPlayer(player_id).GetStartedChessPieceCount();
+    }
 }
