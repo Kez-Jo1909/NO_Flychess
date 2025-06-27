@@ -17,21 +17,31 @@ struct ChessPieceInfo {
     int id = -1; // 棋子ID
     game_utils::Color color = game_utils::Color::UNDEFINED; // 棋子颜色
     int position = -1; // 棋子位置
+    int if_pre_goal = 0;
 };
 
 class ChessPiece{
 public:
     ChessPiece() = default;
 
-    ChessPiece(int id, game_utils::Color color, int position = -1) {
+    ChessPiece(int id, game_utils::Color color, int position = -1, int if_pre_goal = 0) {
         piece_info.id = id;
         piece_info.color = color;
         piece_info.position = position;
+        piece_info.if_pre_goal = if_pre_goal;
         // std::cout << "ChessPiece created with ID: " << id << ", Color: " << static_cast<int>(color) << ", Position: " << position << std::endl;
     }
 
     inline void SetId(int new_id) {
         piece_info.id = new_id;
+    }
+
+    inline void SetPreGoal() {
+        piece_info.if_pre_goal = 1;
+    }
+
+    inline int ifPreGoal() {
+        return piece_info.if_pre_goal;
     }
 
     inline void SetColor(game_utils::Color new_color) {
@@ -48,7 +58,14 @@ public:
 
     inline void SimpleMove(int steps) {
         piece_info.position += steps;
+        piece_info.position = piece_info.position <= 52 ? piece_info.position : piece_info.position - 51; // 确保位置在1-52之间
         std::cout<< "Chess piece " << piece_info.id << " moved to position: " << piece_info.position << std::endl;
+    }
+
+    inline void MoveFromStart(int steps, int start_position) {
+        // 好傻逼的函数
+        int new_position = start_position + steps - 1;
+        piece_info.position = new_position;
     }
 
     void preGoalMove(int steps, int pre_goal_position);
@@ -107,6 +124,7 @@ private:
     PlayerState player_state = PlayerState::UNDEFINED;
     std::vector<ChessPiece> chess_pieces; // 棋子列表
     int pregoal_position = 52; // 预设目标位置
+    int start_position = 0; // 起始位置
 };
 
 }

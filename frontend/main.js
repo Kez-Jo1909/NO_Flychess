@@ -195,6 +195,7 @@ function gameProcess(Module, playerCount, chess_per_player) {
     let started_chess_count = Module._GetStartedChessCount(selectedPlayerId);
     if(started_chess_count <= 0 && currentDiceNumber !== 6) {
       console.log(`玩家 ${currentPlayerIndex + 1} 没有棋子在起点,必须掷出6才能开始游戏`);
+      numberDisplay.innerHTML = `玩家 ${currentPlayerIndex + 1} 掷骰子结果：${currentDiceNumber}<br>无可用棋子`;
       awaitingPieceSelection = false;
       rollBtn.textContent = `玩家 ${currentPlayerIndex + 1} 投骰子`;
       rollBtn.disabled = true;
@@ -218,9 +219,9 @@ function gameProcess(Module, playerCount, chess_per_player) {
             rollBtn.textContent = `玩家 1 投骰子`;
             numberDisplay.innerHTML = '';
             console.log(`开始第 ${roundIndex + 1} 轮`);
-          }, 1000);
+          }, 100);
         }
-      }, 500);
+      }, 100);
     
       return;
     }
@@ -318,9 +319,9 @@ function gameProcess(Module, playerCount, chess_per_player) {
                   rollBtn.textContent = `玩家 1 投骰子`;
                   numberDisplay.innerHTML = '';
                   console.log(`开始第 ${roundIndex + 1} 轮`);
-                }, 1000);
+                }, 100);
               }
-            }, 500);
+            }, 100);
 
             return;
           }
@@ -359,6 +360,10 @@ function drawChessPieces(Module, player_count, chess_per_player) {
         const color      = HEAP32[base + 6];
         
         const fillColor = ChessColor[i + 1] || "gray";
+
+        if (id == -2) {
+          continue;
+        }
 
         const [cx, cy] = getGridCircleCenter(position_x, position_y, type, width, height);
         
@@ -403,6 +408,11 @@ function drawMap(Module) {
       const colorInfo = Color[color + 1];
       const colorName = colorInfo ? colorInfo.name : "UNDEFINED";
       const fillColor = colorInfo ? colorInfo.draw : "gray";
+
+      if (id == -2) {
+        // 跳过未使用的格子
+        continue;
+      }
 
       // console.log(`格子信息: 类型=${GridType[type]}, 坐标=(${position_x},${position_y}), ID=${id}, 宽=${width}, 高=${height}, 颜色=${colorName}`);
       

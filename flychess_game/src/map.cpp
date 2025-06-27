@@ -87,11 +87,14 @@ namespace flychess_map{
         grids.push_back(Grid(static_cast<int>(GridType::START), map_size - grid_size * 2, map_size, 0, grid_size, 2, static_cast<int>(game_utils::Color::UNDEFINED)));
         grids.push_back(Grid(static_cast<int>(GridType::START), 0, map_size - grid_size * 2, 0, grid_size, 3, static_cast<int>(game_utils::Color::UNDEFINED)));
         // std::cout<<"START区域初始化完成,size = " << grids.size() << std::endl;
+    
+        // 这是已经完成的棋子的位置，一个长宽为0的格子
+        grids.push_back(Grid(static_cast<int>(GridType::NORMAL), 0, 0, -2, 0, 0, static_cast<int>(game_utils::Color::UNDEFINED)));
     }
 
     const GridInfo& Map::searchGridInfo(int position_id, int color, int chess_id) {
         // 检查越界
-        if (position_id < -1 || position_id > 58) {
+        if (position_id < -2 || position_id > 58) {
             std::cerr << "Position ID out of bounds: " << position_id << std::endl;
             throw std::out_of_range("Position ID out of bounds");
         }
@@ -102,6 +105,11 @@ namespace flychess_map{
             // std::cout<<"Searching for HOME grid"<<std::endl;
             int index = color + chess_id * 4;
             return grids[index].getGridInfo();
+        }
+        else if(position_id == -2) {
+            // 已经完成的棋子
+            // 妈的不管了返回一个长宽为0的得了
+            return grids[96].getGridInfo();
         }
         else if (position_id == 58) {// GOAL
             // std::cout<<"Searching for GOAL grid"<<std::endl;
@@ -127,7 +135,7 @@ namespace flychess_map{
                 }
 
                 if (grids[i].getGridInfo().id == position_id) {
-                    std::cout<<"Found grid at index: " << i << std::endl;
+                    // std::cout<<"Found grid at index: " << i << std::endl;
                     return grids[i].getGridInfo();
                 }
             }

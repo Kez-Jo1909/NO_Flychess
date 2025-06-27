@@ -2,21 +2,50 @@
 
 namespace flychess_game {
     void ChessPiece::preGoalMove(int steps, int pre_goal_position) {
-        int new_position = piece_info.position + steps;
-        if (new_position < 58){
-            piece_info.position = new_position;
-            return;
-        }
-        else if(new_position == 58){
-            piece_info.position = -2;// -2设置为完成
-            std::cout << "Chess piece " << piece_info.id << " has reached the goal!" << std::endl;
+        // 由于格子是在是写的太屎了，这里得重新做映射
+
+
+        // 初次进入状态
+        if(!piece_info.if_pre_goal) {
+            int new_position = piece_info.position + steps;// 这个值>=pre_goal_position
+            new_position -= pre_goal_position; // 计算新的位置增量
+            if (new_position == 0) {
+                piece_info.position = pre_goal_position; // 如果新位置为0，则设置为pre_goal_position
+            }
+            else {
+                piece_info.position = 52 + new_position; // 否则设置为52 + 新位置增量
+            }
+
+            piece_info.if_pre_goal = 1; // 设置为预目标状态
             return;
         }
         else {
-            int steps_to_return = new_position - 58;
-            piece_info.position = 58 - steps_to_return;
-            return;
+            if (piece_info.position == pre_goal_position) {
+                piece_info.position = 52 + steps;
+            }
+            else {
+                int new_position = piece_info.position + steps; // 计算新的位置
+                if (new_position == 58){
+                    // 该棋子完成
+                    piece_info.position = -2; // 设置为-2表示棋子已完成
+                    std::cout << "Chess piece " << piece_info.id << " has finished the game." << std::endl;
+                    return;
+                }
+                else if (new_position > 58) {
+                    new_position -= 58; // 如果新位置超过58，则进行环绕
+                    // 貌似进入pregoal之后不会再回到pre_goal_position那个位置了
+                    piece_info.position = 58 - new_position; // 设置为pre_goal_position + 新位置增量
+                    std::cout << "Chess piece " << piece_info.id << " circle moved to pregoal position: " << piece_info.position << std::endl;
+                    return;
+                }
+                else {
+                    piece_info.position = new_position; // 否则直接设置为新位置
+                    std::cout << "Chess piece " << piece_info.id << " moved to pregoal position: " << piece_info.position << std::endl;
+                    return;
+                }
+            }
         }
+
     }
 
 
@@ -32,16 +61,20 @@ namespace flychess_game {
 
         switch(static_cast<int>(color)){
             case 0:
-                pregoal_position = 50; // 预设位置为58
+                pregoal_position = 50;
+                start_position = 1;
                 break;
             case 1:
-                pregoal_position = 37; // 预设位置为58
+                pregoal_position = 37;
+                start_position = 40;
                 break;
             case 2:
-                pregoal_position = 24; // 预设位置为58
+                pregoal_position = 24;
+                start_position = 27;
                 break;
             case 3:
-                pregoal_position = 11; // 预设位置为58
+                pregoal_position = 11;
+                start_position = 14;
                 break;
             default:
                 std::cerr << "Invalid player color." << std::endl;
@@ -53,7 +86,7 @@ namespace flychess_game {
         }
 
         for(int i = 0; i < chess_piece_count; i++){
-            chess_pieces.push_back(ChessPiece(i, color, -1));
+            chess_pieces.push_back(ChessPiece(i, color, -1, 0));
             std::cout<<"init posisiton: "<< chess_pieces[i].GetChessPieceInfo().position << std::endl;
         }
 
@@ -80,7 +113,7 @@ namespace flychess_game {
             std::cerr << "Invalid chess piece movement: Chess piece is not on the board." << std::endl;
             return 0;
         }
-
+        std::cout<<std::endl<<std::endl;
         std::cout<<"ready to move chess piece "<< std::endl;
         std::cout<<"chess piece position: "<< chess_piece_to_move.GetChessPieceInfo().position << std::endl;
 
@@ -88,17 +121,26 @@ namespace flychess_game {
             std::cout<<"move to start"<<std::endl;
             // 如果是6点，且棋子不在起始位置，则将棋子放置到起始位置
             chess_piece_to_move.MoveToStart();
-            std::cout << "Chess piece " << chess_id << " moved to start position." << std::endl;
+            std::cout << "Chess piece " << chess_id << " moved to start position." << std::endl<<std::endl;
             return 1;
         }
-        else if(chess_piece_to_move.GetChessPieceInfo().position >= pregoal_position){
+        else if(chess_piece_to_move.GetChessPieceInfo().position == 0){
+            // 如果在START，从起始位置开始移动
+            std::cout<<"move from start"<<std::endl;
+            chess_piece_to_move.MoveFromStart(steps, start_position);
+            std::cout<<"Chess piece " << chess_id << " moved from start position." << std::endl<<std::endl;
+            return 1;
+        }
+        else if((chess_piece_to_move.GetChessPieceInfo().position < pregoal_position && chess_piece_to_move.GetChessPieceInfo().position + steps >= pregoal_position) || chess_piece_to_move.ifPreGoal()){
             std::cout<<"pre goal move"<<std::endl;
             chess_piece_to_move.preGoalMove(steps, pregoal_position);
+            std::cout<<"Chess piece " << chess_id << " moved to "<< chess_piece_to_move.GetChessPieceInfo().position << std::endl<<std::endl;
             return 1;
         }
         else{
             std::cout<<"simple move"<<std::endl;
             chess_piece_to_move.SimpleMove(steps);
+            std::cout<<"Chess piece " << chess_id << " moved to "<< chess_piece_to_move.GetChessPieceInfo().position << std::endl<<std::endl;
             return 1;
         }
         // TODO : 检查是否在特殊格子上（BRIDGE或GOAL）
