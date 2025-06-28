@@ -59,6 +59,8 @@ int MoveChessPiece(int player_id, int chess_id, int steps);
 
 int GetStartedChessCount(int player_id);
 
+int GetFinishedChessCount(int player_id);
+
 #ifdef __cplusplus
 }
 #endif

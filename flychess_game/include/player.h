@@ -114,6 +114,16 @@ public:
         return count;
     }
 
+    int GetFinishedChessPieceCount() const {
+        int count = 0;
+        for (const auto& chess_piece : chess_pieces) {
+            if (chess_piece.GetChessPieceInfo().position == -2) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     inline void KillChessPiece() {
         kill_chess_count++;
     }

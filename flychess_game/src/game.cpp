@@ -91,20 +91,6 @@ extern "C"{
             return nullptr;
         }
 
-        // // Debug代码
-        // if (player_id == 0) {
-        //     return &flychess_map::getGameMap().searchGridInfo(58, static_cast<int>(chess_piece_to_draw.color), chess_id);
-        // }
-        // else if(player_id == 1){
-        //     return &flychess_map::getGameMap().searchGridInfo(58, static_cast<int>(chess_piece_to_draw.color), chess_id);
-        // }
-        // else if(player_id == 2){
-        //     return &flychess_map::getGameMap().searchGridInfo(58, static_cast<int>(chess_piece_to_draw.color), chess_id);
-        // }
-        // else if(player_id == 3){
-        //     return &flychess_map::getGameMap().searchGridInfo(58, static_cast<int>(chess_piece_to_draw.color), chess_id);
-        // }
-
         return &flychess_map::getGameMap().searchGridInfo(chess_piece_to_draw.position, static_cast<int>(chess_piece_to_draw.color), chess_id);
     }
 
@@ -158,5 +144,14 @@ extern "C"{
             return -1;
         }
         return flychess_game::get_instance().GetPlayer(player_id).GetStartedChessPieceCount();
+    }
+
+    EMSCRIPTEN_KEEPALIVE
+    int GetFinishedChessCount(int player_id) {
+        if (player_id < 0 || player_id >= flychess_game::get_instance().GetPlayerCount()) {
+            std::cerr << "Invalid player ID: " << player_id << std::endl;
+            return -1;
+        }
+        return flychess_game::get_instance().GetPlayer(player_id).GetFinishedChessPieceCount();
     }
 }
