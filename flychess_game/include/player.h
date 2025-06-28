@@ -56,6 +56,10 @@ public:
         piece_info.position = 0;
     }
 
+    inline void MoveBackHome() {
+        piece_info.position = -1;
+    }
+
     inline void SimpleMove(int steps) {
         piece_info.position += steps;
         piece_info.position = piece_info.position <= 52 ? piece_info.position : piece_info.position - 51; // 确保位置在1-52之间
@@ -110,6 +114,14 @@ public:
         return count;
     }
 
+    inline void KillChessPiece() {
+        kill_chess_count++;
+    }
+
+    inline void GetKilledChessPiece() {
+        killed_chess_count++;
+    }
+
 
     /**
      * @name MoveChessPiece
@@ -119,12 +131,16 @@ public:
      * @return 返回值：1表示成功，0表示棋子未在棋盘上，-1表示参数错误
      */
     int MoveChessPiece(int chess_id, int steps);
+
+    void SendChessPieceBackHome(int chess_id);
 private:
     game_utils::Color player_color = game_utils::Color::UNDEFINED;
     PlayerState player_state = PlayerState::UNDEFINED;
     std::vector<ChessPiece> chess_pieces; // 棋子列表
     int pregoal_position = 52; // 预设目标位置
     int start_position = 0; // 起始位置
+    int kill_chess_count = 0; // 吃掉的棋子数量
+    int killed_chess_count = 0; // 被吃掉的棋子数量
 };
 
 }

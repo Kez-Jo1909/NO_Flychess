@@ -144,4 +144,9 @@ namespace flychess_game {
         // TODO : 检查是否在特殊格子上（BRIDGE或GOAL）
         // TODO : 检查该格是否被占用，是否可以吃掉对方棋子等逻辑
     }
+
+    void Player::SendChessPieceBackHome(int chess_id) {
+        chess_pieces[chess_id].MoveBackHome();
+        std::cout << "Chess piece " << chess_id << " sent back home." << std::endl;
+    }
 }
