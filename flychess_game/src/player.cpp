@@ -3,8 +3,6 @@
 namespace flychess_game {
     void ChessPiece::preGoalMove(int steps, int pre_goal_position) {
         // 由于格子是在是写的太屎了，这里得重新做映射
-
-
         // 初次进入状态
         if(!piece_info.if_pre_goal) {
             int new_position = piece_info.position + steps;// 这个值>=pre_goal_position
@@ -113,7 +111,7 @@ namespace flychess_game {
             std::cerr << "Invalid chess piece movement: Chess piece is not on the board." << std::endl;
             return 0;
         }
-        std::cout<<std::endl<<std::endl;
+
         std::cout<<"ready to move chess piece "<< std::endl;
         std::cout<<"chess piece position: "<< chess_piece_to_move.GetChessPieceInfo().position << std::endl;
 
@@ -121,26 +119,26 @@ namespace flychess_game {
             std::cout<<"move to start"<<std::endl;
             // 如果是6点，且棋子不在起始位置，则将棋子放置到起始位置
             chess_piece_to_move.MoveToStart();
-            std::cout << "Chess piece " << chess_id << " moved to start position." << std::endl<<std::endl;
+            std::cout << "Chess piece " << chess_id << " moved to start position." << std::endl;
             return 1;
         }
         else if(chess_piece_to_move.GetChessPieceInfo().position == 0){
             // 如果在START，从起始位置开始移动
             std::cout<<"move from start"<<std::endl;
             chess_piece_to_move.MoveFromStart(steps, start_position);
-            std::cout<<"Chess piece " << chess_id << " moved from start position." << std::endl<<std::endl;
+            std::cout<<"Chess piece " << chess_id << " moved from start position." << std::endl;
             return 1;
         }
         else if((chess_piece_to_move.GetChessPieceInfo().position < pregoal_position && chess_piece_to_move.GetChessPieceInfo().position + steps >= pregoal_position) || chess_piece_to_move.ifPreGoal()){
             std::cout<<"pre goal move"<<std::endl;
             chess_piece_to_move.preGoalMove(steps, pregoal_position);
-            std::cout<<"Chess piece " << chess_id << " moved to "<< chess_piece_to_move.GetChessPieceInfo().position << std::endl<<std::endl;
+            std::cout<<"Chess piece " << chess_id << " moved to "<< chess_piece_to_move.GetChessPieceInfo().position << std::endl;
             return 1;
         }
         else{
             std::cout<<"simple move"<<std::endl;
             chess_piece_to_move.SimpleMove(steps);
-            std::cout<<"Chess piece " << chess_id << " moved to "<< chess_piece_to_move.GetChessPieceInfo().position << std::endl<<std::endl;
+            std::cout<<"Chess piece " << chess_id << " moved to "<< chess_piece_to_move.GetChessPieceInfo().position << std::endl;
             return 1;
         }
         // TODO : 检查是否在特殊格子上（BRIDGE或GOAL）

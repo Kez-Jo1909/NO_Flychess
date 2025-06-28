@@ -221,7 +221,7 @@ function gameProcess(Module, playerCount, chess_per_player) {
             console.log(`开始第 ${roundIndex + 1} 轮`);
           }, 100);
         }
-      }, 100);
+      }, 500);
     
       return;
     }
@@ -257,20 +257,19 @@ function gameProcess(Module, playerCount, chess_per_player) {
     // if (mouseCoord) mouseCoord.textContent = `鼠标坐标：(-1, -1)`;
   });
 
-  // 鼠标点击处理函数
   function mouseClickHandle() {
     if (!awaitingPieceSelection) return;
-
+  
     let actual_playerCount = Module._GetPlayerCount();
     let actual_chess_per_player = Module._GetChessPieceCount();
-
+  
     for (let i = 0; i < actual_playerCount; i++) {
       for (let j = 0; j < actual_chess_per_player; j++) {
         const ptr = Module._DrawChessPiece(i, j);
         if (ptr !== 0) {
           const HEAP32 = Module.HEAP32;
           const base = ptr >> 2;
-
+  
           const type       = HEAP32[base + 0];
           const position_x = HEAP32[base + 1];
           const position_y = HEAP32[base + 2];
@@ -278,10 +277,10 @@ function gameProcess(Module, playerCount, chess_per_player) {
           const width      = HEAP32[base + 4];
           const height     = HEAP32[base + 5];
           const color      = HEAP32[base + 6];
-
+  
           const [cx, cy] = getGridCircleCenter(position_x, position_y, type, width, height);
           const radius = canvas.width / 51;
-
+  
           const dx = mouseX - cx;
           const dy = mouseY - cy;
           if (dx * dx + dy * dy <= radius * radius) {
@@ -289,17 +288,26 @@ function gameProcess(Module, playerCount, chess_per_player) {
               console.log(`当前是玩家 ${selectedPlayerId + 1} 的回合，不能操作玩家 ${i + 1} 的棋子`);
               return;
             }
-
+  
             console.log(`玩家 ${i + 1} 选择了棋子 ${j + 1}`);
-            awaitingPieceSelection = false;
-
-            // TODO : 棋子移动接口
-            console.log('移动棋子...');
-            console.log('传入参数：', selectedPlayerId, j, currentDiceNumber);
-            Module._MoveChessPiece(selectedPlayerId, j, currentDiceNumber);
-            drawChessPieces(Module, playerCount, chess_per_player);
-
-            // 延迟继续下一位玩家
+            
+            let ret = Module._MoveChessPiece(selectedPlayerId, j, currentDiceNumber);
+  
+            if (ret === 0) {
+              console.log("不能移动未起飞棋子且点数不是6，请重新选择棋子。");
+              rollBtn.textContent = `等待玩家 ${currentPlayerIndex + 1} 选择棋子, 请重新选择`;
+              awaitingPieceSelection = true;
+              return;  // 不跳过当前玩家
+            } else if (ret === -1) {
+              console.log("无效步数，跳过该玩家回合。");
+              awaitingPieceSelection = false;
+            } else {
+              console.log("棋子移动成功！");
+              drawChessPieces(Module, playerCount, chess_per_player);
+              awaitingPieceSelection = false;
+            }
+  
+            // 延迟切换到下一玩家
             setTimeout(() => {
               currentPlayerIndex++;
               if (currentPlayerIndex < playerCount) {
@@ -321,16 +329,17 @@ function gameProcess(Module, playerCount, chess_per_player) {
                   console.log(`开始第 ${roundIndex + 1} 轮`);
                 }, 100);
               }
-            }, 100);
-
+            }, 500);
+  
             return;
           }
         }
       }
     }
-
+  
     console.log(`点击位置 (${mouseX}, ${mouseY}) 未点击到任何棋子`);
   }
+  
 }
 
 function drawChessPieces(Module, player_count, chess_per_player) {
