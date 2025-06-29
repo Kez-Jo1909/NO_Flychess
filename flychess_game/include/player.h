@@ -75,6 +75,7 @@ public:
     void preGoalMove(int steps, int pre_goal_position);
 private:
     ChessPieceInfo piece_info;
+    bool forward = true; // 是否向前移动
 };
 
 

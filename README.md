@@ -32,8 +32,10 @@ npx http-server
 
 ## TODO
 
-- [ ] JS图形绘制封装
+- [x] JS图形绘制封装
 - [ ] 将grid类重构为基类，派生出其余格子
+- [ ] preGoal区域移动，分类
+- [ ] bridge区域
 
 ## 组件逻辑
 

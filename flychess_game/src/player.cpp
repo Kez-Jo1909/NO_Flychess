@@ -15,6 +15,7 @@ namespace flychess_game {
             }
 
             piece_info.if_pre_goal = 1; // 设置为预目标状态
+            forward = true; // 设置为向前移动
             return;
         }
         else {
@@ -22,24 +23,44 @@ namespace flychess_game {
                 piece_info.position = 52 + steps;
             }
             else {
-                int new_position = piece_info.position + steps; // 计算新的位置
-                if (new_position == 58){
-                    // 该棋子完成
-                    piece_info.position = -2; // 设置为-2表示棋子已完成
-                    std::cout << "Chess piece " << piece_info.id << " has finished the game." << std::endl;
-                    return;
-                }
-                else if (new_position > 58) {
-                    new_position -= 58; // 如果新位置超过58，则进行环绕
-                    // 貌似进入pregoal之后不会再回到pre_goal_position那个位置了
-                    piece_info.position = 58 - new_position; // 设置为pre_goal_position + 新位置增量
-                    std::cout << "Chess piece " << piece_info.id << " circle moved to pregoal position: " << piece_info.position << std::endl;
-                    return;
+                if (forward) {
+                    int new_position = piece_info.position + steps; // 计算新的位置
+                    if (new_position == 58){
+                        // 该棋子完成
+                        piece_info.position = -2; // 设置为-2表示棋子已完成
+                        std::cout << "Chess piece " << piece_info.id << " has finished the game." << std::endl;
+                        return;
+                    }
+                    else if (new_position > 58) {
+                        new_position -= 58; // 如果新位置超过58，则进行环绕
+                        // 貌似进入pregoal之后不会再回到pre_goal_position那个位置了
+                        piece_info.position = 58 - new_position; // 设置为pre_goal_position + 新位置增量
+                        std::cout << "Chess piece " << piece_info.id << " circle moved to pregoal position: " << piece_info.position << std::endl;
+                        forward = false; // 设置为向后移动
+                        return;
+                    }
+                    else {
+                        piece_info.position = new_position; // 否则直接设置为新位置
+                        std::cout << "Chess piece " << piece_info.id << " moved to pregoal position: " << piece_info.position << std::endl;
+                        return;
+                    }
                 }
                 else {
-                    piece_info.position = new_position; // 否则直接设置为新位置
-                    std::cout << "Chess piece " << piece_info.id << " moved to pregoal position: " << piece_info.position << std::endl;
-                    return;
+                    int new_position = piece_info.position - steps; // 计算新的位置
+                    if (new_position < 52) {
+                        forward = true;
+                        piece_info.position = 52 - new_position + 52;
+                        return;
+                    }
+                    else if (new_position == 52) {
+                        piece_info.position = pre_goal_position; // 如果新位置为52，则设置为pre_goal_position
+                        forward = true;
+                        return;
+                    }
+                    else {
+                        piece_info.position = new_position; // 否则直接设置为新位置
+                        return;
+                    }
                 }
             }
         }
