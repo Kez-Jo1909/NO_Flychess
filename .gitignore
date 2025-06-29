@@ -14,6 +14,8 @@ flychess_game/build/
 
 # 但不忽略 frontend 目录下的 index.html
 !frontend/index.html
+!frontend/game.js
+!frontend/game.wasm
 
 # 忽略临时文件
 *.log
