@@ -12,6 +12,27 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function showResultModal(rankingArr) {
+  const modal = document.getElementById('result-modal');
+  const overlay = document.getElementById('modal-overlay');
+  const rankingTextDiv = document.getElementById('ranking-text');
+
+  rankingTextDiv.innerHTML = rankingArr
+    .map((id, idx) => `第 ${idx + 1} 名：玩家 ${id + 1}`)
+    .join('<br>');
+
+  // 显示弹窗和遮罩
+  modal.classList.add('visible');
+  overlay.classList.add('visible');
+
+  // 绑定关闭按钮
+  document.getElementById('close-modal-btn').onclick = () => {
+    modal.classList.remove('visible');
+    overlay.classList.remove('visible');
+  };
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
   const startBtn = document.getElementById('start-btn');
   const gameContainer = document.getElementById('game-container');
@@ -333,6 +354,7 @@ function gameProcess(Module, playerCount, chess_per_player) {
                     rollBtn.disabled = true;
                     rollBtn.textContent = "🏁 游戏结束";
                     numberDisplay.innerHTML += `<br>🏆 游戏结束！所有玩家已完成`;
+                    showResultModal(finishedPlayers);
                     return;
                   }
                 }
