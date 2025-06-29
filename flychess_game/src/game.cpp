@@ -18,6 +18,31 @@ namespace flychess_game {
     Player& FlychessGame::GetPlayer(int player_id) {
         return players[player_id];
     }
+
+    void FlychessGame::IfPositionTaken(int position, int player_id, int chess_id) {
+        if (position <= 0 || players[player_id].GetIfPreGoal(chess_id))
+            return; // 如果位置不可能遇到其他玩家棋子，直接返回
+        for (int i = 0; i < players.size(); i++) {
+            if (i == player_id) continue; // 跳过当前玩家
+
+            auto& other_player = players[i];
+
+            int chess_piece_count = other_player.GetChessPieceCount();
+
+            for(int j = 0; j < chess_piece_count; j++) {
+                auto other_chess_piece_info = other_player.GetChessPieceInfo(j);
+                if (other_chess_piece_info.position == position) {
+                    // 如果格子被占用，送回家
+                    other_player.SendChessPieceBackHome(j);
+                    other_player.GetKilledChessPiece();
+                    players[player_id].KillChessPiece();
+                    std::cout<< "Position " << position << " is occupied by player " << i 
+                              << "'s chess piece " << j << ". Sending it back home." << std::endl;
+                }
+            }
+
+        }
+    }
 }
 
 
@@ -111,28 +136,7 @@ extern "C"{
             // 移动成功开始检查格子是否占用
             auto chess_piece_info = player.GetChessPieceInfo(chess_id);
             auto position  = chess_piece_info.position;
-            // 遍历，查询格子是否被占用
-            for (int i = 0; i < flychess_game::get_instance().GetPlayerCount(); i++) {
-                if (i == player_id)
-                    continue;
-
-                auto& other_player = flychess_game::get_instance().GetPlayer(i);
-
-                int chess_piece_count = other_player.GetChessPieceCount();
-
-                for(int j = 0; j < chess_piece_count; j++) {
-                    auto other_chess_piece_info = other_player.GetChessPieceInfo(j);
-                    if (other_chess_piece_info.position == position) {
-                        std::cout << "Chess piece " << chess_id << " of player " << player_id 
-                                  << " landed on occupied position by player " << i 
-                                  << "'s chess piece " << j << ". Sending it back home." << std::endl;
-                        // 如果格子被占用，送回家
-                        other_player.SendChessPieceBackHome(j);
-                        other_player.GetKilledChessPiece();
-                        player.KillChessPiece();
-                    }
-                }
-            }
+            flychess_game::get_instance().IfPositionTaken(position, player_id, chess_id);
         }
         return ret;
     }

@@ -40,7 +40,7 @@ public:
         piece_info.if_pre_goal = 1;
     }
 
-    inline int ifPreGoal() {
+    inline const int ifPreGoal() {
         return piece_info.if_pre_goal;
     }
 
@@ -132,6 +132,9 @@ public:
         killed_chess_count++;
     }
 
+    inline const int GetIfPreGoal(int chess_id) {
+        return chess_pieces[chess_id].ifPreGoal();
+    }
 
     /**
      * @name MoveChessPiece
