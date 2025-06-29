@@ -20,6 +20,12 @@ namespace flychess_game {
         }
         else {
             if (piece_info.position == pre_goal_position) {
+                if (steps == 6){
+                    // 该棋子完成
+                    piece_info.position = -2; // 设置为-2表示棋子已完成
+                    std::cout << "Chess piece " << piece_info.id << " has finished the game." << std::endl;
+                    return;
+                }
                 piece_info.position = 52 + steps;
             }
             else {
