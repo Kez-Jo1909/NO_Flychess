@@ -1,0 +1,127 @@
+body {
+  font-family: sans-serif;
+  text-align: center;
+  margin-top: 50px;
+}
+
+#flychess-map {
+  border: 2px solid #333;
+  margin: 0 auto;
+  display: block;
+}
+
+#chess-count-select,
+#player-count-select,
+#game-container {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 遮罩层 */
+#modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 9998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* 弹窗盒子 */
+#result-modal {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -30%);
+  background: white;
+  border-radius: 12px;
+  padding: 25px 30px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  z-index: 9999;
+  width: 320px;
+  max-width: 90vw;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  text-align: center;
+  font-family: "Microsoft Yahei", sans-serif;
+}
+
+/* 显示状态 */
+#modal-overlay.visible,
+#result-modal.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#result-modal.visible {
+  transform: translate(-50%, 0);
+}
+
+/* 按钮样式 */
+#close-modal-btn {
+  margin-top: 20px;
+  padding: 8px 18px;
+  background-color: #3a86ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+#close-modal-btn:hover {
+  background-color: #265dcc;
+}
+
+
+
+#menu-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#start-btn {
+  font-size: 20px;
+  padding: 10px 20px;
+  margin-top: 200px;
+}
+
+/* 人数按钮样式 */
+#player-count-select button {
+  display: block;
+  margin: 10px auto;
+  padding: 10px 20px;
+  font-size: 18px;
+}
+
+#player-count-select p {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+#chess-count-select p {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+/* 棋子数按钮样式 */
+#chess-count-select button {
+  display: block;
+  margin: 10px auto;
+  padding: 10px 20px;
+  font-size: 18px;
+}
+
