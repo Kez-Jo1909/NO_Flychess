@@ -8,6 +8,10 @@ let awaitingPieceSelection = false;
 let selectedPieceId = -1; // 当前选中的棋子
 let selectedPlayerId = -1; // 当前要选的玩家
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const startBtn = document.getElementById('start-btn');
   const gameContainer = document.getElementById('game-container');
@@ -263,7 +267,7 @@ function gameProcess(Module, playerCount, chess_per_player) {
     // if (mouseCoord) mouseCoord.textContent = `鼠标坐标：(-1, -1)`;
   });
 
-  function mouseClickHandle() {
+  async function mouseClickHandle() {
     if (!awaitingPieceSelection) return;
   
     let actual_playerCount = Module._GetPlayerCount();
@@ -313,6 +317,7 @@ function gameProcess(Module, playerCount, chess_per_player) {
               // 这里判断能不能飞
               let ret_fly = Module._FlyChessPiece(selectedPlayerId, j);
               if (ret_fly > 0) {
+                await sleep(300);
                 drawChessPieces(Module, playerCount, chess_per_player);
               }
 
