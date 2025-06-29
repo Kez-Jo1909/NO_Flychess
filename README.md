@@ -34,8 +34,8 @@ npx http-server
 
 - [x] JS图形绘制封装
 - [ ] 将grid类重构为基类，派生出其余格子
-- [ ] preGoal区域移动，分类
-- [ ] bridge区域
+- [x] preGoal区域移动，分前后两类
+- [x] bridge区域
 
 ## 组件逻辑
 
