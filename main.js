@@ -165,14 +165,16 @@ function initGame(playerCount, chess_per_player) {
   FlyChessModule().then(Module => {
     GlobalModule = Module;
 
-    // console.log(`初始化游戏，玩家人数: ${playerCount}`);
+    // 初始化游戏
     Module._GameInit(playerCount, chess_per_player);
 
-    drawMap(Module); // 初始绘制地图
-
+    drawMap(Module); // 绘制地图
     gameProcess(Module, playerCount, chess_per_player); // 启动游戏逻辑
+  }).catch(err => {
+    console.error('FlyChessModule 初始化失败:', err);
   });
 }
+
 
 function MoveChess(player_id, steps){
   
