@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>飞行棋</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="./src/takina.png" type="image/x-icon" />
+</head>
+<body>
+  <div id="menu-container">
+    <button id="start-btn">开始游戏</button>
+
+    <div id="player-count-select">
+      <p>请选择玩家人数：</p>
+      <button data-player="1">1人</button>
+      <button data-player="2">2人</button>
+      <button data-player="3">3人</button>
+      <button data-player="4">4人</button>
+    </div>
+
+    <div id="chess-count-select">
+      <p>请选择每个玩家的棋子数：</p>
+      <button data-chess="1">1</button>
+      <button data-chess="2">2</button>
+      <button data-chess="3">3</button>
+      <button data-chess="4">4</button>
+    </div>
+  </div>
+
+  <!-- 游戏主界面 -->
+  <div id="game-container">
+    <canvas id="flychess-map" width="680" height="680"></canvas>
+    <p id="random-number"></p> <!-- 用来显示随机数 -->
+    <!-- <p id="mouse-coord">鼠标坐标：(-1, -1)</p> -->
+    <button id="roll-btn">掷骰子</button>
+  </div>
+  <script src="game.js"></script>
+  <script src="main.js"></script>
+  <!-- 遮罩层 -->
+  <div id="modal-overlay" class="hidden"></div>
+  <!-- 弹窗主体 -->
+  <div id="result-modal" class="hidden">
+    <h2>游戏结果</h2>
+    <div id="ranking-text"></div>
+    <button id="close-modal-btn">关闭</button>
+  </div>
+</body>
+</html>
