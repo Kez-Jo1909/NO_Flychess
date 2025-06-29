@@ -187,6 +187,10 @@ function gameProcess(Module, playerCount, chess_per_player) {
 
     currentDiceNumber = Module._rollDice();
     diceRolled = true;
+
+    // 调试用，取消注释可以直接设置骰子点数
+    // currentDiceNumber = 6;
+
     awaitingPieceSelection = true;
     selectedPieceId = -1;
     selectedPlayerId = currentPlayerIndex;
@@ -306,6 +310,13 @@ function gameProcess(Module, playerCount, chess_per_player) {
             } else {
               console.log("棋子移动成功！");
               drawChessPieces(Module, playerCount, chess_per_player);
+              // 这里判断能不能飞
+              let ret_fly = Module._FlyChessPiece(selectedPlayerId, j);
+              if (ret_fly > 0) {
+                drawChessPieces(Module, playerCount, chess_per_player);
+              }
+
+
               let finished_chess_count = Module._GetFinishedChessCount(selectedPlayerId);
               if (finished_chess_count == actual_chess_per_player) {
                 if (!finishedPlayers.includes(selectedPlayerId)) {

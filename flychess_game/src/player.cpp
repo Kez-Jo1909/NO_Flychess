@@ -82,18 +82,26 @@ namespace flychess_game {
             case 0:
                 pregoal_position = 50;
                 start_position = 1;
+                index_fly = 2;
+                bridge_start_end_position = {18, 30}; // 桥的起始位置和结束位置
                 break;
             case 1:
                 pregoal_position = 37;
                 start_position = 40;
+                index_fly = 1;
+                bridge_start_end_position = {5, 17};
                 break;
             case 2:
                 pregoal_position = 24;
                 start_position = 27;
+                index_fly = 0;
+                bridge_start_end_position = {44, 4};
                 break;
             case 3:
                 pregoal_position = 11;
                 start_position = 14;
+                index_fly = 3;
+                bridge_start_end_position = {31, 43};
                 break;
             default:
                 std::cerr << "Invalid player color." << std::endl;
@@ -162,7 +170,36 @@ namespace flychess_game {
             std::cout<<"Chess piece " << chess_id << " moved to "<< chess_piece_to_move.GetChessPieceInfo().position << std::endl;
             return 1;
         }
-        // TODO : 检查是否在特殊格子上（BRIDGE或GOAL）
+    }
+
+    int Player::FlyChessPiece(int chess_id) {
+        auto& chess_piece_to_fly = chess_pieces[chess_id];
+        auto current_position = chess_piece_to_fly.GetChessPieceInfo().position;
+
+        if (current_position <= 0 || chess_piece_to_fly.ifPreGoal()){
+            return -1;
+        }
+        else if (current_position % 4 == index_fly) {
+            // bridge
+            if (current_position == bridge_start_end_position.first) {
+                chess_piece_to_fly.SetPosition(bridge_start_end_position.second);
+                std::cout<< "Chess piece " << chess_id << " moved to bridge end position: " << bridge_start_end_position.second << std::endl;
+                return 2;
+            }
+
+            if (current_position + 4 != pregoal_position){
+                std::cout<< "Chess piece " << chess_id << " is flying normal." << std::endl;
+                chess_piece_to_fly.SimpleMove(4);
+            }
+            else {
+                std::cout<< "Chess piece " << chess_id << " is flying to pregoal position." << std::endl;
+                chess_piece_to_fly.preGoalMove(4, pregoal_position);
+            }
+            return 1;
+        }
+        else {
+            return 0;
+        }
     }
 
     void Player::SendChessPieceBackHome(int chess_id) {

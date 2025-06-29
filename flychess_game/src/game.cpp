@@ -142,6 +142,27 @@ extern "C"{
     }
 
     EMSCRIPTEN_KEEPALIVE
+    int FlyChessPiece(int player_id, int chess_id) {
+        if (player_id < 0 || player_id >= flychess_game::get_instance().GetPlayerCount()) {
+            std::cerr << "Invalid player ID: " << player_id << std::endl;
+            return -2;
+        }
+
+        auto& player = flychess_game::get_instance().GetPlayer(player_id);
+        int ret = player.FlyChessPiece(chess_id);
+
+        if (ret <= 0)
+            return ret; // 如果没有飞行或发生错误，直接返回
+        else {
+            // 飞行成功开始检查格子是否占用
+            auto chess_piece_info = player.GetChessPieceInfo(chess_id);
+            auto position = chess_piece_info.position;
+            flychess_game::get_instance().IfPositionTaken(position, player_id, chess_id);
+            return ret; // 返回飞行结果
+        }
+    }
+
+    EMSCRIPTEN_KEEPALIVE
     int GetStartedChessCount(int player_id) {
         if (player_id < 0 || player_id >= flychess_game::get_instance().GetPlayerCount()) {
             std::cerr << "Invalid player ID: " << player_id << std::endl;

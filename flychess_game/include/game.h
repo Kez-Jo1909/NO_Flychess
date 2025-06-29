@@ -59,6 +59,8 @@ const flychess_map::GridInfo* DrawChessPiece(int player_id, int chess_id);
 
 int MoveChessPiece(int player_id, int chess_id, int steps);
 
+int FlyChessPiece(int player_id, int chess_id);
+
 int GetStartedChessCount(int player_id);
 
 int GetFinishedChessCount(int player_id);

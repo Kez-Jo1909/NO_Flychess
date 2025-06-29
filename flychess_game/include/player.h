@@ -36,6 +36,10 @@ public:
         piece_info.id = new_id;
     }
 
+    inline void SetPosition(int new_position) {
+        piece_info.position = new_position;
+    }
+
     inline void SetPreGoal() {
         piece_info.if_pre_goal = 1;
     }
@@ -146,6 +150,14 @@ public:
      */
     int MoveChessPiece(int chess_id, int steps);
 
+    /**
+     * @name FlyChessPiece
+     * @brief 飞棋子
+     * @param chess_id 棋子ID
+     * @return 返回值：1表示成功，0表示棋子未在棋盘上，-1表示参数错误
+     */
+    int FlyChessPiece(int chess_id);
+
     void SendChessPieceBackHome(int chess_id);
 private:
     game_utils::Color player_color = game_utils::Color::UNDEFINED;
@@ -155,6 +167,8 @@ private:
     int start_position = 0; // 起始位置
     int kill_chess_count = 0; // 吃掉的棋子数量
     int killed_chess_count = 0; // 被吃掉的棋子数量
+    int index_fly = 2;
+    std::pair<int, int> bridge_start_end_position = {18, 30}; // 起始位置和结束位置
 };
 
 }
