@@ -62,7 +62,7 @@ public:
 
     inline void SimpleMove(int steps) {
         piece_info.position += steps;
-        piece_info.position = piece_info.position <= 52 ? piece_info.position : piece_info.position - 51; // 确保位置在1-52之间
+        piece_info.position = piece_info.position <= 52 ? piece_info.position : piece_info.position - 52; // 确保位置在1-52之间
         std::cout<< "Chess piece " << piece_info.id << " moved to position: " << piece_info.position << std::endl;
     }
 
