@@ -1,6 +1,6 @@
 # README
 
-![version](https://img.shields.io/badge/version-0.0.1-black)
+![version](https://img.shields.io/badge/version-0.1.0-black)
 
 ## 依赖项
 
@@ -100,3 +100,18 @@ npx http-server
 | GREEN     | 2           | 3        | #66ff66  |
 | YELLOW    | 3           | 4        | yellow   |
 
+## Github Pages
+
+安装 `gh-pages` 工具（只做一次）：
+
+```bash
+npm install -g gh-pages
+```
+
+进入项目根目录，发布 frontend 内容：
+
+```bash
+gh-pages -d frontend
+```
+
+它会自动创建 `gh-pages` 分支并推送 frontend 文件夹的内容
