@@ -156,6 +156,8 @@ function MoveChess(player_id, steps){
 function gameProcess(Module, playerCount, chess_per_player) {
   GlobalModule = Module;
 
+  let finishedPlayers = [];
+
   let actual_playerCount = Module._GetPlayerCount();
   let actual_chess_per_player = Module._GetChessPieceCount();
 
@@ -294,7 +296,7 @@ function gameProcess(Module, playerCount, chess_per_player) {
             let ret = Module._MoveChessPiece(selectedPlayerId, j, currentDiceNumber);
   
             if (ret === 0) {
-              console.log("不能移动未起飞棋子且点数不是6，请重新选择棋子。");
+              console.log("不能移动未起飞棋子且点数不是6,请重新选择棋子。");
               rollBtn.textContent = `等待玩家 ${currentPlayerIndex + 1} 选择棋子, 请重新选择`;
               awaitingPieceSelection = true;
               return;  // 不跳过当前玩家
@@ -304,13 +306,33 @@ function gameProcess(Module, playerCount, chess_per_player) {
             } else {
               console.log("棋子移动成功！");
               drawChessPieces(Module, playerCount, chess_per_player);
+              let finished_chess_count = Module._GetFinishedChessCount(selectedPlayerId);
+              if (finished_chess_count == actual_chess_per_player) {
+                if (!finishedPlayers.includes(selectedPlayerId)) {
+                  finishedPlayers.push(selectedPlayerId);
+                  console.log(`🎉 玩家 ${selectedPlayerId + 1} 已完成游戏，排名第 ${finishedPlayers.length}`);
+                  numberDisplay.innerHTML = `🎉 玩家 ${selectedPlayerId + 1} 已完成游戏，排名第 ${finishedPlayers.length}`;
+              
+                  if (finishedPlayers.length === playerCount) {
+                    rollBtn.disabled = true;
+                    rollBtn.textContent = "🏁 游戏结束";
+                    numberDisplay.innerHTML += `<br>🏆 游戏结束！所有玩家已完成`;
+                    return;
+                  }
+                }
+              }
               awaitingPieceSelection = false;
             }
   
             // 延迟切换到下一玩家
             setTimeout(() => {
-              currentPlayerIndex++;
-              if (currentPlayerIndex < playerCount) {
+              let nextIndex = currentPlayerIndex + 1;
+              while (nextIndex < playerCount && finishedPlayers.includes(nextIndex)) {
+                nextIndex++;
+              }
+
+              if (nextIndex < playerCount) {
+                currentPlayerIndex = nextIndex;
                 diceRolled = false;
                 rollBtn.disabled = false;
                 rollBtn.textContent = `玩家 ${currentPlayerIndex + 1} 投骰子`;
@@ -321,10 +343,21 @@ function gameProcess(Module, playerCount, chess_per_player) {
                 console.log("所有玩家已完成本轮投骰子。");
                 setTimeout(() => {
                   currentPlayerIndex = 0;
+                  while (currentPlayerIndex < playerCount && finishedPlayers.includes(currentPlayerIndex)) {
+                    currentPlayerIndex++;
+                  }
+
+                  if (currentPlayerIndex >= playerCount) {
+                    rollBtn.disabled = true;
+                    rollBtn.textContent = "🏁 游戏结束";
+                    numberDisplay.innerHTML = `🏆 游戏结束！所有玩家已完成`;
+                    return;
+                  }
+
                   roundIndex++;
                   diceRolled = false;
                   rollBtn.disabled = false;
-                  rollBtn.textContent = `玩家 1 投骰子`;
+                  rollBtn.textContent = `玩家 ${currentPlayerIndex + 1} 投骰子`;
                   numberDisplay.innerHTML = '';
                   console.log(`开始第 ${roundIndex + 1} 轮`);
                 }, 100);
