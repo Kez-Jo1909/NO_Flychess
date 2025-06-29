@@ -23,15 +23,9 @@ add_executable(game ${SOURCES})
 # set_target_properties(game PROPERTIES
 #     LINK_FLAGS "--bind -s WASM=1 -s MODULARIZE=1 -s EXPORT_NAME=\"FlyChessModule\" -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_RUNTIME_METHODS='[\"cwrap\", \"ccall\", \"HEAP32\"]'"
 # )
-target_link_options(game PRIVATE
-    "--bind"
-    "-s WASM=1"
-    "-s MODULARIZE=1"
-    "-s EXPORT_NAME=FlyChessModule"
-    "-s ALLOW_MEMORY_GROWTH=1"
-    "-s EXPORTED_RUNTIME_METHODS=[\"cwrap\",\"ccall\",\"HEAP32\"]"
-    "-O3"
-    "-DNDEBUG"
+set_target_properties(game PROPERTIES
+    LINK_FLAGS "--bind -s WASM=1 -s EXPORT_NAME=\"FlyChessModule\" -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_RUNTIME_METHODS='[\"cwrap\", \"ccall\", \"HEAP32\"]' -O3"
 )
+
 
 
