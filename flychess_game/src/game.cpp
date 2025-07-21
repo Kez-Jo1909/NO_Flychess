@@ -45,6 +45,8 @@ namespace flychess_game {
     }
 }
 
+// JS 接口部分
+#ifdef __EMSCRIPTEN__
 
 extern "C"{
 
@@ -180,3 +182,4 @@ extern "C"{
         return flychess_game::get_instance().GetPlayer(player_id).GetFinishedChessPieceCount();
     }
 }
+#endif // __EMSCRIPTEN__

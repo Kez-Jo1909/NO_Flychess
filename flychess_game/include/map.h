@@ -3,7 +3,9 @@
 
 #include <iostream>
 #include <vector>
+#ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
+#endif
 #include "./utils.h"
 
 namespace flychess_map{
@@ -82,7 +84,7 @@ inline Map& getGameMap() {
 }
 
 /*以下为JS接口*/
-
+#ifdef __EMSCRIPTEN__
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -95,6 +97,6 @@ int GetGridCount();
 #ifdef __cplusplus
 }
 #endif
-
+#endif // __EMSCRIPTEN__
 
 #endif

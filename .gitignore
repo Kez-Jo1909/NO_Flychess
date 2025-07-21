@@ -6,6 +6,7 @@
 # 忽略编译输出目录
 build/
 flychess_game/build/
+wasm/build/
 
 # 忽略 Emscripten 编译生成的文件
 *.js

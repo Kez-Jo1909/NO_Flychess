@@ -156,6 +156,8 @@ namespace flychess_map{
     }
 }
 
+#ifdef __EMSCRIPTEN__
+
 extern "C"{
 
     EMSCRIPTEN_KEEPALIVE
@@ -172,6 +174,5 @@ extern "C"{
         // std::cout<<flychess_map::getGameMap().getGridsize()<<std::endl;
         return flychess_map::getGameMap().getGridsize();
     }
-        
-
 }
+#endif
