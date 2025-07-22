@@ -1,6 +1,14 @@
 set -e  # 脚本遇错自动退出，避免遗漏错误
 
-./server_build.sh
+mkdir -p build
+
+cd build
+
+cmake ..
+
+make -j16
+
+cd ..
 
 ./wasm_build.sh
 
