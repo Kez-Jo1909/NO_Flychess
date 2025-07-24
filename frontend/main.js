@@ -69,6 +69,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  const ws = new WebSocket('ws://localhost:8080'); // 可改为你的服务器地址
+
+  ws.onopen = () => {
+    console.log('[WebSocket] 已连接');
+    ws.send('Hello from client!');
+  };
+
+  ws.onmessage = (event) => {
+    console.log('[WebSocket] 收到消息:', event.data);
+  };
+
+  ws.onclose = () => {
+    console.log('[WebSocket] 连接关闭');
+  };
+
+  ws.onerror = (err) => {
+    console.error('[WebSocket] 发生错误:', err);
+  };
+
 });
 
 const canvas = document.getElementById('flychess-map');
