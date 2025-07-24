@@ -1,43 +1,43 @@
-#include <ixwebsocket/IXWebSocketServer.h>
-#include <iostream>
-#include <memory>
-#include <thread>
-#include <chrono>
+#include "../include/server.h"
 
-int main()
-{
-    ix::WebSocketServer server(8080);
+namespace flychess_server {
 
-    server.setOnConnectionCallback(
-        [](std::weak_ptr<ix::WebSocket> weakWebSocket,
-           std::shared_ptr<ix::ConnectionState> connectionState) {
-            std::cout << "New connection" << std::endl;
-
-            if (auto webSocket = weakWebSocket.lock())
+    FlycehssServer::FlycehssServer(int port) : port_(port), server_(std::make_unique<ix::WebSocketServer>(port)) {
+        // 初始连接回调
+        server_->setOnConnectionCallback(
+            [](std::weak_ptr<ix::WebSocket> weakWebSocket,
+            std::shared_ptr<ix::ConnectionState> connectionState)
             {
-                webSocket->setOnMessageCallback(
-                    [webSocket](const ix::WebSocketMessagePtr& msg) {
-                        if (msg->type == ix::WebSocketMessageType::Message)
-                        {
-                            std::cout << "Received: " << msg->str << std::endl;
-                            webSocket->send(msg->str);  // Echo 回去
+                std::cout << "New connection received." << std::endl;
+                if(connectionState) {
+                    std::cout << "Client IP: " << connectionState->getRemoteIp() << std::endl;
+                }
+                
+                // 设置 onMessage 回调
+                if (auto webSocket = weakWebSocket.lock()) {
+                    webSocket->setOnMessageCallback(
+                        [](const ix::WebSocketMessagePtr& msg) {
+                            if (msg->type == ix::WebSocketMessageType::Message) {
+                                std::cout << "Received message: " << msg->str << std::endl;
+                            }
                         }
-                    });
+                    );
+                }
             }
-        });
-
-    auto res = server.listen();
-    if (!res.first)
-    {
-        std::cerr << "Listen failed: " << res.second << std::endl;
-        return 1;
+        );
     }
 
-    server.start();
-    std::cout << "Server started on ws://localhost:8080" << std::endl;
+    bool FlycehssServer::start() {
+        auto res = server_->listen();
+        if (!res.first)
+        {
+            std::cerr << "Listen failed: " << res.second << std::endl;
+            return false;
+        }
 
-    while (true)
-    {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        server_->start();
+        std::cout << "WebSocket server started on port " << port_ << std::endl;
+        return true;
     }
+
 }
