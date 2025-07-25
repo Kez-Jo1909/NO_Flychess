@@ -1,4 +1,5 @@
 #include "../include/server.h"
+#include "game.h"
 
 namespace flychess_server {
 
@@ -32,9 +33,6 @@ namespace flychess_server {
     void FlycehssServer::handleMessage(const ix::WebSocketMessagePtr& msg) {
         if (msg->type == ix::WebSocketMessageType::Message) {
             const std::string& msg_text = msg->str;
-
-
-
             if (!msg_text.empty() && (msg_text[0] == '{' || msg_text[0] == '[')) {
                 // json消息
                 try {
@@ -44,6 +42,8 @@ namespace flychess_server {
 
                     if (type == "rolldice") {
                         std::cout<< "rolldice request from player " << j["playerId"] << std::endl;
+                        int dice_num = flychess_game::rollDice();
+                        std::cout<< "backend roll dice:" << dice_num << std::endl;
                     }
                     else {
                         std::cout<< "未知消息类型" << std::endl;

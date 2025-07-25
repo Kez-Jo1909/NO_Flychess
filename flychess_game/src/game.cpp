@@ -43,6 +43,10 @@ namespace flychess_game {
 
         }
     }
+
+    int rollDice() {
+        return game_utils::get_random(1, 6);
+    }
 }
 
 // JS 接口部分

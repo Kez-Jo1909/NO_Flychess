@@ -38,6 +38,8 @@ private:
 
 FlychessGame& get_instance();
 
+int rollDice();
+
 }
 
 
