@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  ws = new WebSocket('ws://localhost:8080'); // 可改为你的服务器地址
+  ws = new WebSocket('ws://localhost:8080');
 
   ws.onopen = () => {
     console.log('[WebSocket] 已连接');

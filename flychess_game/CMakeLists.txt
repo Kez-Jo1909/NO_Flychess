@@ -9,3 +9,6 @@ file(GLOB_RECURSE SOURCES
 )
 
 add_library(flychess STATIC ${SOURCES})
+
+target_include_directories(flychess PUBLIC ${PROJECT_SOURCE_DIR}/include)
+

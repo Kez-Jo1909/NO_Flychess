@@ -7,6 +7,7 @@
 #include <thread>
 #include <chrono>
 #include <nlohmann/json.hpp>
+#include "game.h"
 
 namespace flychess_server{
 

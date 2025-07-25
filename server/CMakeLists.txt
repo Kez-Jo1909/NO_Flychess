@@ -14,4 +14,4 @@ file(GLOB_RECURSE SOURCES
 # 添加可执行文件
 add_executable(server ${SOURCES})
 
-target_link_libraries(server PRIVATE ixwebsocket)
+target_link_libraries(server PRIVATE ixwebsocket flychess)
