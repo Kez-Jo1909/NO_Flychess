@@ -2,6 +2,7 @@ let mouseX = -1;
 let mouseY = -1;
 let mouseClicked = false;
 let GlobalModule = null;
+let ws = null;
 
 // 棋子选择全局变量
 let awaitingPieceSelection = false;
@@ -69,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  const ws = new WebSocket('ws://localhost:8080'); // 可改为你的服务器地址
+  ws = new WebSocket('ws://localhost:8080'); // 可改为你的服务器地址
 
   ws.onopen = () => {
     console.log('[WebSocket] 已连接');
@@ -231,11 +232,17 @@ function gameProcess(Module, playerCount, chess_per_player) {
       return;
     }
 
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: "rolldice",
+        playerId: currentPlayerIndex
+      }));
+    } else {
+      console.warn("WebSocket 连接未打开，无法发送 rolldice 请求");
+    }
+
     currentDiceNumber = Module._rollDice();
     diceRolled = true;
-
-    // 调试用，取消注释可以直接设置骰子点数
-    // currentDiceNumber = 6;
 
     awaitingPieceSelection = true;
     selectedPieceId = -1;

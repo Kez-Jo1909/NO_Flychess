@@ -6,6 +6,7 @@
 #include <memory>
 #include <thread>
 #include <chrono>
+#include <nlohmann/json.hpp>
 
 namespace flychess_server{
 
@@ -16,6 +17,11 @@ public:
 
     // 启动服务器
     bool start();
+
+    void setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket);
+
+    void handleMessage(const ix::WebSocketMessagePtr& msg);
+
 
 private:
     int port_;
