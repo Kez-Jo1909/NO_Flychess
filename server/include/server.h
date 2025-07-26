@@ -19,14 +19,20 @@ public:
     // 启动服务器
     bool start();
 
-    void setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket);
-
-    void handleMessage(const ix::WebSocketMessagePtr& msg);
-
+    void handleMessage(const ix::WebSocketMessagePtr& msg, const std::string& client_id);
 
 private:
     int port_;
     std::unique_ptr<ix::WebSocketServer> server_;
+    std::unordered_map<std::string, std::shared_ptr<ix::WebSocket>> clients_;// client_id -> WebSocket映射
+
+    void setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket, const std::string& client_id);
+
+    void sendDiceNum(int dice_num_, const std::string& client_id);
+
+    void sendToClient(const std::string& client_id, const std::string msg);
+
+    void BroadCast(const std::string& msg);
 };
 
 }

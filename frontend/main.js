@@ -89,6 +89,21 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('[WebSocket] 发生错误:', err);
   };
 
+  ws.onmessage = function(event) {
+    const msg = JSON.parse(event.data);
+  
+    switch (msg.type) {
+      case "dice_result":
+        const dice_reuslt = msg.dice_reuslt;
+        console.log(`收到骰子结果：${dice_reuslt}`);
+        break;
+  
+      default:
+        console.warn("收到未知类型消息：", msg);
+    }
+  };
+  
+
 });
 
 const canvas = document.getElementById('flychess-map');
