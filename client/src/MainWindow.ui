@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QPushButton" name="pushButton">
+    <property name="geometry">
+     <rect>
+      <x>350</x>
+      <y>150</y>
+      <width>99</width>
+      <height>38</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Button Test</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFlychess">
+    <property name="title">
+     <string>Flychess-test</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menutest2">
+    <property name="title">
+     <string>test2</string>
+    </property>
+   </widget>
+   <addaction name="menuFlychess"/>
+   <addaction name="menutest2"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

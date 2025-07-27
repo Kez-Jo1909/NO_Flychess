@@ -19,8 +19,13 @@ file(GLOB_RECURSE SOURCES
     ${PROJECT_SOURCE_DIR}/src/*.cpp
 )
 
-# 定义可执行目标
-add_executable(Flychess_QT_Client ${SOURCES})
+# 查找头文件
+file(GLOB_RECURSE HEADERS
+    ${PROJECT_SOURCE_DIR}/include/*.h
+)
+
+# 可执行文件
+add_executable(Flychess_QT_Client ${SOURCES} ${HEADERS})
 
 # 链接 Qt5 库
 target_link_libraries(Flychess_QT_Client Qt5::Widgets)
