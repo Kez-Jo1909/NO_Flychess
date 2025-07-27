@@ -94,8 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
     switch (msg.type) {
       case "dice_result":
-        const dice_reuslt = msg.dice_reuslt;
-        console.log(`收到骰子结果：${dice_reuslt}`);
+        const dice_result = msg.dice_result;
+        console.log(`收到骰子结果：${dice_result}`);
         break;
   
       default:

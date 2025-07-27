@@ -46,13 +46,13 @@ namespace flychess_server {
 
                     if (type == "rolldice") {
                         std::cout<< "rolldice request from player " << j["playerId"] << std::endl;
-                        int dice_reuslt = flychess_game::rollDice();
+                        int dice_result = flychess_game::rollDice();
                         // std::cout<< "backend roll dice:" << dice_reuslt << std::endl;
-                        sendDiceNum(dice_reuslt, client_id);
+                        sendDiceNum(dice_result, client_id);
                     }
                     else {
                         std::cout<< "未知消息类型" << std::endl;
-                    }
+                    }   
                 }
                 catch (const std::exception& e) {
                     std::cerr << "[JSON Parse Error] " << e.what() << std::endl;
@@ -67,10 +67,10 @@ namespace flychess_server {
         }
     }
 
-    void FlycehssServer::sendDiceNum(int dice_reuslt_, const std::string& client_id) {
+    void FlycehssServer::sendDiceNum(int dice_result, const std::string& client_id) {
         nlohmann::json message_json;
         message_json["type"] = "dice_result";
-        message_json["dice_reuslt"] = dice_reuslt_;
+        message_json["dice_result"] = dice_result;
 
         std::string message_str = message_json.dump();
         if (server_) {
@@ -97,6 +97,10 @@ namespace flychess_server {
         {
             if (socket->getReadyState() == ix::ReadyState::Open) {
                 socket->send(msg);
+                std::cout<< "消息已广播给客户端 [" << id << "]:" << msg << std::endl;
+            }
+            else {
+                std::cerr << "Client [" << id << "] is not connected." << std::endl;
             }
         }
     }

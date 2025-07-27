@@ -8,3 +8,5 @@ add_subdirectory(flychess_game)
 add_subdirectory(third_party/ixwebsocket)
 
 add_subdirectory(server)
+
+add_subdirectory(client)
