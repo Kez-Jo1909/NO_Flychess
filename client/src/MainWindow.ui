@@ -11,72 +11,61 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Flychess_QT_Client</string>
+   <string>MainWindow</string>
   </property>
-  <property name="windowIcon">
-   <iconset>
-    <normaloff>../../../../frontend/src/takina.png</normaloff>../../../../frontend/src/takina.png</iconset>
-  </property>
-  <widget class="QWidget" name="MainMenuWidget">
-   <widget class="QPushButton" name="StartButton">
-    <property name="geometry">
-     <rect>
-      <x>340</x>
-      <y>200</y>
-      <width>99</width>
-      <height>38</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>开始游戏</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="SakanaLabel">
-    <property name="geometry">
-     <rect>
-      <x>590</x>
-      <y>350</y>
-      <width>201</width>
-      <height>191</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-    <property name="pixmap">
-     <pixmap>../../frontend/src/takina.png</pixmap>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="SettingsButton">
-    <property name="geometry">
-     <rect>
-      <x>340</x>
-      <y>240</y>
-      <width>99</width>
-      <height>38</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>设置</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="ExitButton">
-    <property name="geometry">
-     <rect>
-      <x>340</x>
-      <y>280</y>
-      <width>99</width>
-      <height>38</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>退出</string>
-    </property>
-   </widget>
-   <zorder>StartButton</zorder>
-   <zorder>SettingsButton</zorder>
-   <zorder>ExitButton</zorder>
-   <zorder>SakanaLabel</zorder>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QStackedWidget" name="stackedWidget">
+      <widget class="QWidget" name="page">
+       <layout class="QVBoxLayout" name="verticalLayout_page">
+        <item>
+         <widget class="QPushButton" name="StartButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>开始游戏</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="SettingsButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>设置</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="ExitButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>退出</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_2">
+       <layout class="QVBoxLayout" name="verticalLayout_page2"/>
+      </widget>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -87,30 +76,6 @@
      <height>32</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFlychess">
-    <property name="title">
-     <string>Flychess-test</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menutest2">
-    <property name="title">
-     <string>设置</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menu">
-    <property name="title">
-     <string>用户</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menu_about">
-    <property name="title">
-     <string>关于</string>
-    </property>
-   </widget>
-   <addaction name="menuFlychess"/>
-   <addaction name="menu"/>
-   <addaction name="menutest2"/>
-   <addaction name="menu_about"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
