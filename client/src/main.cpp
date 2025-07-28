@@ -4,7 +4,7 @@
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
 
-    MainWindow window;
+    flychess_client::MainWindow window;
     window.show();
 
     return app.exec();
