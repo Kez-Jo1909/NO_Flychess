@@ -43,8 +43,14 @@ namespace flychess_game {
 
         }
     }
+
+    int rollDice() {
+        return game_utils::get_random(1, 6);
+    }
 }
 
+// JS 接口部分
+#ifdef __EMSCRIPTEN__
 
 extern "C"{
 
@@ -180,3 +186,4 @@ extern "C"{
         return flychess_game::get_instance().GetPlayer(player_id).GetFinishedChessPieceCount();
     }
 }
+#endif // __EMSCRIPTEN__

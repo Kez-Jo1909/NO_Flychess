@@ -1,7 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include <emscripten/emscripten.h>
 #include <iostream>
 #include "../include/utils.h"
 #include "../include/player.h"
@@ -39,11 +38,15 @@ private:
 
 FlychessGame& get_instance();
 
+int rollDice();
+
 }
 
 
 /*以下为JS接口*/
+#ifdef __EMSCRIPTEN__
 
+#include <emscripten/emscripten.h>
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -68,6 +71,6 @@ int GetFinishedChessCount(int player_id);
 #ifdef __cplusplus
 }
 #endif
-
+#endif // __EMSCRIPTEN__
 
 #endif // GAME_H

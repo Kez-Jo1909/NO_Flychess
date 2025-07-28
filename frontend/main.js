@@ -2,6 +2,7 @@ let mouseX = -1;
 let mouseY = -1;
 let mouseClicked = false;
 let GlobalModule = null;
+let ws = null;
 
 // 棋子选择全局变量
 let awaitingPieceSelection = false;
@@ -68,6 +69,40 @@ document.addEventListener('DOMContentLoaded', () => {
       initGame(playerCount, chess_per_player);
     }
   });
+
+  ws = new WebSocket('ws://localhost:8080');
+
+  ws.onopen = () => {
+    console.log('[WebSocket] 已连接');
+    ws.send('Hello from client!');
+  };
+
+  ws.onmessage = (event) => {
+    console.log('[WebSocket] 收到消息:', event.data);
+  };
+
+  ws.onclose = () => {
+    console.log('[WebSocket] 连接关闭');
+  };
+
+  ws.onerror = (err) => {
+    console.error('[WebSocket] 发生错误:', err);
+  };
+
+  ws.onmessage = function(event) {
+    const msg = JSON.parse(event.data);
+  
+    switch (msg.type) {
+      case "dice_result":
+        const dice_result = msg.dice_result;
+        console.log(`收到骰子结果：${dice_result}`);
+        break;
+  
+      default:
+        console.warn("收到未知类型消息：", msg);
+    }
+  };
+  
 
 });
 
@@ -212,11 +247,17 @@ function gameProcess(Module, playerCount, chess_per_player) {
       return;
     }
 
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: "rolldice",
+        playerId: currentPlayerIndex
+      }));
+    } else {
+      console.warn("WebSocket 连接未打开，无法发送 rolldice 请求");
+    }
+
     currentDiceNumber = Module._rollDice();
     diceRolled = true;
-
-    // 调试用，取消注释可以直接设置骰子点数
-    // currentDiceNumber = 6;
 
     awaitingPieceSelection = true;
     selectedPieceId = -1;

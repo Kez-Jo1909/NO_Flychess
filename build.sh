@@ -1,14 +1,15 @@
 set -e  # 脚本遇错自动退出，避免遗漏错误
 
-cd flychess_game || { echo "❌ 进入 flychess_game 目录失败"; exit 1; }
+mkdir -p build
 
-# 使用emcmake配置build目录（可以加上 -DCMAKE_BUILD_TYPE=Release 做release构建）
-emcmake cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cd build
 
-# 编译
-emmake make -C build
+cmake ..
 
-# 复制 wasm 和 js 文件到 frontend 目录
-cp build/game.* ../frontend/
+make -j16
 
-echo "✅ 编译完成并复制到 frontend/ 目录"
+cd ..
+
+./wasm_build.sh
+
+echo "✅ 编译全部完成"
