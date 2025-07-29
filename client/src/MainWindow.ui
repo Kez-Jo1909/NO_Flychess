@@ -429,12 +429,65 @@
        </layout>
       </widget>
       <widget class="QWidget" name="PreparePage">
-        <layout class="QVBoxLayout" name="verticalLayout_PreparePage">
-        </layout>
+       <layout class="QVBoxLayout" name="verticalLayout_PreparePage">
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <spacer name="verticalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Expanding</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <item>
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="PreparePageExitButton">
+              <property name="text">
+               <string>返回</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="StartGameButton">
+              <property name="text">
+               <string>开始游戏</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="GamePage">
+       <layout class="QVBoxLayout" name="verticalLayout_GamePage"/>
       </widget>
       <widget class="QWidget" name="EmptyPage">
-        <layout class="QVBoxLayout" name="verticalLayout_EmptyPage">
-        </layout>
+       <layout class="QVBoxLayout" name="verticalLayout_EmptyPage"/>
       </widget>
      </widget>
     </item>

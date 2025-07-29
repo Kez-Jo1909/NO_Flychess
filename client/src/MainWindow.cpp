@@ -16,6 +16,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->StartExitButton, &QPushButton::clicked, this, &MainWindow::onSettingExitClicked);
     connect(ui->SettingReButton, &QPushButton::clicked, this, &MainWindow::onSettingReButtonClicked);
     connect(ui->SettingSaveButton, &QPushButton::clicked, this, &MainWindow::onSettingSaveButtonClicked);
+    connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
+    connect(ui->CreateGameButton, &QPushButton::clicked, this, &MainWindow::onCreateGameButtonClicked);
 
     // 绑定菜单栏-关于
     connect(ui->actionAbout, &QAction::triggered,
@@ -62,6 +64,24 @@ void MainWindow::StartButtonClicked() {
 
 void MainWindow::onSettingExitClicked() {
     ui->stackedWidget->setCurrentIndex(0); // 切换回第一页
+}
+
+void MainWindow::onCreateGameButtonClicked() {
+    // 切换到创建游戏页面
+    ui->stackedWidget->setCurrentIndex(3);
+}
+
+void MainWindow::onPreparePageExitButtonClicked() {
+    auto reply = QMessageBox::question(
+        this,
+        "返回确认",
+        "确定要退出房间吗？",
+        QMessageBox::Yes | QMessageBox::No
+    );
+
+    if (reply == QMessageBox::Yes) {
+        ui->stackedWidget->setCurrentIndex(2);   
+    }
 }
 
 void MainWindow::onSettingReButtonClicked() {

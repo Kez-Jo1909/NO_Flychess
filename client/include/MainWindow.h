@@ -36,6 +36,9 @@ private slots:
 
     void showAboutDialog();
 
+    void onCreateGameButtonClicked();
+
+    void onPreparePageExitButtonClicked();
 private:
     // void repositionStartMenu();
 
