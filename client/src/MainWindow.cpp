@@ -69,6 +69,7 @@ void MainWindow::onSettingExitClicked() {
 void MainWindow::onCreateGameButtonClicked() {
     // 切换到创建游戏页面
     ui->stackedWidget->setCurrentIndex(3);
+    ui->RoomListWidget->addItem("system: 创建游戏成功,进入房间");
 }
 
 void MainWindow::onPreparePageExitButtonClicked() {
@@ -81,6 +82,7 @@ void MainWindow::onPreparePageExitButtonClicked() {
 
     if (reply == QMessageBox::Yes) {
         ui->stackedWidget->setCurrentIndex(2);   
+        ui->RoomListWidget->clear();
     }
 }
 
