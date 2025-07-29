@@ -16,10 +16,44 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->StartExitButton, &QPushButton::clicked, this, &MainWindow::onSettingExitClicked);
     connect(ui->SettingReButton, &QPushButton::clicked, this, &MainWindow::onSettingReButtonClicked);
     connect(ui->SettingSaveButton, &QPushButton::clicked, this, &MainWindow::onSettingSaveButtonClicked);
+
+    // 绑定菜单栏-关于
+    connect(ui->actionAbout, &QAction::triggered,
+            this, &MainWindow::showAboutDialog);
 }
 
 MainWindow::~MainWindow() {
     delete ui;
+}
+
+void MainWindow::showAboutDialog() {
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("关于");
+
+    // 设置富文本并允许点击链接
+    msgBox.setTextFormat(Qt::RichText);
+    msgBox.setTextInteractionFlags(Qt::TextBrowserInteraction);
+
+    QString text = R"(
+        <h3>关于项目</h3>
+        <p>这是一个基于 Qt 的飞行棋游戏客户端。</p>
+        作者: KezJo<br>
+        版本: 0.1.0<br>
+        <a href='https://github.com/Kez-Jo1909/NO_Flychess'>访问 GitHub 项目主页</a>
+    )";
+
+    msgBox.setText(text);
+
+    // 捕获链接点击
+    QLabel* label = msgBox.findChild<QLabel*>("qt_msgbox_label");
+    if (label) {
+        QObject::connect(label, &QLabel::linkActivated,
+                         [](const QString &link){
+            QDesktopServices::openUrl(QUrl(link));
+        });
+    }
+
+    msgBox.exec();
 }
 
 void MainWindow::StartButtonClicked() {
@@ -72,18 +106,19 @@ void MainWindow::onExitButtonClicked() {
 void MainWindow::resizeEvent(QResizeEvent *event) {
     QMainWindow::resizeEvent(event); // 保留父类处理
 
-    // 额外输出s
-    // QWidget* centralWidget = this->centralWidget();
-    // QStackedWidget* stackedWidget = ui->stackedWidget;
-    // QWidget* currentPage = stackedWidget->currentWidget();
-    // qDebug() << "[resizeEvent] centralWidget size:" << centralWidget->size();
-    // qDebug() << "[resizeEvent] stackedWidget size:" << stackedWidget->size();
-    // qDebug() << "[resizeEvent] page size:" << currentPage->size();
-
-    ui->verticalLayout_page->setStretch(0, 5); // Top spacer
+    ui->verticalLayout_page->setStretch(0, 3); // Top spacer
     // ui->verticalLayout_page->setStretch(2, 0); // Between2 spacer
     // ui->verticalLayout_page->setStretch(4, 0); // Bottom spacer
-    ui->verticalLayout_page->setStretch(6, 5); // Bottom spacer
+    ui->verticalLayout_page->setStretch(6, 1); // Bottom spacer
+
+    ui->horizontalLayout_StartButton->setStretch(0, 19);
+    ui->horizontalLayout_StartButton->setStretch(2, 1);
+
+    ui->horizontalLayout_SettingsButton->setStretch(0, 19);
+    ui->horizontalLayout_SettingsButton->setStretch(2, 1);
+
+    ui->horizontalLayout_ExitButton->setStretch(0, 19);
+    ui->horizontalLayout_ExitButton->setStretch(2, 1);
 }
 
 void MainWindow::onSettingButtonClicked() {

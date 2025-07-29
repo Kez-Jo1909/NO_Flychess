@@ -3,6 +3,10 @@
 
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QLabel>
+#include <QUrl>
+#include <QDesktopServices>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -29,6 +33,8 @@ private slots:
     void onSettingReButtonClicked();// 设置中重置按钮槽函数
 
     void onSettingSaveButtonClicked();
+
+    void showAboutDialog();
 
 private:
     // void repositionStartMenu();
