@@ -45,6 +45,11 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
     qDebug() << "[resizeEvent] centralWidget size:" << centralWidget->size();
     qDebug() << "[resizeEvent] stackedWidget size:" << stackedWidget->size();
     qDebug() << "[resizeEvent] page size:" << currentPage->size();
+
+    ui->verticalLayout_page->setStretch(0, 5); // Top spacer
+    // ui->verticalLayout_page->setStretch(2, 0); // Between2 spacer
+    // ui->verticalLayout_page->setStretch(4, 0); // Bottom spacer
+    ui->verticalLayout_page->setStretch(6, 5); // Bottom spacer
 }
 
 }// namespace flychess_client
