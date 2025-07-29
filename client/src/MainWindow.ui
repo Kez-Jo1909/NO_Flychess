@@ -428,8 +428,14 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="PreparePage"/>
-      <widget class="QWidget" name="EmptyPage"/>
+      <widget class="QWidget" name="PreparePage">
+        <layout class="QVBoxLayout" name="verticalLayout_PreparePage">
+        </layout>
+      </widget>
+      <widget class="QWidget" name="EmptyPage">
+        <layout class="QVBoxLayout" name="verticalLayout_EmptyPage">
+        </layout>
+      </widget>
      </widget>
     </item>
    </layout>
