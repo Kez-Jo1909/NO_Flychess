@@ -20,10 +20,18 @@ public:
 private slots:
     void StartButtonClicked();  // 开始按钮槽函数
 
-    void on_ExitButton_clicked();// 退出按钮槽函数
+    void onExitButtonClicked();// 退出按钮槽函数
+
+    void onSettingButtonClicked();// 设置按钮槽函数
+
+    void onSettingExitClicked();// 设置中返回槽函数
+
+    void onSettingReButtonClicked();// 设置中重置按钮槽函数
+
+    void onSettingSaveButtonClicked();
 
 private:
-    void repositionStartMenu();
+    // void repositionStartMenu();
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
