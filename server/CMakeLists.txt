@@ -3,15 +3,22 @@ project(FlychessServer)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# 添加头文件目录
-include_directories(${PROJECT_SOURCE_DIR}/include)
-
-# 递归查找所有 .cpp 源文件
 file(GLOB_RECURSE SOURCES
     ${PROJECT_SOURCE_DIR}/src/*.cpp
 )
 
-# 添加可执行文件
-add_executable(server ${SOURCES})
+# 生成静态库
+add_library(flychess_server STATIC ${SOURCES})
 
-target_link_libraries(server PRIVATE ixwebsocket flychess)
+# 显式暴露 server/include 目录给外部使用
+target_include_directories(flychess_server
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/include
+)
+
+# 链接依赖库
+target_link_libraries(flychess_server
+    PUBLIC
+        ixwebsocket
+        flychess
+)

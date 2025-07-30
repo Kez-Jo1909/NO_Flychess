@@ -25,6 +25,14 @@ namespace flychess_server {
         );  
     }
 
+    void FlycehssServer::stop() {
+        if (server_) {
+            std::cout << "Stopping server..." << std::endl;
+            server_->stop();  // 停止监听并断开所有客户端
+            server_.reset();  // 释放资源
+        }
+    }
+
     void FlycehssServer::setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket, const std::string& client_id) {
         webSocket->setOnMessageCallback(
             [this, client_id](const ix::WebSocketMessagePtr& msg) {

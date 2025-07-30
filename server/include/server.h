@@ -19,6 +19,8 @@ public:
     // 启动服务器
     bool start();
 
+    void stop();
+
     void handleMessage(const ix::WebSocketMessagePtr& msg, const std::string& client_id);
 
 private:

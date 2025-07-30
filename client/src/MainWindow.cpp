@@ -67,10 +67,29 @@ void MainWindow::onSettingExitClicked() {
 }
 
 void MainWindow::onCreateGameButtonClicked() {
-    // 切换到创建游戏页面
     ui->stackedWidget->setCurrentIndex(3);
-    ui->RoomListWidget->addItem("system: 创建游戏成功,进入房间");
+
+    server_ = std::make_unique<flychess_server::FlycehssServer>(8080);
+
+    std::thread([this] {
+        bool server_ret = server_->start();
+
+        if (!server_ret) {
+            QMetaObject::invokeMethod(this, [this]() {
+                QMessageBox::critical(this, "错误", "服务器启动失败！");
+                ui->stackedWidget->setCurrentIndex(2);
+                ui->RoomListWidget->clear();
+            }, Qt::QueuedConnection);
+        } else {
+            QMetaObject::invokeMethod(this, [this]() {
+                ui->RoomListWidget->addItem("system: 创建游戏成功,服务器已建立,进入房间");
+            }, Qt::QueuedConnection);
+        }
+    }).detach();
 }
+
+
+
 
 void MainWindow::onPreparePageExitButtonClicked() {
     auto reply = QMessageBox::question(
@@ -81,10 +100,16 @@ void MainWindow::onPreparePageExitButtonClicked() {
     );
 
     if (reply == QMessageBox::Yes) {
+        if (server_) {
+            server_->stop(); // 停止服务器
+            server_.reset(); // 释放资源
+            std::cout<<"server stopped." << std::endl;
+        }
         ui->stackedWidget->setCurrentIndex(2);   
         ui->RoomListWidget->clear();
     }
 }
+
 
 void MainWindow::onSettingReButtonClicked() {
     auto reply = QMessageBox::question(
