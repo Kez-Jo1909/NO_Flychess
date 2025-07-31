@@ -27,11 +27,12 @@ namespace flychess_server {
 
     void FlycehssServer::stop() {
         if (server_) {
-            std::cout << "Stopping server..." << std::endl;
-            server_->stop();  // 停止监听并断开所有客户端
-            server_.reset();  // 释放资源
+            server_->stop();     // 请求服务器停止
+            // server_->wait();     // 等待后台线程安全退出（关键！）
+            // server_.reset();     // 释放资源
         }
     }
+
 
     void FlycehssServer::setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket, const std::string& client_id) {
         webSocket->setOnMessageCallback(

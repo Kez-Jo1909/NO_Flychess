@@ -21,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->SettingSaveButton, &QPushButton::clicked, this, &MainWindow::onSettingSaveButtonClicked);
     connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
     connect(ui->CreateGameButton, &QPushButton::clicked, this, &MainWindow::onCreateGameButtonClicked);
-
+    connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
     // 绑定菜单栏-关于
     connect(ui->actionAbout, &QAction::triggered,
             this, &MainWindow::showAboutDialog);
@@ -69,6 +69,10 @@ void MainWindow::onSettingExitClicked() {
     ui->stackedWidget->setCurrentIndex(0); // 切换回第一页
 }
 
+void MainWindow::onPreparePageStartButtonClicked() {
+
+}
+
 void MainWindow::onCreateGameButtonClicked() {
     ui->stackedWidget->setCurrentIndex(3);
 
@@ -107,11 +111,17 @@ void MainWindow::onPreparePageExitButtonClicked() {
 
     if (reply == QMessageBox::Yes) {
         if (server_) {
-            server_->stop(); // 停止服务器
-            server_.reset(); // 释放资源
-            std::cout<<"server stopped." << std::endl;
             client_->close();
+            server_->stop();
+
+            // 延迟执行reset，确保后台线程有时间退出
+            QTimer::singleShot(100, this, [this]() {
+                server_.reset();
+                std::cout << "server stopped." << std::endl;
+                ui->RoomListWidget->addItem("system: 服务器已关闭");
+            });
         }
+
         ui->stackedWidget->setCurrentIndex(2);   
         ui->RoomListWidget->clear();
     }

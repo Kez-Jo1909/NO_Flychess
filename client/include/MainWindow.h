@@ -5,6 +5,7 @@
 #include <QMessageBox>
 #include <QLabel>
 #include <QUrl>
+#include <QTimer>
 #include <QDesktopServices>
 #include "game.h"
 #include "server.h"
@@ -41,6 +42,8 @@ private slots:
     void onCreateGameButtonClicked();
 
     void onPreparePageExitButtonClicked();
+
+    void onPreparePageStartButtonClicked();
 private:
     // void repositionStartMenu();
 
