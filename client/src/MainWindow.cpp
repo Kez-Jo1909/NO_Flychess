@@ -8,6 +8,9 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
+    // 创建客户端实例
+    client_ = new flychess_client::FlychessClient(this);
+
     // 连接信号和槽函数
     connect(ui->StartButton, &QPushButton::clicked, this, &MainWindow::StartButtonClicked);
     connect(ui->ExitButton, &QPushButton::clicked, this, &MainWindow::onExitButtonClicked);
@@ -81,8 +84,11 @@ void MainWindow::onCreateGameButtonClicked() {
                 ui->RoomListWidget->clear();
             }, Qt::QueuedConnection);
         } else {
+            // 这里发起本地客户端连接
+            client_->connectToServer("ws://127.0.0.1:8080");
             QMetaObject::invokeMethod(this, [this]() {
-                ui->RoomListWidget->addItem("system: 创建游戏成功,服务器已建立,进入房间");
+                ui->RoomListWidget->addItem("system: 创建游戏成功,服务器已建立");
+                ui->RoomListWidget->addItem("system: 本地用户进入房间");
             }, Qt::QueuedConnection);
         }
     }).detach();
@@ -104,6 +110,7 @@ void MainWindow::onPreparePageExitButtonClicked() {
             server_->stop(); // 停止服务器
             server_.reset(); // 释放资源
             std::cout<<"server stopped." << std::endl;
+            client_->close();
         }
         ui->stackedWidget->setCurrentIndex(2);   
         ui->RoomListWidget->clear();

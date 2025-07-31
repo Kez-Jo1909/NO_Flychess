@@ -6,25 +6,29 @@
 #include <memory>
 #include <thread>
 #include <chrono>
+#include <QObject>
 #include <nlohmann/json.hpp>
 
 
 namespace flychess_client {
 
-class FlychessClient {
+class FlychessClient : public QObject {
+    Q_OBJECT
 public:
-    FlychessClient(const std::string& url);
+    explicit FlychessClient(QObject *parent = nullptr);
     ~FlychessClient();
 
-    void connect();
-    void disconnect();
+    void connectToServer(const std::string &url);
+
+    void close();
+
     void sendMessage(const std::string& message);
+signals:
+    void connected();
+    void disconnected();
+    void messageReceived(QString msg);  // 发给 Qt 的信号
 private:
-    void handleMessage(const std::string& msg);
-private:
-    ix::WebSocket websocket_;
-    std::string url_;
-    std::function<void(const std::string&)> onMessageCallback_;
+    ix::WebSocket ws_;
 };
 
 }

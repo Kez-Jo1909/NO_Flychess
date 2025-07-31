@@ -8,6 +8,7 @@
 #include <QDesktopServices>
 #include "game.h"
 #include "server.h"
+#include "client.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -50,6 +51,9 @@ protected:
 private:
     Ui::MainWindow *ui;
     std::unique_ptr<flychess_server::FlycehssServer> server_;
+
+    // 直接在类内声明客户端实例
+    flychess_client::FlychessClient *client_;
 };
 
 }// namespace flychess_client
