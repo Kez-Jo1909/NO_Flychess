@@ -70,7 +70,16 @@ void MainWindow::onSettingExitClicked() {
 }
 
 void MainWindow::onPreparePageStartButtonClicked() {
+    auto reply = QMessageBox::question(
+        this,
+        "开始确认",
+        "确定要开始游戏吗？",
+        QMessageBox::Yes | QMessageBox::No
+    );
 
+    if (reply == QMessageBox::Yes) {
+        std::cout << "start" << std::endl;
+    }
 }
 
 void MainWindow::onCreateGameButtonClicked() {
@@ -183,6 +192,12 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
 
     ui->horizontalLayout_ExitButton->setStretch(0, 19);
     ui->horizontalLayout_ExitButton->setStretch(2, 1);
+
+    ui->verticalLayout_3->setStretch(0, 3); // Top spacer
+    ui->verticalLayout_3->setStretch(1, 1); // Between spacer
+
+    ui->horizontalLayout_3->setStretch(0,2);
+    ui->horizontalLayout_3->setStretch(1,1);
 }
 
 void MainWindow::onSettingButtonClicked() {
