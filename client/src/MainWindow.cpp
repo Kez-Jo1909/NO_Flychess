@@ -282,6 +282,9 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
 
     ui->horizontalLayout_3->setStretch(0,2);
     ui->horizontalLayout_3->setStretch(1,1);
+
+    ui->horizontalLayout_4->setStretch(0,2);
+    ui->horizontalLayout_4->setStretch(1,1);
 }
 
 void MainWindow::onSettingButtonClicked() {

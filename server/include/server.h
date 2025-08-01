@@ -1,27 +1,29 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include <QObject>
 #include <ixwebsocket/IXWebSocketServer.h>
 #include <iostream>
 #include <memory>
-#include <thread>
-#include <chrono>
+#include <unordered_map>
 #include <nlohmann/json.hpp>
-#include "game.h"
 
 namespace flychess_server{
 
-class FlycehssServer {
+class FlycehssServer : public QObject {
+    Q_OBJECT
 public:
-    //传入端口号，默认8080
-    explicit FlycehssServer(int port = 8080);
+    explicit FlycehssServer(int port = 8080, QObject* parent = nullptr);
 
-    // 启动服务器
-    bool start();
-
-    void stop();
-
+    bool start();                     // 启动服务器
+    void stop();                       // 停止服务器
     void handleMessage(const ix::WebSocketMessagePtr& msg, const std::string& client_id);
+
+signals:
+    void clientConnected(const QString& client_id, const QString& ip);
+    void clientDisconnected(const QString& client_id);
+    void messageReceived(const QString& client_id, const QString& msg);
+    void jsonReceived(const QString& client_id, const QJsonObject& json);
 
 private:
     int port_;
@@ -29,11 +31,8 @@ private:
     std::unordered_map<std::string, std::shared_ptr<ix::WebSocket>> clients_;// client_id -> WebSocket映射
 
     void setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket, const std::string& client_id);
-
     void sendDiceNum(int dice_num_, const std::string& client_id);
-
     void sendToClient(const std::string& client_id, const std::string msg);
-
     void BroadCast(const std::string& msg);
 };
 
