@@ -68,6 +68,8 @@ private:
 
     QMessageBox* connectingBox_ = nullptr;  // “正在连接”提示框
     QTimer* connectTimer_ = nullptr;        // 连接超时定时器
+
+    bool is_server = false;
 };
 
 }// namespace flychess_client

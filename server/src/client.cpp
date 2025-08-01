@@ -49,7 +49,6 @@ namespace flychess_client {
     }
 
     void FlychessClient::disconnectFromServer() {
-        // stop 会立即终止连接尝试或关闭已连接的 WebSocket
         ws_.stop();
     }
 

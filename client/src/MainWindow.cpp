@@ -86,6 +86,7 @@ void MainWindow::UrlEditEnter() {
     );
 
     if (reply == QMessageBox::Yes) {
+        is_server = false;
         // 弹出“正在连接”提示框（非阻塞）
         connectingBox_ = new QMessageBox(QMessageBox::Information,
                                         "连接中",
@@ -111,6 +112,11 @@ void MainWindow::onConnected() {
         connectingBox_ = nullptr;
     }
     QMessageBox::information(this, "提示", "连接服务器成功！");
+    if (is_server) {
+        ui->stackedWidget->setCurrentIndex(3);
+    } else {
+        ui->stackedWidget->setCurrentIndex(5);
+    }
 }
 
 void MainWindow::onDisconnected() {
@@ -120,7 +126,11 @@ void MainWindow::onDisconnected() {
         connectingBox_->close();
         connectingBox_ = nullptr;
     }
-    QMessageBox::warning(this, "提示", "连接失败或已断开！");
+
+    if (!is_server) {
+        QMessageBox::warning(this, "提示", "连接失败或已断开！\n 即将返回上一个界面");
+        ui->stackedWidget->setCurrentIndex(2);
+    }
 }
 
 void MainWindow::onConnectTimeout() {
@@ -155,7 +165,9 @@ void MainWindow::onPreparePageStartButtonClicked() {
 }
 
 void MainWindow::onCreateGameButtonClicked() {
-    ui->stackedWidget->setCurrentIndex(3);
+    is_server = true;
+
+    // ui->stackedWidget->setCurrentIndex(3);
 
     server_ = std::make_unique<flychess_server::FlycehssServer>(8080);
 
