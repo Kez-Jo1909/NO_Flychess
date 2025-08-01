@@ -10,6 +10,7 @@
 #include "game.h"
 #include "server.h"
 #include "client.h"
+#include "utils.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -43,9 +44,10 @@ private slots:
 
     void onPreparePageExitButtonClicked();
 
-    void onPreparePageStartButtonClicked();
-
     void UrlEditEnter();
+
+    void onPreparePageStartButtonClicked();
+    void onPreparePagePrepareButtonClicked();
 private:
     // void repositionStartMenu();
 
@@ -64,12 +66,14 @@ private:
     // 直接在类内声明客户端实例
     flychess_client::FlychessClient *client_;
 
-    flychess_game::FlychessGame game_; // 游戏实例
+    flychess_game::FlychessGame *game_; // 游戏实例
+    flychess_game::FlychessGameRoom *game_room_; // 游戏房间实例
 
     QMessageBox* connectingBox_ = nullptr;  // “正在连接”提示框
     QTimer* connectTimer_ = nullptr;        // 连接超时定时器
 
     bool is_server = false;
+    bool prepared = false;
 };
 
 }// namespace flychess_client

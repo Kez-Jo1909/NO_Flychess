@@ -1,6 +1,12 @@
 #include "../include/game.h"
 
 namespace flychess_game {
+    void FlychessGameRoom::addPlayer(const PlayerInfo p_info) {
+        players.push_back(p_info);
+        // std::cout << "Player added: " << p_info.player_name << ", Color: " << static_cast<int>(p_info.color) << std::endl;
+    }
+
+
     void FlychessGame::AddNewPlayer(game_utils::Color color, int chess_piece_count) {
         players.emplace_back(color, chess_piece_count);
     }

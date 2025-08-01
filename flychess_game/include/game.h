@@ -7,12 +7,45 @@
 #include "../include/map.h"
 
 namespace flychess_game {
+
+struct PlayerInfo {
+    int websocket_id;
+    std::string player_name = "player";// TODO : 也许未来可以本地存储用户名
+    game_utils::Color color;
+    bool if_prepared = false;
+
+    PlayerInfo(game_utils::Color color, std::string p_name, int web_id) : color(color), websocket_id(web_id) {
+        if_prepared = false;
+    }
+};
+
+class FlychessGameRoom {
+public:
+    FlychessGameRoom() = default;
+
+    inline void setChessCount(int count) {
+        chess_count_per_player = count;
+    }
+
+    inline void setPlayerCount(int count) {
+        player_count = count;
+    }
+
+    void addPlayer(const PlayerInfo p_info);
+private:
+    int player_count = 4; // 玩家数量
+    int chess_count_per_player = 4;
+    std::vector<PlayerInfo> players; // 玩家信息列表
+};
+
+
 class FlychessGame {
 public:
     FlychessGame() = default;
 
     // 添加玩家
     void AddNewPlayer(game_utils::Color color, int chess_piece_count = 4);
+    
     // 重设游戏状态
     void Reset();
 

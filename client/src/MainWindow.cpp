@@ -1,5 +1,7 @@
 #include "../include/MainWindow.h"
+#include "game.h"
 #include "ui_MainWindow.h"
+#include "utils.h"
 #include <QDebug>
 
 namespace flychess_client{
@@ -7,6 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow) {
     ui->setupUi(this);
+    ui->RoomListTableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     // 创建客户端实例
     client_ = new flychess_client::FlychessClient(this);
@@ -21,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->SettingSaveButton, &QPushButton::clicked, this, &MainWindow::onSettingSaveButtonClicked);
     connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
     connect(ui->CreateGameButton, &QPushButton::clicked, this, &MainWindow::onCreateGameButtonClicked);
-    connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
+    // connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
     connect(ui->UrlEdit, &QLineEdit::returnPressed, this, &MainWindow::UrlEditEnter);
 
     connect(client_, &FlychessClient::connected,    this, &MainWindow::onConnected);
@@ -103,6 +106,30 @@ void MainWindow::UrlEditEnter() {
     }
 }
 
+void MainWindow::onPreparePageStartButtonClicked() {
+    // 开始游戏
+    auto reply = QMessageBox::question(
+        this,
+        "开始游戏",
+        "确定要开始游戏吗？",
+        QMessageBox::Yes | QMessageBox::No
+    );
+
+    if (reply == QMessageBox::Yes) {
+
+    }
+}
+
+void MainWindow::onPreparePagePrepareButtonClicked() {
+    if(prepared){
+        ui->PreparePageStartButton->setText("准备");
+    } else {
+        ui->PreparePageStartButton->setText("取消准备");
+        // TODO : 发出准备信号
+    }
+    prepared = !prepared;
+}
+
 void MainWindow::onConnected() {
     // 停止超时计时
     connectTimer_->stop();  
@@ -113,9 +140,21 @@ void MainWindow::onConnected() {
     }
     QMessageBox::information(this, "提示", "连接服务器成功！");
     if (is_server) {
+        ui->PlayerCountBox->setEnabled(true);
+        ui->ChessCountBox->setEnabled(true);
+        ui->ifCardCheckBox->setEnabled(true);
+        ui->ifAiCheckBox->setEnabled(true);
+        ui->PreparePageStartButton->setText("开始游戏");
+        connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
         ui->stackedWidget->setCurrentIndex(3);
     } else {
-        ui->stackedWidget->setCurrentIndex(5);
+        ui->PlayerCountBox->setEnabled(false);
+        ui->ChessCountBox->setEnabled(false);
+        ui->ifCardCheckBox->setEnabled(false);
+        ui->ifAiCheckBox->setEnabled(false);
+        ui->PreparePageStartButton->setText("准备");
+        connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
+        ui->stackedWidget->setCurrentIndex(3);
     }
 }
 
@@ -151,19 +190,6 @@ void MainWindow::onSettingExitClicked() {
     ui->stackedWidget->setCurrentIndex(0); // 切换回第一页
 }
 
-void MainWindow::onPreparePageStartButtonClicked() {
-    auto reply = QMessageBox::question(
-        this,
-        "开始确认",
-        "确定要开始游戏吗？",
-        QMessageBox::Yes | QMessageBox::No
-    );
-
-    if (reply == QMessageBox::Yes) {
-        std::cout << "start" << std::endl;
-    }
-}
-
 void MainWindow::onCreateGameButtonClicked() {
     is_server = true;
 
@@ -183,6 +209,10 @@ void MainWindow::onCreateGameButtonClicked() {
         } else {
             // 这里发起本地客户端连接
             client_->connectToServer("ws://127.0.0.1:8080");
+            // game_ = new flychess_game::FlychessGame();
+            game_room_ = new flychess_game::FlychessGameRoom();
+            game_room_ -> addPlayer(flychess_game::PlayerInfo(game_utils::Color::RED, "player", 0));
+
             QMetaObject::invokeMethod(this, [this]() {
                 ui->RoomListWidget->addItem("system: 创建游戏成功,服务器已建立");
                 ui->RoomListWidget->addItem("system: 本地用户进入房间");
@@ -282,9 +312,6 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
 
     ui->horizontalLayout_3->setStretch(0,2);
     ui->horizontalLayout_3->setStretch(1,1);
-
-    ui->horizontalLayout_4->setStretch(0,2);
-    ui->horizontalLayout_4->setStretch(1,1);
 }
 
 void MainWindow::onSettingButtonClicked() {
