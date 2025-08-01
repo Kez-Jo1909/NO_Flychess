@@ -44,8 +44,14 @@ private slots:
     void onPreparePageExitButtonClicked();
 
     void onPreparePageStartButtonClicked();
+
+    void UrlEditEnter();
 private:
     // void repositionStartMenu();
+
+    void onConnected();
+    void onDisconnected();
+    void onConnectTimeout();
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -57,6 +63,11 @@ private:
 
     // 直接在类内声明客户端实例
     flychess_client::FlychessClient *client_;
+
+    flychess_game::FlychessGame game_; // 游戏实例
+
+    QMessageBox* connectingBox_ = nullptr;  // “正在连接”提示框
+    QTimer* connectTimer_ = nullptr;        // 连接超时定时器
 };
 
 }// namespace flychess_client

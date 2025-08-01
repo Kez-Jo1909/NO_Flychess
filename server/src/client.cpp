@@ -48,6 +48,11 @@ namespace flychess_client {
         std::cout << "客户端主动断开连接" << std::endl;
     }
 
+    void FlychessClient::disconnectFromServer() {
+        // stop 会立即终止连接尝试或关闭已连接的 WebSocket
+        ws_.stop();
+    }
+
 
 // GPT写的示例，先扔在这
 //     // 回调线程

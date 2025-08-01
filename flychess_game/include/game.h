@@ -36,6 +36,7 @@ private:
     std::vector<Player> players; // 玩家列表
 };
 
+// 原本给js前端预留的接口
 FlychessGame& get_instance();
 
 int rollDice();

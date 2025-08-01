@@ -23,6 +23,8 @@ public:
     void close();
 
     void sendMessage(const std::string& message);
+
+    void disconnectFromServer();
 signals:
     void connected();
     void disconnected();

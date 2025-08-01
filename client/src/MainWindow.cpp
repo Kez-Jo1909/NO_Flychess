@@ -22,9 +22,19 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
     connect(ui->CreateGameButton, &QPushButton::clicked, this, &MainWindow::onCreateGameButtonClicked);
     connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
+    connect(ui->UrlEdit, &QLineEdit::returnPressed, this, &MainWindow::UrlEditEnter);
+
+    connect(client_, &FlychessClient::connected,    this, &MainWindow::onConnected);
+    connect(client_, &FlychessClient::disconnected, this, &MainWindow::onDisconnected);
+
     // 绑定菜单栏-关于
-    connect(ui->actionAbout, &QAction::triggered,
-            this, &MainWindow::showAboutDialog);
+    connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::showAboutDialog);
+
+    // 初始化定时器
+    connectTimer_ = new QTimer(this);
+    connectTimer_->setSingleShot(true);  // 只触发一次
+    connect(connectTimer_, &QTimer::timeout, this, &MainWindow::onConnectTimeout);
+
 }
 
 MainWindow::~MainWindow() {
@@ -59,6 +69,68 @@ void MainWindow::showAboutDialog() {
     }
 
     msgBox.exec();
+}
+
+void MainWindow::UrlEditEnter() {
+    QString url = ui->UrlEdit->text().trimmed();
+    if (url.isEmpty()) {
+        QMessageBox::warning(this, "错误", "请输入服务器URL!");
+        return;
+    }
+    // qDebug() << "按回车输入的URL是:" << url;
+    auto reply = QMessageBox::question(
+        this,
+        "加入房间确认",
+        "确定要加入房间吗？",
+        QMessageBox::Yes | QMessageBox::No
+    );
+
+    if (reply == QMessageBox::Yes) {
+        // 弹出“正在连接”提示框（非阻塞）
+        connectingBox_ = new QMessageBox(QMessageBox::Information,
+                                        "连接中",
+                                        "正在连接服务器，请稍候…",
+                                        QMessageBox::NoButton,
+                                        this);
+        connectingBox_->setModal(false);
+        connectingBox_->show();
+
+        // 启动超时计时器（5秒）
+        connectTimer_->start(5000);
+
+        client_->connectToServer("ws://" + url.toStdString());
+    }
+}
+
+void MainWindow::onConnected() {
+    // 停止超时计时
+    connectTimer_->stop();  
+
+    if (connectingBox_) {
+        connectingBox_->close();
+        connectingBox_ = nullptr;
+    }
+    QMessageBox::information(this, "提示", "连接服务器成功！");
+}
+
+void MainWindow::onDisconnected() {
+    connectTimer_->stop(); // 如果是断开也需要停掉定时器
+
+    if (connectingBox_) {
+        connectingBox_->close();
+        connectingBox_ = nullptr;
+    }
+    QMessageBox::warning(this, "提示", "连接失败或已断开！");
+}
+
+void MainWindow::onConnectTimeout() {
+    if (connectingBox_) {
+        connectingBox_->close();
+        connectingBox_ = nullptr;
+    }
+    QMessageBox::warning(this, "提示", "连接超时，请检查服务器是否可用！");
+    // 这里可以选择断开 WebSocket
+    client_->disconnectFromServer();
 }
 
 void MainWindow::StartButtonClicked() {
