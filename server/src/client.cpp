@@ -45,6 +45,7 @@ namespace flychess_client {
 
     void FlychessClient::close() {
         ws_.close();
+        ws_.stop();
         std::cout << "客户端主动断开连接" << std::endl;
     }
 

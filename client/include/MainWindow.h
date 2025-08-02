@@ -43,6 +43,7 @@ private slots:
     void onCreateGameButtonClicked();
 
     void onPreparePageExitButtonClicked();
+    void onPreparePageExitButtonUserClicked();
 
     void UrlEditEnter();
 

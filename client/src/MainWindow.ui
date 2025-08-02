@@ -520,6 +520,11 @@
                     <string>2人</string>
                    </property>
                   </item>
+                  <item>
+                   <property name="text">
+                    <string>1人</string>
+                   </property>
+                  </item>
                  </widget>
                 </item>
                 <item>
@@ -646,7 +651,7 @@
                 <item>
                  <widget class="QPushButton" name="PreparePageExitButton">
                   <property name="text">
-                   <string>返回</string>
+                   <string>退出房间</string>
                   </property>
                  </widget>
                 </item>

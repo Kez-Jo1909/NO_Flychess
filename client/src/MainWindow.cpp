@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->StartExitButton, &QPushButton::clicked, this, &MainWindow::onSettingExitClicked);
     connect(ui->SettingReButton, &QPushButton::clicked, this, &MainWindow::onSettingReButtonClicked);
     connect(ui->SettingSaveButton, &QPushButton::clicked, this, &MainWindow::onSettingSaveButtonClicked);
-    connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
+    // connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
     connect(ui->CreateGameButton, &QPushButton::clicked, this, &MainWindow::onCreateGameButtonClicked);
     // connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
     connect(ui->UrlEdit, &QLineEdit::returnPressed, this, &MainWindow::UrlEditEnter);
@@ -146,6 +146,7 @@ void MainWindow::onConnected() {
         ui->ifAiCheckBox->setEnabled(true);
         ui->PreparePageStartButton->setText("开始游戏");
         connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
+        connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
         ui->stackedWidget->setCurrentIndex(3);
     } else {
         ui->PlayerCountBox->setEnabled(false);
@@ -154,6 +155,7 @@ void MainWindow::onConnected() {
         ui->ifAiCheckBox->setEnabled(false);
         ui->PreparePageStartButton->setText("准备");
         connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
+        connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonUserClicked);
         ui->stackedWidget->setCurrentIndex(3);
     }
 }
@@ -167,6 +169,7 @@ void MainWindow::onDisconnected() {
     }
 
     if (!is_server) {
+        client_->close();
         QMessageBox::warning(this, "提示", "连接失败或已断开！\n 即将返回上一个界面");
         ui->stackedWidget->setCurrentIndex(2);
     }
@@ -221,7 +224,20 @@ void MainWindow::onCreateGameButtonClicked() {
     }).detach();
 }
 
+void MainWindow::onPreparePageExitButtonUserClicked() {
+    auto reply = QMessageBox::question(
+        this,
+        "返回确认",
+        "确定要退出房间吗？",
+        QMessageBox::Yes | QMessageBox::No
+    );
 
+    if (reply == QMessageBox::Yes) {
+        client_->close();
+        ui->stackedWidget->setCurrentIndex(2);   
+        ui->RoomListWidget->clear();
+    }
+}
 
 
 void MainWindow::onPreparePageExitButtonClicked() {
