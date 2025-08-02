@@ -77,6 +77,17 @@ void FlycehssServer::handleMessage(const ix::WebSocketMessagePtr& msg, const std
                     std::string user_name = j.at("name");
                     int color = game_room_->getPlayerCount();
                     game_room_->addPlayer(flychess_game::PlayerInfo(static_cast<game_utils::Color>(color + 1), "player", std::stoi(client_id)));
+
+                    nlohmann::json ret_msg;
+                    ret_msg["type"] = "new_player";
+                    ret_msg["color"] = std::to_string(color + 1);
+                    ret_msg["name"] = user_name;
+                    this->BroadCast(ret_msg.dump());
+
+                    nlohmann::json register_msg;
+                    register_msg["type"] = "register_ret";
+                    register_msg["color"] = std::to_string(color + 1);
+                    this->sendToClient(client_id, ret_msg.dump());
                 }
                 else {
                     std::cout<< "未知消息类型,内容:";
