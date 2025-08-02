@@ -116,7 +116,7 @@ void MainWindow::onPreparePageStartButtonClicked() {
     );
 
     if (reply == QMessageBox::Yes) {
-
+        // TODO : 发出开始游戏信号
     }
 }
 
@@ -138,13 +138,15 @@ void MainWindow::onConnected() {
         connectingBox_->close();
         connectingBox_ = nullptr;
     }
-    QMessageBox::information(this, "提示", "连接服务器成功！");
+    // QMessageBox::information(this, "提示", "连接服务器成功！");
     if (is_server) {
         ui->PlayerCountBox->setEnabled(true);
         ui->ChessCountBox->setEnabled(true);
         ui->ifCardCheckBox->setEnabled(true);
         ui->ifAiCheckBox->setEnabled(true);
         ui->PreparePageStartButton->setText("开始游戏");
+        disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
+        disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
         connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
         connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
         ui->stackedWidget->setCurrentIndex(3);
@@ -154,10 +156,14 @@ void MainWindow::onConnected() {
         ui->ifCardCheckBox->setEnabled(false);
         ui->ifAiCheckBox->setEnabled(false);
         ui->PreparePageStartButton->setText("准备");
+        disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
+        disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonUserClicked);
         connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
         connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonUserClicked);
         ui->stackedWidget->setCurrentIndex(3);
     }
+    // 准备发送用户信息
+    client_->sendUserInfo("player");
 }
 
 void MainWindow::onDisconnected() {
@@ -213,8 +219,6 @@ void MainWindow::onCreateGameButtonClicked() {
             // 这里发起本地客户端连接
             client_->connectToServer("ws://127.0.0.1:8080");
             // game_ = new flychess_game::FlychessGame();
-            game_room_ = new flychess_game::FlychessGameRoom();
-            game_room_ -> addPlayer(flychess_game::PlayerInfo(game_utils::Color::RED, "player", 0));
 
             QMetaObject::invokeMethod(this, [this]() {
                 ui->RoomListWidget->addItem("system: 创建游戏成功,服务器已建立");
@@ -244,7 +248,7 @@ void MainWindow::onPreparePageExitButtonClicked() {
     auto reply = QMessageBox::question(
         this,
         "返回确认",
-        "确定要退出房间吗？",
+        "确定要退出并解散房间吗？",
         QMessageBox::Yes | QMessageBox::No
     );
 

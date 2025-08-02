@@ -46,11 +46,19 @@ namespace flychess_client {
     void FlychessClient::close() {
         ws_.close();
         ws_.stop();
-        std::cout << "客户端主动断开连接" << std::endl;
+        // std::cout << "客户端主动断开连接" << std::endl;
     }
 
     void FlychessClient::disconnectFromServer() {
         ws_.stop();
+    }
+
+    void FlychessClient::sendUserInfo(const std::string user_name) {
+        nlohmann::json msg;
+        msg["type"] = "userInfo";
+        msg["name"] = user_name;
+
+        ws_.send(msg.dump());
     }
 
 

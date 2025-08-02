@@ -7,6 +7,8 @@
 #include <memory>
 #include <unordered_map>
 #include <nlohmann/json.hpp>
+#include "game.h"
+#include "utils.h"
 
 namespace flychess_server{
 
@@ -34,6 +36,10 @@ private:
     void sendDiceNum(int dice_num_, const std::string& client_id);
     void sendToClient(const std::string& client_id, const std::string msg);
     void BroadCast(const std::string& msg);
+
+    flychess_game::FlychessGame *game_; // 游戏实例
+    flychess_game::FlychessGameRoom *game_room_; // 游戏房间实例
+
 };
 
 }

@@ -25,6 +25,8 @@ public:
     void sendMessage(const std::string& message);
 
     void disconnectFromServer();
+
+    void sendUserInfo(const std::string user_name);
 signals:
     void connected();
     void disconnected();

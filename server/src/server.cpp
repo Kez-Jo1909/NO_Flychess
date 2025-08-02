@@ -32,7 +32,9 @@ FlycehssServer::FlycehssServer(int port, QObject* parent)
                 }, Qt::QueuedConnection);
             }
         }
-    );  
+    );
+    game_room_ = new flychess_game::FlychessGameRoom();
+    // game_room_ -> addPlayer(flychess_game::PlayerInfo(game_utils::Color::RED, "player", 0)); 
 }
 
 void FlycehssServer::stop() {
@@ -71,8 +73,14 @@ void FlycehssServer::handleMessage(const ix::WebSocketMessagePtr& msg, const std
                     int dice_result = flychess_game::rollDice();
                     sendDiceNum(dice_result, client_id);
                 }
+                else if (type == "userInfo") {
+                    std::string user_name = j.at("name");
+                    int color = game_room_->getPlayerCount();
+                    game_room_->addPlayer(flychess_game::PlayerInfo(static_cast<game_utils::Color>(color + 1), "player", std::stoi(client_id)));
+                }
                 else {
-                    std::cout<< "未知消息类型" << std::endl;
+                    std::cout<< "未知消息类型,内容:";
+                    std::cout<< msg_text << std::endl;
                 }   
             }
             catch (const std::exception& e) {
