@@ -25,6 +25,16 @@ inline std::string colorToString(Color c) {
     }
 }
 
+inline std::string colorIntToString(int c) {
+    switch(c) {
+        case 0: return "RED";
+        case 1: return "BLUE";
+        case 2: return "GREEN";
+        case 3: return "YELLOW";
+        default: return "UNDEFINED";
+    }
+}
+
 /**
  * @name get_random
  * @brief Generates a random number within the specified range.

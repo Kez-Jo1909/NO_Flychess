@@ -7,6 +7,8 @@
 #include <QUrl>
 #include <QTimer>
 #include <QDesktopServices>
+#include <QVariant>
+#include <QList>
 #include "game.h"
 #include "server.h"
 #include "client.h"
@@ -52,6 +54,7 @@ private slots:
 
     void onNewPlayerJoined(QString name, game_utils::Color color);
     void onRegisterResult(game_utils::Color color);
+    void onPlayerListUpdated(const QList<QVariantList>& players);
 private:
     // void repositionStartMenu();
 

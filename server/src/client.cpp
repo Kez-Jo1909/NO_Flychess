@@ -33,7 +33,7 @@ namespace flychess_client {
             }
             else if (msg->type == ix::WebSocketMessageType::Message)
             {
-                std::cout << "[DEBUG] msg->str=" << msg->str << " size=" << msg->wireSize << std::endl;
+                // std::cout << "[DEBUG] msg->str=" << msg->str << " size=" << msg->wireSize << std::endl;
                 QString qmsg = QString::fromStdString(msg->str);
                 const std::string& msg_text = msg->str;
                 if (!msg_text.empty() && (msg_text[0] == '{' || msg_text[0] == '[')) {
@@ -60,6 +60,23 @@ namespace flychess_client {
                             QMetaObject::invokeMethod(this, [this, new_player_name, new_player_color]() {
                                 emit newPlayerJoined(QString::fromStdString(new_player_name),
                                                      static_cast<game_utils::Color>(std::stoi(new_player_color)));
+                            }, Qt::QueuedConnection);
+                        }
+                        else if(type == "update_player_list") {
+                            QList<QVariantList> players;
+                            for (auto& player : j["players"]) {
+                                std::string name = player.at("name");
+                                int colorInt = player.at("color");
+                                bool is_ready = player.at("if_prepared");
+                                players.append(QVariantList{
+                                    QString::fromStdString(name),
+                                    colorInt,
+                                    is_ready
+                                });
+                            }
+                            // 发信号给 Qt 主线程
+                            QMetaObject::invokeMethod(this, [this, players = std::move(players)]() {
+                                emit playerListUpdated(players);
                             }, Qt::QueuedConnection);
                         }
                         else {

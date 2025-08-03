@@ -460,6 +460,25 @@
       <widget class="QWidget" name="PreparePage">
        <layout class="QVBoxLayout" name="verticalLayout_PreparePage">
         <item>
+         <widget class="QTableWidget" name="RoomTableWidget">
+          <column>
+           <property name="text">
+            <string>ID</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>颜色</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>准备</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item>
          <spacer name="verticalSpacer_3">
           <property name="orientation">
            <enum>Qt::Vertical</enum>

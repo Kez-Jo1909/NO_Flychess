@@ -37,6 +37,8 @@ private:
     void sendToClient(const std::string& client_id, const std::string msg);
     void BroadCast(const std::string& msg);
 
+    void BroadCastPlayerList();
+
     flychess_game::FlychessGame *game_; // 游戏实例
     flychess_game::FlychessGameRoom *game_room_; // 游戏房间实例
 

@@ -3,6 +3,9 @@
 #pragma once
 #include <ixwebsocket/IXWebSocketServer.h>
 #include <iostream>
+#include <QVariant>
+#include <QString>
+#include <QList>
 #include <memory>
 #include <thread>
 #include <chrono>
@@ -35,6 +38,7 @@ signals:
     void registerResult(game_utils::Color color);
     void newPlayerJoined(QString name, game_utils::Color color);
     void unknownMessage(QString msg);
+    void playerListUpdated(QList<QVariantList> players);
 private:
     ix::WebSocket ws_;
 

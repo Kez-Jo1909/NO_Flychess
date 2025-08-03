@@ -36,6 +36,10 @@ public:
     int getPlayerCount() const {
         return players.size();
     }
+
+    PlayerInfo getPlayer(int index) {
+        return players[index];
+    }
 private:
     int player_count = 4; // 玩家数量
     int chess_count_per_player = 4;

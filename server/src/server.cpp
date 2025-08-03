@@ -89,6 +89,8 @@
                         register_msg["color"] = std::to_string(color);
                         this->sendToClient(client_id, register_msg.dump());
                         std::cout << "[Server] 广播 add_player_broadcast: " << std::endl;
+
+                        this->BroadCastPlayerList();
                     }
                     else {
                         std::cout<< "未知消息类型,内容:";
@@ -154,6 +156,22 @@
             }
         }
     }
+
+    void FlycehssServer::BroadCastPlayerList() {
+        nlohmann::json player_list_json;
+        player_list_json["type"] = "update_player_list";
+        int current_player_num = game_room_->getPlayerCount();
+        for(int i = 0;  i < current_player_num; i++) {
+            const auto& player = game_room_->getPlayer(i);
+            player_list_json["players"].push_back({
+                {"name", player.player_name},
+                {"color", static_cast<int>(player.color)},
+                {"if_prepared", player.if_prepared}
+            });
+        }
+        this->BroadCast(player_list_json.dump());
+    }
+
 
     bool FlycehssServer::start() {
         auto res = server_->listen();

@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow) {
     ui->setupUi(this);
     ui->RoomListTableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->RoomTableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     // 创建客户端实例
     client_ = new flychess_client::FlychessClient(this);
@@ -35,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(client_, &FlychessClient::newPlayerJoined, this, &MainWindow::onNewPlayerJoined);
     connect(client_, &FlychessClient::registerResult, this, &MainWindow::onRegisterResult);
+    connect(client_, &FlychessClient::playerListUpdated, this, &MainWindow::onPlayerListUpdated);
+
 
 
     // 初始化定时器
@@ -50,14 +53,15 @@ MainWindow::~MainWindow() {
 
 void MainWindow::onNewPlayerJoined(QString name, game_utils::Color color) {
     std::string color_str = game_utils::colorToString(color);
-    QString message = QString("新玩家加入: %1, 颜色: %2").arg(name, QString::fromStdString(color_str));
+    QString message = QString("system: %1进入房间, 颜色: %2").arg(name, QString::fromStdString(color_str));
     ui->RoomListWidget->addItem(message);   
 }
 
 void MainWindow::onRegisterResult(game_utils::Color color) {
     this->user_color_ = color;
     std::string color_str = game_utils::colorToString(color);
-    QString message = QString("注册成功, 颜色: %1").arg(QString::fromStdString(color_str));
+    QString message = QString("system: 当前颜色: %1").arg(QString::fromStdString(color_str));
+    ui->RoomListWidget->addItem(message);  
 }
 
 void MainWindow::showAboutDialog() {
@@ -89,6 +93,42 @@ void MainWindow::showAboutDialog() {
 
     msgBox.exec();
 }
+
+void MainWindow::onPlayerListUpdated(const QList<QVariantList>& players) {
+    // 清空表格
+    ui->RoomTableWidget->setRowCount(0);
+
+    // 遍历玩家列表
+    int row = 0;
+    for (const QVariantList& player : players) {
+        // 确保 player 里有三列：[name(QString), colorInt(int), is_ready(bool)]
+        if (player.size() < 3) continue;
+
+        QString name = player[0].toString();
+        int colorInt = player[1].toInt();
+        bool isReady = player[2].toBool();
+
+        // 插入新行
+        ui->RoomTableWidget->insertRow(row);
+
+        // ID 列（这里我理解你想显示玩家名字）
+        ui->RoomTableWidget->setItem(row, 0, new QTableWidgetItem(name));
+
+        // 颜色列（转换成字符串）
+        std::string colorStr = game_utils::colorIntToString(colorInt);
+        QString colorQStr = QString::fromStdString(colorStr);
+        ui->RoomTableWidget->setItem(row, 1, new QTableWidgetItem(colorQStr));
+
+        // 准备列
+        ui->RoomTableWidget->setItem(row, 2, new QTableWidgetItem(isReady ? "已准备" : "未准备"));
+
+        row++;
+    }
+}
+
+
+
+
 
 void MainWindow::UrlEditEnter() {
     QString url = ui->UrlEdit->text().trimmed();
@@ -139,6 +179,7 @@ void MainWindow::onPreparePageStartButtonClicked() {
 void MainWindow::onPreparePagePrepareButtonClicked() {
     if(prepared){
         ui->PreparePageStartButton->setText("准备");
+        // TODO : 发出准备信号
     } else {
         ui->PreparePageStartButton->setText("取消准备");
         // TODO : 发出准备信号
