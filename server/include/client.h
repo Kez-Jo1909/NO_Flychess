@@ -31,6 +31,9 @@ public:
     void disconnectFromServer();
 
     void sendUserInfo(const std::string user_name);
+
+    void sendGetPrepared();
+    void sendGetUnPrepared();
 signals:
     void connected();
     void disconnected();

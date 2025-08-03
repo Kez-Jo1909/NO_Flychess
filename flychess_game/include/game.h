@@ -40,6 +40,9 @@ public:
     PlayerInfo getPlayer(int index) {
         return players[index];
     }
+
+    void setPrepared(int web_id);
+    void setUnPrepared(int web_id);
 private:
     int player_count = 4; // 玩家数量
     int chess_count_per_player = 4;

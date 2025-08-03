@@ -179,10 +179,10 @@ void MainWindow::onPreparePageStartButtonClicked() {
 void MainWindow::onPreparePagePrepareButtonClicked() {
     if(prepared){
         ui->PreparePageStartButton->setText("准备");
-        // TODO : 发出准备信号
+        this->client_->sendGetUnPrepared();
     } else {
         ui->PreparePageStartButton->setText("取消准备");
-        // TODO : 发出准备信号
+        this->client_->sendGetPrepared();
     }
     prepared = !prepared;
 }
@@ -221,6 +221,11 @@ void MainWindow::onConnected() {
     }
     // 准备发送用户信息
     client_->sendUserInfo("player");
+
+    if(server_) {
+        // 默认准备
+        this->client_->sendGetPrepared();
+    }
 }
 
 void MainWindow::onDisconnected() {

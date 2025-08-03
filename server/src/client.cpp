@@ -119,4 +119,16 @@ namespace flychess_client {
         ws_.send(msg.dump());
     }
 
+    void FlychessClient::sendGetPrepared() {
+        nlohmann::json msg;
+        msg["type"] = "get_prepared";
+        ws_.send(msg.dump());
+    }
+
+    void FlychessClient::sendGetUnPrepared() {
+        nlohmann::json msg;
+        msg["type"] = "get_unprepared";
+        ws_.send(msg.dump());
+    }
+
 }

@@ -92,10 +92,18 @@
 
                         this->BroadCastPlayerList();
                     }
+                    else if(type == "get_prepared") {
+                        this->game_room_->setPrepared(std::stoi(client_id));
+                        BroadCastPlayerList();
+                    }
+                    else if(type == "get_unprepared") {
+                        this->game_room_->setUnPrepared(std::stoi(client_id));
+                        BroadCastPlayerList();
+                    }
                     else {
                         std::cout<< "未知消息类型,内容:";
                         std::cout<< msg_text << std::endl;
-                    }   
+                    }
                 }
                 catch (const std::exception& e) {
                     std::cerr << "[JSON Parse Error] " << e.what() << std::endl;

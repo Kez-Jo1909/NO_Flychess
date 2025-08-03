@@ -6,6 +6,27 @@ namespace flychess_game {
         std::cout << "Player added: " << p_info.player_name << ", Color: " << static_cast<int>(p_info.color) << std::endl;
     }
 
+    void FlychessGameRoom::setPrepared(int web_id) {
+        for (auto& player : players) {
+            if (player.websocket_id == web_id) {
+                player.if_prepared = true;
+                // std::cout << "Player " << player.player_name << " is now prepared." << std::endl;
+                return;
+            }
+        }
+        std::cerr << "Player with websocket ID " << web_id << " not found." << std::endl;
+    }
+
+    void FlychessGameRoom::setUnPrepared(int web_id) {
+        for (auto& player : players) {
+            if (player.websocket_id == web_id) {
+                player.if_prepared = false;
+                // std::cout << "Player " << player.player_name << " is now prepared." << std::endl;
+                return;
+            }
+        }
+        std::cerr << "Player with websocket ID " << web_id << " not found." << std::endl;
+    }
 
     void FlychessGame::AddNewPlayer(game_utils::Color color, int chess_piece_count) {
         players.emplace_back(color, chess_piece_count);
