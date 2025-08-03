@@ -8,6 +8,7 @@
 #include <chrono>
 #include <QObject>
 #include <nlohmann/json.hpp>
+#include "utils.h"
 
 
 namespace flychess_client {
@@ -31,8 +32,13 @@ signals:
     void connected();
     void disconnected();
     void messageReceived(QString msg);  // 发给 Qt 的信号
+    void registerResult(game_utils::Color color);
+    void newPlayerJoined(QString name, game_utils::Color color);
+    void unknownMessage(QString msg);
 private:
     ix::WebSocket ws_;
+
+    game_utils::Color user_color_;
 };
 
 }

@@ -49,6 +49,9 @@ private slots:
 
     void onPreparePageStartButtonClicked();
     void onPreparePagePrepareButtonClicked();
+
+    void onNewPlayerJoined(QString name, game_utils::Color color);
+    void onRegisterResult(game_utils::Color color);
 private:
     // void repositionStartMenu();
 
@@ -67,14 +70,13 @@ private:
     // 直接在类内声明客户端实例
     flychess_client::FlychessClient *client_;
 
-    flychess_game::FlychessGame *game_; // 游戏实例
-    flychess_game::FlychessGameRoom *game_room_; // 游戏房间实例
-
     QMessageBox* connectingBox_ = nullptr;  // “正在连接”提示框
     QTimer* connectTimer_ = nullptr;        // 连接超时定时器
 
     bool is_server = false;
     bool prepared = false;
+
+    game_utils::Color user_color_ = game_utils::Color::UNDEFINED; // 默认颜色
 };
 
 }// namespace flychess_client

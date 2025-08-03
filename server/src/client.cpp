@@ -10,6 +10,10 @@ namespace flychess_client {
     }
 
     void FlychessClient::connectToServer(const std::string &url) {
+        std::cout<<"调用 connectToServer, url: " << url << std::endl;
+        ws_.stop();  // 先停掉旧连接，防止重复
+
+
         ws_.setUrl(url);
 
             // 注册消息回调
@@ -29,10 +33,47 @@ namespace flychess_client {
             }
             else if (msg->type == ix::WebSocketMessageType::Message)
             {
+                std::cout << "[DEBUG] msg->str=" << msg->str << " size=" << msg->wireSize << std::endl;
                 QString qmsg = QString::fromStdString(msg->str);
-                QMetaObject::invokeMethod(this, [this, qmsg]() {
-                    emit messageReceived(qmsg);
-                }, Qt::QueuedConnection);
+                const std::string& msg_text = msg->str;
+                if (!msg_text.empty() && (msg_text[0] == '{' || msg_text[0] == '[')) {
+                    try {
+                        auto j = nlohmann::json::parse(msg->str);
+                        std::string type = j.at("type");
+
+                        if (type == "register_ret") {
+                            std::string color = j.at("color");
+                            this->user_color_ = static_cast<game_utils::Color>(std::stoi(color));
+
+                            // 发信号给 Qt 主线程
+                            QMetaObject::invokeMethod(this, [this]() {
+                                emit registerResult(this->user_color_);
+                            }, Qt::QueuedConnection);
+                        }
+                        else if(type == "add_player_broadcast") {
+                            std::string new_player_name = j.at("name");
+                            std::string new_player_color = j.at("color");
+                            // game_utils::Color color = static_cast<game_utils::Color>(std::stoi(new_player_color));
+                            // std::cout << "[DEBUG] 收到 add_player_broadcast: "
+                            //     << new_player_name << " color=" << new_player_color << std::endl;
+                            // 发信号给 Qt 主线程
+                            QMetaObject::invokeMethod(this, [this, new_player_name, new_player_color]() {
+                                emit newPlayerJoined(QString::fromStdString(new_player_name),
+                                                     static_cast<game_utils::Color>(std::stoi(new_player_color)));
+                            }, Qt::QueuedConnection);
+                        }
+                        else {
+                            std::cout<< "未知消息类型,内容:";
+                            std::cout<< msg_text << std::endl;
+                            // QMetaObject::invokeMethod(this, [this, msg_text]() {
+                            //     emit unknownMessage(QString::fromStdString(msg_text));
+                            // }, Qt::QueuedConnection);
+                        }
+                    }
+                    catch(const std::exception& e) {
+                        std::cerr << "[JSON Parse Error] " << e.what() << std::endl;
+                    }
+                }
             }
         });
 
@@ -60,21 +101,5 @@ namespace flychess_client {
 
         ws_.send(msg.dump());
     }
-
-
-// GPT写的示例，先扔在这
-//     // 回调线程
-// ws_.setOnMessageCallback([this](const ix::WebSocketMessagePtr &msg) {
-//     if (msg->type == ix::WebSocketMessageType::Message) {
-//         // 先在回调线程解析 JSON 或做逻辑处理
-//         std::string reply = handleMessage(msg->str);
-
-//         // 最后只把 UI 相关事件投递回 Qt 主线程
-//         QString qmsg = QString::fromStdString(reply);
-//         QMetaObject::invokeMethod(this, [this, qmsg]() {
-//             emit messageReceived(qmsg);
-//         }, Qt::QueuedConnection);
-//     }
-// });
 
 }

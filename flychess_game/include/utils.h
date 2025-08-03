@@ -15,6 +15,16 @@ enum class Color {
     YELLOW = 3
 };
 
+inline std::string colorToString(Color c) {
+    switch (c) {
+        case Color::RED:      return "RED";
+        case Color::BLUE:     return "BLUE";
+        case Color::GREEN:    return "GREEN";
+        case Color::YELLOW:   return "YELLOW";
+        default:              return "UNDEFINED";
+    }
+}
+
 /**
  * @name get_random
  * @brief Generates a random number within the specified range.

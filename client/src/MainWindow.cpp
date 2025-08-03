@@ -33,6 +33,10 @@ MainWindow::MainWindow(QWidget *parent)
     // 绑定菜单栏-关于
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::showAboutDialog);
 
+    connect(client_, &FlychessClient::newPlayerJoined, this, &MainWindow::onNewPlayerJoined);
+    connect(client_, &FlychessClient::registerResult, this, &MainWindow::onRegisterResult);
+
+
     // 初始化定时器
     connectTimer_ = new QTimer(this);
     connectTimer_->setSingleShot(true);  // 只触发一次
@@ -42,6 +46,18 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow() {
     delete ui;
+}
+
+void MainWindow::onNewPlayerJoined(QString name, game_utils::Color color) {
+    std::string color_str = game_utils::colorToString(color);
+    QString message = QString("新玩家加入: %1, 颜色: %2").arg(name, QString::fromStdString(color_str));
+    ui->RoomListWidget->addItem(message);   
+}
+
+void MainWindow::onRegisterResult(game_utils::Color color) {
+    this->user_color_ = color;
+    std::string color_str = game_utils::colorToString(color);
+    QString message = QString("注册成功, 颜色: %1").arg(QString::fromStdString(color_str));
 }
 
 void MainWindow::showAboutDialog() {

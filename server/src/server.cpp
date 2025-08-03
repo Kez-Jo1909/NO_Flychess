@@ -1,170 +1,171 @@
-#include "../include/server.h"
-#include <QMetaObject>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include "game.h"
+    #include "../include/server.h"
+    #include <QMetaObject>
+    #include <QJsonDocument>
+    #include <QJsonObject>
+    #include "game.h"
 
-namespace flychess_server {
+    namespace flychess_server {
 
-FlycehssServer::FlycehssServer(int port, QObject* parent)
-    : QObject(parent), port_(port), server_(std::make_unique<ix::WebSocketServer>(port)) 
-{
-    // 初始连接回调
-    server_->setOnConnectionCallback(
-        [this](std::weak_ptr<ix::WebSocket> weakWebSocket,
-               std::shared_ptr<ix::ConnectionState> connectionState)
-        {
-            std::cout << "New connection received." << std::endl;
-            if(connectionState) {
-                std::string client_id = connectionState->getId();
-                std::string ip = connectionState->getRemoteIp();
-                std::cout << "Client ID: " << client_id << ", IP: " << ip << std::endl;
-            
-                if (auto webSocket = weakWebSocket.lock()) {
-                    clients_[client_id] = webSocket;  // 保存映射
-                    setupMessageCallback(webSocket, client_id);
+    FlycehssServer::FlycehssServer(int port, QObject* parent)
+        : QObject(parent), port_(port), server_(std::make_unique<ix::WebSocketServer>(port)) 
+    {
+        // 初始连接回调
+        server_->setOnConnectionCallback(
+            [this](std::weak_ptr<ix::WebSocket> weakWebSocket,
+                std::shared_ptr<ix::ConnectionState> connectionState)
+            {
+                std::cout << "New connection received." << std::endl;
+                if(connectionState) {
+                    std::string client_id = connectionState->getId();
+                    std::string ip = connectionState->getRemoteIp();
+                    std::cout << "Client ID: " << client_id << ", IP: " << ip << std::endl;
+                
+                    if (auto webSocket = weakWebSocket.lock()) {
+                        clients_[client_id] = webSocket;  // 保存映射
+                        setupMessageCallback(webSocket, client_id);
+                    }
+
+                    // 发射 Qt 信号
+                    QMetaObject::invokeMethod(this, [this, client_id, ip]() {
+                        emit clientConnected(QString::fromStdString(client_id),
+                                            QString::fromStdString(ip));
+                    }, Qt::QueuedConnection);
                 }
-
-                // 发射 Qt 信号
-                QMetaObject::invokeMethod(this, [this, client_id, ip]() {
-                    emit clientConnected(QString::fromStdString(client_id),
-                                         QString::fromStdString(ip));
-                }, Qt::QueuedConnection);
             }
-        }
-    );
-    game_room_ = new flychess_game::FlychessGameRoom();
-    // game_room_ -> addPlayer(flychess_game::PlayerInfo(game_utils::Color::RED, "player", 0)); 
-}
-
-void FlycehssServer::stop() {
-    if (server_) {
-        server_->stop();     
+        );
+        game_room_ = new flychess_game::FlychessGameRoom();
+        // game_room_ -> addPlayer(flychess_game::PlayerInfo(game_utils::Color::RED, "player", 0)); 
     }
-}
 
-void FlycehssServer::setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket, const std::string& client_id) {
-    webSocket->setOnMessageCallback(
-        [this, client_id](const ix::WebSocketMessagePtr& msg) {
-            handleMessage(msg, client_id);
+    void FlycehssServer::stop() {
+        if (server_) {
+            server_->stop();     
         }
-    );
-}
+    }
 
-void FlycehssServer::handleMessage(const ix::WebSocketMessagePtr& msg, const std::string& client_id) {
-    if (msg->type == ix::WebSocketMessageType::Message) {
-        std::cout << "收到来自ID [" << client_id << "] 的消息: ";
-        const std::string& msg_text = msg->str;
-        if (!msg_text.empty() && (msg_text[0] == '{' || msg_text[0] == '[')) {
-            try {
-                auto j = nlohmann::json::parse(msg->str);
-                std::string type = j.at("type");
+    void FlycehssServer::setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket, const std::string& client_id) {
+        webSocket->setOnMessageCallback(
+            [this, client_id](const ix::WebSocketMessagePtr& msg) {
+                handleMessage(msg, client_id);
+            }
+        );
+    }
 
-                // 通过 Qt 信号通知
-                QMetaObject::invokeMethod(this, [this, client_id, j]() {
-                    QJsonObject obj = QJsonDocument::fromJson(
-                        QByteArray::fromStdString(j.dump())
-                    ).object();
-                    emit jsonReceived(QString::fromStdString(client_id), obj);
+    void FlycehssServer::handleMessage(const ix::WebSocketMessagePtr& msg, const std::string& client_id) {
+        if (msg->type == ix::WebSocketMessageType::Message) {
+            std::cout << "收到来自ID [" << client_id << "] 的消息: ";
+            const std::string& msg_text = msg->str;
+            if (!msg_text.empty() && (msg_text[0] == '{' || msg_text[0] == '[')) {
+                try {
+                    auto j = nlohmann::json::parse(msg->str);
+                    std::string type = j.at("type");
+
+                    // // 通过 Qt 信号通知
+                    // QMetaObject::invokeMethod(this, [this, client_id, j]() {
+                    //     QJsonObject obj = QJsonDocument::fromJson(
+                    //         QByteArray::fromStdString(j.dump())
+                    //     ).object();
+                    //     emit jsonReceived(QString::fromStdString(client_id), obj);
+                    // }, Qt::QueuedConnection);
+
+                    if (type == "rolldice") {
+                        std::cout<< "rolldice request from player " << j["playerId"] << std::endl;
+                        int dice_result = flychess_game::rollDice();
+                        sendDiceNum(dice_result, client_id);
+                    }
+                    else if (type == "userInfo") {
+                        std::string user_name = j.at("name");
+                        int color = game_room_->getPlayerCount();
+                        game_room_->addPlayer(flychess_game::PlayerInfo(static_cast<game_utils::Color>(color), "player", std::stoi(client_id)));
+
+                        nlohmann::json ret_msg;
+                        ret_msg["type"] = "add_player_broadcast";
+                        ret_msg["color"] = std::to_string(color);
+                        ret_msg["name"] = user_name;
+                        this->BroadCast(ret_msg.dump());
+
+                        nlohmann::json register_msg;
+                        register_msg["type"] = "register_ret";
+                        register_msg["color"] = std::to_string(color);
+                        this->sendToClient(client_id, register_msg.dump());
+                        std::cout << "[Server] 广播 add_player_broadcast: " << std::endl;
+                    }
+                    else {
+                        std::cout<< "未知消息类型,内容:";
+                        std::cout<< msg_text << std::endl;
+                    }   
+                }
+                catch (const std::exception& e) {
+                    std::cerr << "[JSON Parse Error] " << e.what() << std::endl;
+                }
+            } else {
+                std::cout<<"non-json message: " << msg->str << std::endl;
+
+                // 发射普通文本消息信号
+                QMetaObject::invokeMethod(this, [this, client_id, msg_text]() {
+                    emit messageReceived(QString::fromStdString(client_id),
+                                        QString::fromStdString(msg_text));
                 }, Qt::QueuedConnection);
-
-                if (type == "rolldice") {
-                    std::cout<< "rolldice request from player " << j["playerId"] << std::endl;
-                    int dice_result = flychess_game::rollDice();
-                    sendDiceNum(dice_result, client_id);
-                }
-                else if (type == "userInfo") {
-                    std::string user_name = j.at("name");
-                    int color = game_room_->getPlayerCount();
-                    game_room_->addPlayer(flychess_game::PlayerInfo(static_cast<game_utils::Color>(color + 1), "player", std::stoi(client_id)));
-
-                    nlohmann::json ret_msg;
-                    ret_msg["type"] = "new_player";
-                    ret_msg["color"] = std::to_string(color + 1);
-                    ret_msg["name"] = user_name;
-                    this->BroadCast(ret_msg.dump());
-
-                    nlohmann::json register_msg;
-                    register_msg["type"] = "register_ret";
-                    register_msg["color"] = std::to_string(color + 1);
-                    this->sendToClient(client_id, ret_msg.dump());
-                }
-                else {
-                    std::cout<< "未知消息类型,内容:";
-                    std::cout<< msg_text << std::endl;
-                }   
             }
-            catch (const std::exception& e) {
-                std::cerr << "[JSON Parse Error] " << e.what() << std::endl;
-            }
-        } else {
-            std::cout<<"non-json message: " << msg->str << std::endl;
+        }
+        else if (msg->type == ix::WebSocketMessageType::Close) {
+            std::cout << "客户端 [" << client_id << "] 断开连接。" << std::endl;
+            clients_.erase(client_id);
 
-            // 发射普通文本消息信号
-            QMetaObject::invokeMethod(this, [this, client_id, msg_text]() {
-                emit messageReceived(QString::fromStdString(client_id),
-                                     QString::fromStdString(msg_text));
+            QMetaObject::invokeMethod(this, [this, client_id]() {
+                emit clientDisconnected(QString::fromStdString(client_id));
             }, Qt::QueuedConnection);
         }
     }
-    else if (msg->type == ix::WebSocketMessageType::Close) {
-        std::cout << "客户端 [" << client_id << "] 断开连接。" << std::endl;
-        clients_.erase(client_id);
 
-        QMetaObject::invokeMethod(this, [this, client_id]() {
-            emit clientDisconnected(QString::fromStdString(client_id));
-        }, Qt::QueuedConnection);
-    }
-}
+    void FlycehssServer::sendDiceNum(int dice_result, const std::string& client_id) {
+        nlohmann::json message_json;
+        message_json["type"] = "dice_result";
+        message_json["dice_result"] = dice_result;
 
-void FlycehssServer::sendDiceNum(int dice_result, const std::string& client_id) {
-    nlohmann::json message_json;
-    message_json["type"] = "dice_result";
-    message_json["dice_result"] = dice_result;
-
-    std::string message_str = message_json.dump();
-    if (server_) {
-        this->sendToClient(client_id, message_str);
-    } else {
-        std::cerr<< "server异常" << std::endl;
-    }
-}
-
-void FlycehssServer::sendToClient(const std::string& client_id, const std::string msg) {
-    auto it = clients_.find(client_id);
-
-    if (it != clients_.end() && it->second->getReadyState() == ix::ReadyState::Open) {
-        it->second->send(msg);
-        std::cout<<"消息已发送给客户端 [" << client_id << "]:" << msg << std::endl;
-    } else {
-        std::cerr << "Client [" << client_id << "] not found or not connected." << std::endl;
-    }
-}
-
-void FlycehssServer::BroadCast(const std::string& msg) {
-    for (const auto& [id, socket] : clients_)
-    {
-        if (socket->getReadyState() == ix::ReadyState::Open) {
-            socket->send(msg);
-            std::cout<< "消息已广播给客户端 [" << id << "]:" << msg << std::endl;
-        }
-        else {
-            std::cerr << "Client [" << id << "] is not connected." << std::endl;
+        std::string message_str = message_json.dump();
+        if (server_) {
+            this->sendToClient(client_id, message_str);
+        } else {
+            std::cerr<< "server异常" << std::endl;
         }
     }
-}
 
-bool FlycehssServer::start() {
-    auto res = server_->listen();
-    if (!res.first)
-    {
-        std::cerr << "Listen failed: " << res.second << std::endl;
-        return false;
+    void FlycehssServer::sendToClient(const std::string& client_id, const std::string msg) {
+        auto it = clients_.find(client_id);
+
+        if (it != clients_.end() && it->second->getReadyState() == ix::ReadyState::Open) {
+            it->second->send(msg);
+            std::cout<<"消息已发送给客户端 [" << client_id << "]:" << msg << std::endl;
+        } else {
+            std::cerr << "Client [" << client_id << "] not found or not connected." << std::endl;
+        }
     }
 
-    server_->start();
-    std::cout << "WebSocket server started on port " << port_ << std::endl;
-    return true;
-}
+    void FlycehssServer::BroadCast(const std::string& msg) {
+        for (const auto& [id, socket] : clients_)
+        {
+            if (socket->getReadyState() == ix::ReadyState::Open) {
+                socket->send(msg);
+                std::cout<< "消息已广播给客户端 [" << id << "]:" << msg << std::endl;
+            }
+            else {
+                std::cerr << "Client [" << id << "] is not connected." << std::endl;
+            }
+        }
+    }
 
-}
+    bool FlycehssServer::start() {
+        auto res = server_->listen();
+        if (!res.first)
+        {
+            std::cerr << "Listen failed: " << res.second << std::endl;
+            return false;
+        }
+
+        server_->start();
+        std::cout << "WebSocket server started on port " << port_ << std::endl;
+        return true;
+    }
+
+    }
