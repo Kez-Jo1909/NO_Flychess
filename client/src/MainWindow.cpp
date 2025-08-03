@@ -37,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::newPlayerJoined, this, &MainWindow::onNewPlayerJoined);
     connect(client_, &FlychessClient::registerResult, this, &MainWindow::onRegisterResult);
     connect(client_, &FlychessClient::playerListUpdated, this, &MainWindow::onPlayerListUpdated);
-
+    connect(client_, &FlychessClient::playerLeaveRoom, this, &MainWindow::onPlayerLeaveRoom);
 
 
     // 初始化定时器
@@ -55,6 +55,12 @@ void MainWindow::onNewPlayerJoined(QString name, game_utils::Color color) {
     std::string color_str = game_utils::colorToString(color);
     QString message = QString("system: %1进入房间, 颜色: %2").arg(name, QString::fromStdString(color_str));
     ui->RoomListWidget->addItem(message);   
+}
+
+void MainWindow::onPlayerLeaveRoom(QString name, game_utils::Color color) {
+    std::string color_str = game_utils::colorToString(color);
+    QString message = QString("system: %1(%2) 离开房间").arg(name, QString::fromStdString(color_str));
+    ui->RoomListWidget->addItem(message);  
 }
 
 void MainWindow::onRegisterResult(game_utils::Color color) {

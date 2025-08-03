@@ -42,6 +42,7 @@ signals:
     void newPlayerJoined(QString name, game_utils::Color color);
     void unknownMessage(QString msg);
     void playerListUpdated(QList<QVariantList> players);
+    void playerLeaveRoom(QString name, game_utils::Color color);
 private:
     ix::WebSocket ws_;
 

@@ -88,7 +88,7 @@
                         register_msg["type"] = "register_ret";
                         register_msg["color"] = std::to_string(color);
                         this->sendToClient(client_id, register_msg.dump());
-                        std::cout << "[Server] 广播 add_player_broadcast: " << std::endl;
+                        // std::cout << "[Server] 广播 add_player_broadcast: " << std::endl;
 
                         this->BroadCastPlayerList();
                     }
@@ -121,6 +121,19 @@
         else if (msg->type == ix::WebSocketMessageType::Close) {
             std::cout << "客户端 [" << client_id << "] 断开连接。" << std::endl;
             clients_.erase(client_id);
+
+            // 广播退出房间
+            nlohmann::json leave_msg;
+            leave_msg["type"] = "leave_room";
+            const auto& player_to_leave_info = game_room_->getPlayerByWebId(std::stoi(client_id));
+            int color_value = static_cast<int>(player_to_leave_info.color);
+            leave_msg["color"] = std::to_string(color_value);
+            leave_msg["name"] = player_to_leave_info.player_name;
+            this->BroadCast(leave_msg.dump());
+
+            // 删除房间内玩家信息
+            game_room_->DeletePlayer(std::stoi(client_id));
+            this->BroadCastPlayerList();
 
             QMetaObject::invokeMethod(this, [this, client_id]() {
                 emit clientDisconnected(QString::fromStdString(client_id));

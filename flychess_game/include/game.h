@@ -41,8 +41,19 @@ public:
         return players[index];
     }
 
+    PlayerInfo getPlayerByWebId(int web_id) {
+        for (const auto& player : players) {
+            if (player.websocket_id == web_id) {
+                return player;
+            }
+        }
+        throw std::runtime_error("Player not found with the given websocket ID.");
+    }
+
     void setPrepared(int web_id);
     void setUnPrepared(int web_id);
+
+    void DeletePlayer(int web_id);
 private:
     int player_count = 4; // 玩家数量
     int chess_count_per_player = 4;

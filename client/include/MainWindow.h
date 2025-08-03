@@ -55,6 +55,7 @@ private slots:
     void onNewPlayerJoined(QString name, game_utils::Color color);
     void onRegisterResult(game_utils::Color color);
     void onPlayerListUpdated(const QList<QVariantList>& players);
+    void onPlayerLeaveRoom(QString name, game_utils::Color color);
 private:
     // void repositionStartMenu();
 

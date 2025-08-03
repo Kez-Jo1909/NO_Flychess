@@ -79,6 +79,15 @@ namespace flychess_client {
                                 emit playerListUpdated(players);
                             }, Qt::QueuedConnection);
                         }
+                        else if(type == "leave_room"){
+                            std::string name = j.at("name");
+                            std::string color = j.at("color");
+
+                            QMetaObject::invokeMethod(this, [this, name, color]() {
+                                emit playerLeaveRoom(QString::fromStdString(name), 
+                                                    static_cast<game_utils::Color>(std::stoi(color)));
+                            }, Qt::QueuedConnection);
+                        }
                         else {
                             std::cout<< "未知消息类型,内容:";
                             std::cout<< msg_text << std::endl;

@@ -28,6 +28,23 @@ namespace flychess_game {
         std::cerr << "Player with websocket ID " << web_id << " not found." << std::endl;
     }
 
+    void FlychessGameRoom::DeletePlayer(int web_id) {
+        for (size_t i = 0; i < players.size(); ++i) {
+            if (players[i].websocket_id == web_id) {
+                // 删除当前元素
+                players.erase(players.begin() + i);
+
+                // 调整后续玩家的颜色
+                for (size_t j = i; j < players.size(); ++j) {
+                    int c = static_cast<int>(players[j].color);
+                    players[j].color = static_cast<game_utils::Color>(c - 1);
+                }
+
+                break; // 只删除一个，直接退出
+            }
+        }
+    }
+
     void FlychessGame::AddNewPlayer(game_utils::Color color, int chess_piece_count) {
         players.emplace_back(color, chess_piece_count);
     }
