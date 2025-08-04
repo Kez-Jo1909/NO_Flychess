@@ -88,6 +88,27 @@ namespace flychess_client {
                                                     static_cast<game_utils::Color>(std::stoi(color)));
                             }, Qt::QueuedConnection);
                         }
+                        else if(type == "update_pc_ret") {
+                            int new_pc = j.at("new_count");
+
+                            QMetaObject::invokeMethod(this,[this, new_pc](){
+                                emit updatePlayerCount(new_pc);
+                            }, Qt::QueuedConnection);
+                        }
+                        else if(type == "failed_pc_update") {
+                            int current_min_num = j.at("reason");
+
+                            QMetaObject::invokeMethod(this,[this, current_min_num](){
+                                emit updatePlayerCountFailed(current_min_num);
+                            }, Qt::QueuedConnection);
+                        }
+                        else if(type == "update_cc_ret") {
+                            int new_cc = j.at("new_count");
+
+                            QMetaObject::invokeMethod(this,[this, new_cc](){
+                                emit updateChessCount(new_cc);
+                            }, Qt::QueuedConnection);
+                        }
                         else {
                             std::cout<< "未知消息类型,内容:";
                             std::cout<< msg_text << std::endl;
@@ -114,6 +135,22 @@ namespace flychess_client {
         ws_.close();
         ws_.stop();
         // std::cout << "客户端主动断开连接" << std::endl;
+    }
+
+    void FlychessClient::sendPlayerCount(int num) {
+        nlohmann::json p_count_msg;
+        p_count_msg["type"] = "update_player_count";
+        p_count_msg["new_p_num"] = num;
+
+        this->sendMessage(p_count_msg.dump());
+    }
+
+    void FlychessClient::sendChessCount(int num) {
+        nlohmann::json c_count_msg;
+        c_count_msg["type"] = "update_chess_count";
+        c_count_msg["new_c_num"] = num;
+
+        this->sendMessage(c_count_msg.dump());
     }
 
     void FlychessClient::disconnectFromServer() {

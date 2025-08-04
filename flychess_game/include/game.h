@@ -27,14 +27,27 @@ public:
         chess_count_per_player = count;
     }
 
-    inline void setPlayerCount(int count) {
-        player_count = count;
+    inline bool setPlayerCount(int count) {
+        if (players.size() <= count) {
+            player_count = count;
+            return true;
+        }
+        else
+            return false;
     }
 
     void addPlayer(const PlayerInfo p_info);
 
     int getPlayerCount() const {
         return players.size();
+    }
+
+    int getMaxPlayerCount() const {
+        return player_count;
+    }
+
+    int getChessPerPlayer() const {
+        return chess_count_per_player;
     }
 
     PlayerInfo getPlayer(int index) {

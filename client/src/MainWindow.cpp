@@ -27,6 +27,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->CreateGameButton, &QPushButton::clicked, this, &MainWindow::onCreateGameButtonClicked);
     // connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
     connect(ui->UrlEdit, &QLineEdit::returnPressed, this, &MainWindow::UrlEditEnter);
+    connect(ui->PlayerCountBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onPlayerCountChanged);
+    connect(ui->ChessCountBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onChessCountChanged);
 
     connect(client_, &FlychessClient::connected,    this, &MainWindow::onConnected);
     connect(client_, &FlychessClient::disconnected, this, &MainWindow::onDisconnected);
@@ -38,7 +40,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::registerResult, this, &MainWindow::onRegisterResult);
     connect(client_, &FlychessClient::playerListUpdated, this, &MainWindow::onPlayerListUpdated);
     connect(client_, &FlychessClient::playerLeaveRoom, this, &MainWindow::onPlayerLeaveRoom);
-
+    connect(client_, &FlychessClient::updatePlayerCount, this, &MainWindow::onPlayerCountUpdate);
+    connect(client_, &FlychessClient::updateChessCount, this, &MainWindow::onChessCountUpdate);
+    connect(client_, &FlychessClient::updatePlayerCountFailed, this, &MainWindow::onPlayerCountUpdateFailed);
 
     // 初始化定时器
     connectTimer_ = new QTimer(this);
@@ -63,12 +67,53 @@ void MainWindow::onPlayerLeaveRoom(QString name, game_utils::Color color) {
     ui->RoomListWidget->addItem(message);  
 }
 
+void MainWindow::onPlayerCountUpdate(int num) {
+    int index = 4 - num;
+    if (index >= 0 && index < ui->PlayerCountBox->count()) {
+        ui->PlayerCountBox->setCurrentIndex(index);
+    }
+}
+
+void MainWindow::onChessCountUpdate(int num) {
+    int index = 4 - num;
+    if (index >= 0 && index < ui->ChessCountBox->count()) {
+        ui->ChessCountBox->setCurrentIndex(index);
+    }
+}
+
+void MainWindow::onPlayerCountUpdateFailed(int min_num) {
+    QMessageBox::warning(this,
+                         "错误",
+                         QString("当前房间已有 %1 人!").arg(min_num));
+}
+
 void MainWindow::onRegisterResult(game_utils::Color color) {
     this->user_color_ = color;
     std::string color_str = game_utils::colorToString(color);
     QString message = QString("system: 当前颜色: %1").arg(QString::fromStdString(color_str));
     ui->RoomListWidget->addItem(message);  
 }
+
+void MainWindow::onPlayerCountChanged(int index) {
+    // 通过索引获取文本，例如 "3人"
+    QString text = ui->PlayerCountBox->itemText(index);
+
+    // 去掉最后的“人”，并转为整数
+    int playerCount = text.left(text.length() - 1).toInt();
+
+    // qDebug() << "当前选择人数:" << playerCount;
+    client_->sendPlayerCount(playerCount);
+}
+
+void MainWindow::onChessCountChanged(int index) {
+    QString text = ui->ChessCountBox->itemText(index);
+
+    // 去掉最后的“子”，并转为整数
+    int chess_count = text.left(text.length() - 1).toInt();
+
+    client_->sendChessCount(chess_count);
+}
+
 
 void MainWindow::showAboutDialog() {
     QMessageBox msgBox(this);
@@ -272,7 +317,7 @@ void MainWindow::onCreateGameButtonClicked() {
 
     // ui->stackedWidget->setCurrentIndex(3);
 
-    server_ = std::make_unique<flychess_server::FlycehssServer>(8080);
+    server_ = std::make_unique<flychess_server::FlychessServer>(8080);
 
     std::thread([this] {
         bool server_ret = server_->start();

@@ -34,6 +34,9 @@ public:
 
     void sendGetPrepared();
     void sendGetUnPrepared();
+
+    void sendPlayerCount(int num);
+    void sendChessCount(int num);
 signals:
     void connected();
     void disconnected();
@@ -43,6 +46,9 @@ signals:
     void unknownMessage(QString msg);
     void playerListUpdated(QList<QVariantList> players);
     void playerLeaveRoom(QString name, game_utils::Color color);
+    void updatePlayerCount(int new_pc);
+    void updatePlayerCountFailed(int min_num);
+    void updateChessCount(int new_cc);
 private:
     ix::WebSocket ws_;
 

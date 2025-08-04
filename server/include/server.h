@@ -12,10 +12,10 @@
 
 namespace flychess_server{
 
-class FlycehssServer : public QObject {
+class FlychessServer : public QObject {
     Q_OBJECT
 public:
-    explicit FlycehssServer(int port = 8080, QObject* parent = nullptr);
+    explicit FlychessServer(int port = 8080, QObject* parent = nullptr);
 
     bool start();                     // 启动服务器
     void stop();                       // 停止服务器
@@ -38,6 +38,10 @@ private:
     void BroadCast(const std::string& msg);
 
     void BroadCastPlayerList();
+
+    void BroadCastPlayerCount();
+    void BroadCastChessCount();
+    void BoradCastRoomInfo();
 
     flychess_game::FlychessGame *game_; // 游戏实例
     flychess_game::FlychessGameRoom *game_room_; // 游戏房间实例

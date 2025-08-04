@@ -1,7 +1,7 @@
 #include "../include/server.h"
 
 int main() {
-    flychess_server::FlycehssServer server(8080);
+    flychess_server::FlychessServer server(8080);
 
     if (!server.start())
     {

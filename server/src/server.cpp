@@ -6,7 +6,7 @@
 
     namespace flychess_server {
 
-    FlycehssServer::FlycehssServer(int port, QObject* parent)
+    FlychessServer::FlychessServer(int port, QObject* parent)
         : QObject(parent), port_(port), server_(std::make_unique<ix::WebSocketServer>(port)) 
     {
         // 初始连接回调
@@ -37,13 +37,13 @@
         // game_room_ -> addPlayer(flychess_game::PlayerInfo(game_utils::Color::RED, "player", 0)); 
     }
 
-    void FlycehssServer::stop() {
+    void FlychessServer::stop() {
         if (server_) {
             server_->stop();     
         }
     }
 
-    void FlycehssServer::setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket, const std::string& client_id) {
+    void FlychessServer::setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket, const std::string& client_id) {
         webSocket->setOnMessageCallback(
             [this, client_id](const ix::WebSocketMessagePtr& msg) {
                 handleMessage(msg, client_id);
@@ -51,7 +51,7 @@
         );
     }
 
-    void FlycehssServer::handleMessage(const ix::WebSocketMessagePtr& msg, const std::string& client_id) {
+    void FlychessServer::handleMessage(const ix::WebSocketMessagePtr& msg, const std::string& client_id) {
         if (msg->type == ix::WebSocketMessageType::Message) {
             std::cout << "收到来自ID [" << client_id << "] 的消息: ";
             const std::string& msg_text = msg->str;
@@ -73,7 +73,7 @@
                         int dice_result = flychess_game::rollDice();
                         sendDiceNum(dice_result, client_id);
                     }
-                    else if (type == "userInfo") {
+                    else if (type == "userInfo") {// 新加入玩家在这里
                         std::string user_name = j.at("name");
                         int color = game_room_->getPlayerCount();
                         game_room_->addPlayer(flychess_game::PlayerInfo(static_cast<game_utils::Color>(color), "player", std::stoi(client_id)));
@@ -91,6 +91,7 @@
                         // std::cout << "[Server] 广播 add_player_broadcast: " << std::endl;
 
                         this->BroadCastPlayerList();
+                        this->BoradCastRoomInfo();
                     }
                     else if(type == "get_prepared") {
                         this->game_room_->setPrepared(std::stoi(client_id));
@@ -99,6 +100,27 @@
                     else if(type == "get_unprepared") {
                         this->game_room_->setUnPrepared(std::stoi(client_id));
                         BroadCastPlayerList();
+                    }
+                    else if(type == "update_player_count") {
+                        int num = j.at("new_p_num");
+                        bool ret = this->game_room_->setPlayerCount(num);
+
+                        if(ret) {
+                            this->BroadCastPlayerCount();
+                        }
+                        else {
+                            nlohmann::json failed_ret;
+                            failed_ret["type"] = "failed_pc_update";
+                            failed_ret["reason"] = game_room_->getPlayerCount();
+                            this->BroadCastPlayerCount();
+                            this->sendToClient(client_id, failed_ret.dump());
+                        }
+                    }
+                    else if(type == "update_chess_count") {
+                        int num = j.at("new_c_num");
+                        this->game_room_->setChessCount(num);
+
+                        this->BroadCastChessCount();
                     }
                     else {
                         std::cout<< "未知消息类型,内容:";
@@ -141,7 +163,7 @@
         }
     }
 
-    void FlycehssServer::sendDiceNum(int dice_result, const std::string& client_id) {
+    void FlychessServer::sendDiceNum(int dice_result, const std::string& client_id) {
         nlohmann::json message_json;
         message_json["type"] = "dice_result";
         message_json["dice_result"] = dice_result;
@@ -154,7 +176,7 @@
         }
     }
 
-    void FlycehssServer::sendToClient(const std::string& client_id, const std::string msg) {
+    void FlychessServer::sendToClient(const std::string& client_id, const std::string msg) {
         auto it = clients_.find(client_id);
 
         if (it != clients_.end() && it->second->getReadyState() == ix::ReadyState::Open) {
@@ -165,7 +187,26 @@
         }
     }
 
-    void FlycehssServer::BroadCast(const std::string& msg) {
+    void FlychessServer::BroadCastPlayerCount() {
+        nlohmann::json update_pc_ret;
+        update_pc_ret["type"] = "update_pc_ret";
+        update_pc_ret["new_count"] = game_room_->getMaxPlayerCount();
+        this->BroadCast(update_pc_ret.dump());
+    }
+
+    void FlychessServer::BroadCastChessCount() {
+        nlohmann::json update_cc_ret;
+        update_cc_ret["type"] = "update_cc_ret";
+        update_cc_ret["new_count"] = game_room_->getChessPerPlayer();
+        this->BroadCast(update_cc_ret.dump());
+    }
+
+    void FlychessServer::BoradCastRoomInfo() {
+        this->BroadCastPlayerCount();
+        this->BroadCastChessCount();
+    }
+
+    void FlychessServer::BroadCast(const std::string& msg) {
         for (const auto& [id, socket] : clients_)
         {
             if (socket->getReadyState() == ix::ReadyState::Open) {
@@ -178,7 +219,7 @@
         }
     }
 
-    void FlycehssServer::BroadCastPlayerList() {
+    void FlychessServer::BroadCastPlayerList() {
         nlohmann::json player_list_json;
         player_list_json["type"] = "update_player_list";
         int current_player_num = game_room_->getPlayerCount();
@@ -194,7 +235,7 @@
     }
 
 
-    bool FlycehssServer::start() {
+    bool FlychessServer::start() {
         auto res = server_->listen();
         if (!res.first)
         {

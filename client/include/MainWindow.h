@@ -9,6 +9,7 @@
 #include <QDesktopServices>
 #include <QVariant>
 #include <QList>
+#include <QComboBox>
 #include "game.h"
 #include "server.h"
 #include "client.h"
@@ -52,10 +53,16 @@ private slots:
     void onPreparePageStartButtonClicked();
     void onPreparePagePrepareButtonClicked();
 
+    void onPlayerCountChanged(int index);
+    void onChessCountChanged(int index);
+
     void onNewPlayerJoined(QString name, game_utils::Color color);
     void onRegisterResult(game_utils::Color color);
     void onPlayerListUpdated(const QList<QVariantList>& players);
     void onPlayerLeaveRoom(QString name, game_utils::Color color);
+    void onPlayerCountUpdate(int num);
+    void onChessCountUpdate(int num);
+    void onPlayerCountUpdateFailed(int min_num);
 private:
     // void repositionStartMenu();
 
@@ -69,7 +76,7 @@ protected:
 // 以下是私有成员变量
 private:
     Ui::MainWindow *ui;
-    std::unique_ptr<flychess_server::FlycehssServer> server_;
+    std::unique_ptr<flychess_server::FlychessServer> server_;
 
     // 直接在类内声明客户端实例
     flychess_client::FlychessClient *client_;
