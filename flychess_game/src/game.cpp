@@ -31,16 +31,16 @@ namespace flychess_game {
     void FlychessGameRoom::DeletePlayer(int web_id) {
         for (size_t i = 0; i < players.size(); ++i) {
             if (players[i].websocket_id == web_id) {
-                // 删除当前元素
+                // 
                 players.erase(players.begin() + i);
 
-                // 调整后续玩家的颜色
+                // 
                 for (size_t j = i; j < players.size(); ++j) {
                     int c = static_cast<int>(players[j].color);
                     players[j].color = static_cast<game_utils::Color>(c - 1);
                 }
 
-                break; // 只删除一个，直接退出
+                break; // 
             }
         }
     }
@@ -65,9 +65,9 @@ namespace flychess_game {
 
     void FlychessGame::IfPositionTaken(int position, int player_id, int chess_id) {
         if (position <= 0 || players[player_id].GetIfPreGoal(chess_id))
-            return; // 如果位置不可能遇到其他玩家棋子，直接返回
+            return; // 
         for (int i = 0; i < players.size(); i++) {
-            if (i == player_id) continue; // 跳过当前玩家
+            if (i == player_id) continue; // 
 
             auto& other_player = players[i];
 
@@ -76,7 +76,7 @@ namespace flychess_game {
             for(int j = 0; j < chess_piece_count; j++) {
                 auto other_chess_piece_info = other_player.GetChessPieceInfo(j);
                 if (other_chess_piece_info.position == position) {
-                    // 如果格子被占用，送回家
+                    // 
                     other_player.SendChessPieceBackHome(j);
                     other_player.GetKilledChessPiece();
                     players[player_id].KillChessPiece();
@@ -93,7 +93,7 @@ namespace flychess_game {
     }
 }
 
-// JS 接口部分
+// JS 
 #ifdef __EMSCRIPTEN__
 
 extern "C"{
@@ -117,21 +117,21 @@ extern "C"{
             std::cout << "Player " << i + 1 << " added with color: " << static_cast<int>(static_cast<game_utils::Color>(i % 4)) << std::endl;
         }
 
-        // 检查玩家数量
+        // 
         if (flychess_game::get_instance().GetPlayerCount() != player_count) {
             std::cerr << "Not enough players to start the game." << std::endl;
             return;
         }else{
-            std::cout << "创建完成,玩家数量检查完成" << std::endl;
+            std::cout << "," << std::endl;
         }
 
-        // 检查棋子数量
+        // 
         if (flychess_game::get_instance().GetChessPieceCount() != chess_piece_count) {
             std::cerr << "Chess piece count does not match." << std::endl;
             std::cerr << "Expected: " << chess_piece_count << ", Actual: " << flychess_game::get_instance().GetChessPieceCount() << std::endl;
             return;
         }else{
-            std::cout << "棋子数量检查完成" << std::endl;
+            std::cout << "" << std::endl;
         }
 
     }
@@ -179,11 +179,11 @@ extern "C"{
         auto& player = flychess_game::get_instance().GetPlayer(player_id);
         int ret = player.MoveChessPiece(chess_id, steps);
         
-        // 如果有问题直接返回错误码
+        // 
         if(ret <= 0)
             return ret;
         else {
-            // 移动成功开始检查格子是否占用
+            // 
             auto chess_piece_info = player.GetChessPieceInfo(chess_id);
             auto position  = chess_piece_info.position;
             flychess_game::get_instance().IfPositionTaken(position, player_id, chess_id);
@@ -202,13 +202,13 @@ extern "C"{
         int ret = player.FlyChessPiece(chess_id);
 
         if (ret <= 0)
-            return ret; // 如果没有飞行或发生错误，直接返回
+            return ret; // 
         else {
-            // 飞行成功开始检查格子是否占用
+            // 
             auto chess_piece_info = player.GetChessPieceInfo(chess_id);
             auto position = chess_piece_info.position;
             flychess_game::get_instance().IfPositionTaken(position, player_id, chess_id);
-            return ret; // 返回飞行结果
+            return ret; // 
         }
     }
 

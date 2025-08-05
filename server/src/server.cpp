@@ -9,7 +9,7 @@
     FlychessServer::FlychessServer(int port, QObject* parent)
         : QObject(parent), port_(port), server_(std::make_unique<ix::WebSocketServer>(port)) 
     {
-        // 初始连接回调
+        // 
         server_->setOnConnectionCallback(
             [this](std::weak_ptr<ix::WebSocket> weakWebSocket,
                 std::shared_ptr<ix::ConnectionState> connectionState)
@@ -21,11 +21,11 @@
                     std::cout << "Client ID: " << client_id << ", IP: " << ip << std::endl;
                 
                     if (auto webSocket = weakWebSocket.lock()) {
-                        clients_[client_id] = webSocket;  // 保存映射
+                        clients_[client_id] = webSocket;  // 
                         setupMessageCallback(webSocket, client_id);
                     }
 
-                    // 发射 Qt 信号
+                    //  Qt 
                     QMetaObject::invokeMethod(this, [this, client_id, ip]() {
                         emit clientConnected(QString::fromStdString(client_id),
                                             QString::fromStdString(ip));
@@ -53,14 +53,14 @@
 
     void FlychessServer::handleMessage(const ix::WebSocketMessagePtr& msg, const std::string& client_id) {
         if (msg->type == ix::WebSocketMessageType::Message) {
-            std::cout << "收到来自ID [" << client_id << "] 的消息: ";
+            std::cout << "ID [" << client_id << "] : ";
             const std::string& msg_text = msg->str;
             if (!msg_text.empty() && (msg_text[0] == '{' || msg_text[0] == '[')) {
                 try {
                     auto j = nlohmann::json::parse(msg->str);
                     std::string type = j.at("type");
 
-                    // // 通过 Qt 信号通知
+                    // //  Qt 
                     // QMetaObject::invokeMethod(this, [this, client_id, j]() {
                     //     QJsonObject obj = QJsonDocument::fromJson(
                     //         QByteArray::fromStdString(j.dump())
@@ -73,7 +73,7 @@
                         int dice_result = flychess_game::rollDice();
                         sendDiceNum(dice_result, client_id);
                     }
-                    else if (type == "userInfo") {// 新加入玩家在这里
+                    else if (type == "userInfo") {// 
                         std::string user_name = j.at("name");
                         int color = game_room_->getPlayerCount();
                         game_room_->addPlayer(flychess_game::PlayerInfo(static_cast<game_utils::Color>(color), "player", std::stoi(client_id)));
@@ -88,7 +88,7 @@
                         register_msg["type"] = "register_ret";
                         register_msg["color"] = std::to_string(color);
                         this->sendToClient(client_id, register_msg.dump());
-                        // std::cout << "[Server] 广播 add_player_broadcast: " << std::endl;
+                        // std::cout << "[Server]  add_player_broadcast: " << std::endl;
 
                         this->BroadCastPlayerList();
                         this->BoradCastRoomInfo();
@@ -123,7 +123,7 @@
                         this->BroadCastChessCount();
                     }
                     else {
-                        std::cout<< "未知消息类型,内容:";
+                        std::cout<< ",:";
                         std::cout<< msg_text << std::endl;
                     }
                 }
@@ -133,7 +133,7 @@
             } else {
                 std::cout<<"non-json message: " << msg->str << std::endl;
 
-                // 发射普通文本消息信号
+                // 
                 QMetaObject::invokeMethod(this, [this, client_id, msg_text]() {
                     emit messageReceived(QString::fromStdString(client_id),
                                         QString::fromStdString(msg_text));
@@ -141,10 +141,10 @@
             }
         }
         else if (msg->type == ix::WebSocketMessageType::Close) {
-            std::cout << "客户端 [" << client_id << "] 断开连接。" << std::endl;
+            std::cout << " [" << client_id << "] " << std::endl;
             clients_.erase(client_id);
 
-            // 广播退出房间
+            // 
             nlohmann::json leave_msg;
             leave_msg["type"] = "leave_room";
             const auto& player_to_leave_info = game_room_->getPlayerByWebId(std::stoi(client_id));
@@ -153,7 +153,7 @@
             leave_msg["name"] = player_to_leave_info.player_name;
             this->BroadCast(leave_msg.dump());
 
-            // 删除房间内玩家信息
+            // 
             game_room_->DeletePlayer(std::stoi(client_id));
             this->BroadCastPlayerList();
 
@@ -172,7 +172,7 @@
         if (server_) {
             this->sendToClient(client_id, message_str);
         } else {
-            std::cerr<< "server异常" << std::endl;
+            std::cerr<< "server" << std::endl;
         }
     }
 
@@ -181,7 +181,7 @@
 
         if (it != clients_.end() && it->second->getReadyState() == ix::ReadyState::Open) {
             it->second->send(msg);
-            std::cout<<"消息已发送给客户端 [" << client_id << "]:" << msg << std::endl;
+            std::cout<<" [" << client_id << "]:" << msg << std::endl;
         } else {
             std::cerr << "Client [" << client_id << "] not found or not connected." << std::endl;
         }
@@ -211,7 +211,7 @@
         {
             if (socket->getReadyState() == ix::ReadyState::Open) {
                 socket->send(msg);
-                std::cout<< "消息已广播给客户端 [" << id << "]:" << msg << std::endl;
+                std::cout<< " [" << id << "]:" << msg << std::endl;
             }
             else {
                 std::cerr << "Client [" << id << "] is not connected." << std::endl;

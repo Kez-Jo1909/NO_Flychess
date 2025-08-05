@@ -29,15 +29,15 @@ public:
     ~MainWindow();
 
 private slots:
-    void StartButtonClicked();  // 开始按钮槽函数
+    void StartButtonClicked();  // 
 
-    void onExitButtonClicked();// 退出按钮槽函数
+    void onExitButtonClicked();// 
 
-    void onSettingButtonClicked();// 设置按钮槽函数
+    void onSettingButtonClicked();// 
 
-    void onSettingExitClicked();// 设置中返回槽函数
+    void onSettingExitClicked();// 
 
-    void onSettingReButtonClicked();// 设置中重置按钮槽函数
+    void onSettingReButtonClicked();// 
 
     void onSettingSaveButtonClicked();
 
@@ -73,21 +73,21 @@ private:
 protected:
     void resizeEvent(QResizeEvent *event) override;
 
-// 以下是私有成员变量
+// 
 private:
     Ui::MainWindow *ui;
     std::unique_ptr<flychess_server::FlychessServer> server_;
 
-    // 直接在类内声明客户端实例
+    // 
     flychess_client::FlychessClient *client_;
 
-    QMessageBox* connectingBox_ = nullptr;  // “正在连接”提示框
-    QTimer* connectTimer_ = nullptr;        // 连接超时定时器
+    QMessageBox* connectingBox_ = nullptr;  // 
+    QTimer* connectTimer_ = nullptr;        // 
 
     bool is_server = false;
     bool prepared = false;
 
-    game_utils::Color user_color_ = game_utils::Color::UNDEFINED; // 默认颜色
+    game_utils::Color user_color_ = game_utils::Color::UNDEFINED; // 
 };
 
 }// namespace flychess_client

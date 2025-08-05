@@ -14,9 +14,9 @@ enum class PlayerState {
 };
 
 struct ChessPieceInfo {
-    int id = -1; // 棋子ID
-    game_utils::Color color = game_utils::Color::UNDEFINED; // 棋子颜色
-    int position = -1; // 棋子位置
+    int id = -1; // ID
+    game_utils::Color color = game_utils::Color::UNDEFINED; // 
+    int position = -1; // 
     int if_pre_goal = 0;
 };
 
@@ -66,12 +66,12 @@ public:
 
     inline void SimpleMove(int steps) {
         piece_info.position += steps;
-        piece_info.position = piece_info.position <= 52 ? piece_info.position : piece_info.position - 52; // 确保位置在1-52之间
+        piece_info.position = piece_info.position <= 52 ? piece_info.position : piece_info.position - 52; // 1-52
         std::cout<< "Chess piece " << piece_info.id << " moved to position: " << piece_info.position << std::endl;
     }
 
     inline void MoveFromStart(int steps, int start_position) {
-        // 好傻逼的函数
+        // 
         int new_position = start_position + steps - 1;
         piece_info.position = new_position;
     }
@@ -79,7 +79,7 @@ public:
     void preGoalMove(int steps, int pre_goal_position);
 private:
     ChessPieceInfo piece_info;
-    bool forward = true; // 是否向前移动
+    bool forward = true; // 
 };
 
 
@@ -87,7 +87,7 @@ private:
 class Player {
 public:
     Player() = default;
-    // TODO : 构造函数分为ai和玩家两种
+    // TODO : ai
 
     Player(game_utils::Color color, int chess_piece_count = 4);
 
@@ -143,18 +143,18 @@ public:
 
     /**
      * @name MoveChessPiece
-     * @brief 移动棋子
-     * @param chess_id 棋子ID
-     * @param steps 移动步数
-     * @return 返回值：1表示成功，0表示棋子未在棋盘上，-1表示参数错误
+     * @brief 
+     * @param chess_id ID
+     * @param steps 
+     * @return 10-1
      */
     int MoveChessPiece(int chess_id, int steps);
 
     /**
      * @name FlyChessPiece
-     * @brief 飞棋子
-     * @param chess_id 棋子ID
-     * @return 返回值：1表示成功，0表示棋子未在棋盘上，-1表示参数错误
+     * @brief 
+     * @param chess_id ID
+     * @return 10-1
      */
     int FlyChessPiece(int chess_id);
 
@@ -162,13 +162,13 @@ public:
 private:
     game_utils::Color player_color = game_utils::Color::UNDEFINED;
     PlayerState player_state = PlayerState::UNDEFINED;
-    std::vector<ChessPiece> chess_pieces; // 棋子列表
-    int pregoal_position = 52; // 预设目标位置
-    int start_position = 0; // 起始位置
-    int kill_chess_count = 0; // 吃掉的棋子数量
-    int killed_chess_count = 0; // 被吃掉的棋子数量
+    std::vector<ChessPiece> chess_pieces; // 
+    int pregoal_position = 52; // 
+    int start_position = 0; // 
+    int kill_chess_count = 0; // 
+    int killed_chess_count = 0; // 
     int index_fly = 2;
-    std::pair<int, int> bridge_start_end_position = {18, 30}; // 起始位置和结束位置
+    std::pair<int, int> bridge_start_end_position = {18, 30}; // 
 };
 
 }

@@ -13,10 +13,10 @@ namespace flychess_map{
 enum class GridType {
     NORMAL,
     START,
-    HOME,     // 起始区
-    GOAL,     // 终点区
-    BRIDGE,   // 跳跃区
-    TURN      // 转角点
+    HOME,     // 
+    GOAL,     // 
+    BRIDGE,   // 
+    TURN      // 
 };
 
 struct GridInfo {
@@ -41,7 +41,7 @@ public:
         return grid_info;
     }
 private:
-    GridInfo grid_info; // 格子信息
+    GridInfo grid_info; // 
 };
 
 
@@ -64,16 +64,16 @@ public:
     const GridInfo& searchGridInfo(int position_id, int color, int chess_id);
 
 private:
-    const int grid_size = 80;  // 地图宽度
+    const int grid_size = 80;  // 
     const int map_size = 680;
 
     /**
      * @name grids
-     * @brief 存储地图格子信息
-     * @details 前四个元素为Home区，后4个元素为Goal区
-     * @details 再后四个为START区
+     * @brief 
+     * @details Home4Goal
+     * @details START
      */
-    std::vector<Grid> grids; // 存储地图格子
+    std::vector<Grid> grids; // 
 };
 
 inline Map& getGameMap() {
@@ -83,13 +83,13 @@ inline Map& getGameMap() {
 
 }
 
-/*以下为JS接口*/
+/*JS*/
 #ifdef __EMSCRIPTEN__
 #ifdef __cplusplus
 extern "C"{
 #endif
 
-// 返回地图格子信息
+// 
 const flychess_map::GridInfo* GetGridInfo(int index);
 
 int GetGridCount();

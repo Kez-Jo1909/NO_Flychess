@@ -11,6 +11,9 @@ set(CMAKE_AUTOUIC ON)
 # 查找 Qt5 库
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets Network)
 
+# 查找 nlohmann_json 库
+find_package(nlohmann_json CONFIG REQUIRED)
+
 # 查找源码文件（包含头文件，让 AUTOMOC 能扫描 Q_OBJECT）
 file(GLOB_RECURSE SOURCES
     ${PROJECT_SOURCE_DIR}/src/*.cpp
@@ -34,4 +37,5 @@ target_link_libraries(flychess_server
         Qt5::Core
         Qt5::Widgets
         Qt5::Network
+        nlohmann_json::nlohmann_json
 )
