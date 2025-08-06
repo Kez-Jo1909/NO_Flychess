@@ -115,3 +115,12 @@ gh-pages -d frontend
 ```
 
 它会自动创建 `gh-pages` 分支并推送 frontend 文件夹的内容
+
+## Windows编译
+
+```bash
+cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE="D:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_PREFIX_PATH="C:/Qt/5.15.19/msvc2019_64"
+cmake --build . --config Release
+& "C:\Qt\5.15.19\msvc2019_64\bin\windeployqt.exe" .\Flychess_QT_Client.exe
+```
+
