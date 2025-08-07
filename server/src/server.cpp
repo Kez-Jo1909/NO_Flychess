@@ -240,6 +240,7 @@
         if (!res.first)
         {
             std::cerr << "Listen failed: " << res.second << std::endl;
+            printf("setsockopt error: %d\n", WSAGetLastError());
             return false;
         }
 
