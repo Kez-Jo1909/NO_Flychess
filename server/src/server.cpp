@@ -240,6 +240,12 @@
         if (!res.first)
         {
             std::cerr << "Listen failed: " << res.second << std::endl;
+            #ifdef _WIN32
+                printf("setsockopt error: %d\n", WSAGetLastError());
+            #else
+                perror("setsockopt error");
+            #endif
+
             return false;
         }
 

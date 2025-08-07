@@ -14,7 +14,6 @@ file(GLOB_RECURSE HEADERS ${PROJECT_SOURCE_DIR}/include/*.h)
 
 add_executable(Flychess_QT_Client ${SOURCES} ${HEADERS})
 
-# 只包含 client 的头文件
 target_include_directories(Flychess_QT_Client
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
