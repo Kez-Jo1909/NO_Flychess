@@ -10,6 +10,7 @@
 #include <QGraphicsView>
 #include <QResizeEvent>
 #include <QVariant>
+#include <QPainter>
 #include <QList>
 #include <QComboBox>
 #include "game.h"
@@ -20,21 +21,6 @@
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
-
-class SquareGraphicsView : public QGraphicsView
-{
-    Q_OBJECT
-public:
-    using QGraphicsView::QGraphicsView;
-
-protected:
-    void resizeEvent(QResizeEvent *event) override
-    {
-        int side = qMin(event->size().width(), event->size().height());
-        resize(side, side); // 改为 resize 而不是 setFixedSize
-        QGraphicsView::resizeEvent(event);
-    }
-};
 
 
 namespace flychess_client{
@@ -82,6 +68,7 @@ private slots:
     void onChessCountUpdate(int num);
     void onPlayerCountUpdateFailed(int min_num);
     void onGameStart();
+    void onGameStartFailed();
 private:
     // void repositionStartMenu();
 
@@ -110,4 +97,20 @@ private:
 };
 
 }// namespace flychess_client
+
+class ChessBoardWidget : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit ChessBoardWidget(QWidget *parent = nullptr);
+
+protected:
+    // void resizeEvent(QResizeEvent *event) override;
+    QSize minimumSizeHint() const override;
+    void paintEvent(QPaintEvent *event) override;
+
+private:
+};
+
+
 #endif // MAINWINDOW_H

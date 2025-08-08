@@ -44,6 +44,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::updateChessCount, this, &MainWindow::onChessCountUpdate);
     connect(client_, &FlychessClient::updatePlayerCountFailed, this, &MainWindow::onPlayerCountUpdateFailed);
     connect(client_, &FlychessClient::GameStart, this, &MainWindow::onGameStart);
+    connect(client_, &FlychessClient::GameStartFailed, this, &MainWindow::onGameStartFailed);
+
 
     // 初始化定时器
     connectTimer_ = new QTimer(this);
@@ -64,6 +66,10 @@ void MainWindow::onNewPlayerJoined(QString name, game_utils::Color color) {
 
 void MainWindow::onGameStart() {
     ui->stackedWidget->setCurrentIndex(4);
+}
+
+void MainWindow::onGameStartFailed() {
+    QMessageBox::warning(this, "游戏开始失败", "有玩家未准备好，无法开始游戏！");
 }
 
 void MainWindow::onPlayerLeaveRoom(QString name, game_utils::Color color) {
@@ -452,9 +458,19 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
     ui->horizontalLayout_3->setStretch(0,2);
     ui->horizontalLayout_3->setStretch(1,1);
 
-    ui->horizontalLayout_6->setStretch(0, 1);
-    ui->horizontalLayout_6->setStretch(1, 3);
-    ui->horizontalLayout_6->setStretch(2, 1);
+    // ui->horizontalLayout_6->setStretch(0, 1);
+    // ui->horizontalLayout_6->setStretch(1, 4);
+    // ui->horizontalLayout_6->setStretch(2, 1);
+
+    ui->verticalLayout_GamePage->setStretch(0, 5);
+    ui->verticalLayout_GamePage->setStretch(1, 2);
+
+    ui->horizontalLayout_9->setStretch(0,1);
+    ui->horizontalLayout_9->setStretch(1,2);
+
+    ui->verticalLayout_5->setStretch(0, 3); // Top spacer
+    ui->verticalLayout_5->setStretch(1, 1); // Between spacer
+
 }
 
 void MainWindow::onSettingButtonClicked() {
@@ -463,3 +479,39 @@ void MainWindow::onSettingButtonClicked() {
 }
 
 }// namespace flychess_client
+
+
+ChessBoardWidget::ChessBoardWidget(QWidget *parent)
+    : QWidget(parent) {
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+}
+
+QSize ChessBoardWidget::minimumSizeHint() const {
+    return QSize(300, 300);
+}
+
+// void ChessBoardWidget::resizeEvent(QResizeEvent *event) {
+//     int size = std::min(width(), height());
+//     resize(size, size); // 保持正方形
+//     QWidget::resizeEvent(event);
+// }
+
+void ChessBoardWidget::paintEvent(QPaintEvent *event) {
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    // 计算最大正方形区域
+    int boardSizePx = std::min(width(), height()) - 10;
+    int offsetX = (width()  - boardSizePx) / 2;
+    int offsetY = (height() - boardSizePx) / 2;
+
+    // 绘制整个控件背景
+    painter.fillRect(rect(), Qt::white);
+
+    // 绘制棋盘区域的浅色背景
+    painter.fillRect(QRect(offsetX, offsetY, boardSizePx, boardSizePx), QColor(255, 255, 255));
+
+    // 绘制正方形边框
+    painter.setPen(QPen(Qt::black, 2));
+    painter.drawRect(offsetX, offsetY, boardSizePx, boardSizePx);
+}

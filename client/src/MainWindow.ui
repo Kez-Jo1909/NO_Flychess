@@ -731,42 +731,45 @@
       <widget class="QWidget" name="GamePage">
        <layout class="QVBoxLayout" name="verticalLayout_GamePage">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <widget class="ChessBoardWidget" name="chessBoardWidget" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_9">
           <item>
-           <spacer name="horizontalSpacer_10">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
+           <layout class="QVBoxLayout" name="verticalLayout_5">
+            <item>
+             <widget class="QListWidget" name="listWidget"/>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="lineEdit">
+              <property name="placeholderText">
+               <string>点击输入，回车发送消息...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
-           <widget class="SquareGraphicsView" name="graphicsView"/>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_11">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
+           <layout class="QHBoxLayout" name="horizontalLayout_11">
+            <item>
+             <widget class="QLabel" name="label">
+              <property name="text">
+               <string>卡牌区</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </item>
        </layout>
-      </widget>
-      <widget class="QWidget" name="PrepareUserPage">
-       <layout class="QVBoxLayout" name="verticalLayout_PrepareUserPage"/>
       </widget>
       <widget class="QWidget" name="EmptyPage">
        <layout class="QVBoxLayout" name="verticalLayout_EmptyPage"/>
@@ -801,9 +804,10 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>SquareGraphicsView</class>
-   <extends>QGraphicsView</extends>
+   <class>ChessBoardWidget</class>
+   <extends>QWidget</extends>
    <header>MainWindow.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>
