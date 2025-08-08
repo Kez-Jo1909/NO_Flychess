@@ -18,12 +18,12 @@
   </property>
   <property name="maximumSize">
    <size>
-    <width>1000</width>
-    <height>750</height>
+    <width>10000</width>
+    <height>7500</height>
    </size>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>NO_Flychess_Client</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -729,7 +729,41 @@
        </layout>
       </widget>
       <widget class="QWidget" name="GamePage">
-       <layout class="QVBoxLayout" name="verticalLayout_GamePage"/>
+       <layout class="QVBoxLayout" name="verticalLayout_GamePage">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <item>
+           <spacer name="horizontalSpacer_10">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="SquareGraphicsView" name="graphicsView"/>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_11">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="PrepareUserPage">
        <layout class="QVBoxLayout" name="verticalLayout_PrepareUserPage"/>
@@ -765,6 +799,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>SquareGraphicsView</class>
+   <extends>QGraphicsView</extends>
+   <header>MainWindow.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

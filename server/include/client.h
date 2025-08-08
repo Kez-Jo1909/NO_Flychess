@@ -49,6 +49,7 @@ signals:
     void updatePlayerCount(int new_pc);
     void updatePlayerCountFailed(int min_num);
     void updateChessCount(int new_cc);
+    void GameStart();
 private:
     ix::WebSocket ws_;
 

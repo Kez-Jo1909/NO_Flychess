@@ -109,6 +109,11 @@ namespace flychess_client {
                                 emit updateChessCount(new_cc);
                             }, Qt::QueuedConnection);
                         }
+                        else if (type == "game_start"){
+                            QMetaObject::invokeMethod(this,[this](){
+                                emit GameStart();
+                            }, Qt::QueuedConnection);
+                        }
                         else {
                             std::cout<< "未知消息类型,内容:";
                             std::cout<< msg_text << std::endl;

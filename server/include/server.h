@@ -21,6 +21,8 @@ public:
     void stop();                       // 停止服务器
     void handleMessage(const ix::WebSocketMessagePtr& msg, const std::string& client_id);
 
+    void GameStart();
+
 signals:
     void clientConnected(const QString& client_id, const QString& ip);
     void clientDisconnected(const QString& client_id);

@@ -254,4 +254,22 @@
         return true;
     }
 
+    void FlychessServer::GameStart() {
+        // 先判断是否全部准备
+        bool all_prepared = game_room_->ifAllPrepared();
+        if  (!all_prepared) {
+            // BROADCAST
+            nlohmann::json not_ready_msg;
+            not_ready_msg["type"] = "not_ready";
+            this->BroadCast(not_ready_msg.dump());
+        }
+        else {
+            // 发出开始游戏
+            nlohmann::json start_game_msg;
+            start_game_msg["type"] = "game_start";
+            this->BroadCast(start_game_msg.dump());
+        }
+
     }
+
+}// flychess_server

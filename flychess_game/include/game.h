@@ -63,6 +63,8 @@ public:
         throw std::runtime_error("Player not found with the given websocket ID.");
     }
 
+    bool ifAllPrepared();
+
     void setPrepared(int web_id);
     void setUnPrepared(int web_id);
 

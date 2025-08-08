@@ -43,6 +43,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::updatePlayerCount, this, &MainWindow::onPlayerCountUpdate);
     connect(client_, &FlychessClient::updateChessCount, this, &MainWindow::onChessCountUpdate);
     connect(client_, &FlychessClient::updatePlayerCountFailed, this, &MainWindow::onPlayerCountUpdateFailed);
+    connect(client_, &FlychessClient::GameStart, this, &MainWindow::onGameStart);
 
     // 初始化定时器
     connectTimer_ = new QTimer(this);
@@ -59,6 +60,10 @@ void MainWindow::onNewPlayerJoined(QString name, game_utils::Color color) {
     std::string color_str = game_utils::colorToString(color);
     QString message = QString("system: %1进入房间, 颜色: %2").arg(name, QString::fromStdString(color_str));
     ui->RoomListWidget->addItem(message);   
+}
+
+void MainWindow::onGameStart() {
+    ui->stackedWidget->setCurrentIndex(4);
 }
 
 void MainWindow::onPlayerLeaveRoom(QString name, game_utils::Color color) {
@@ -223,7 +228,8 @@ void MainWindow::onPreparePageStartButtonClicked() {
     );
 
     if (reply == QMessageBox::Yes) {
-        // TODO : 发出开始游戏信号
+        server_->GameStart();
+        // ui->stackedWidget->setCurrentIndex(4);
     }
 }
 
@@ -254,7 +260,7 @@ void MainWindow::onConnected() {
         ui->ifAiCheckBox->setEnabled(true);
         ui->PreparePageStartButton->setText("开始游戏");
         disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
-        disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
+        disconnect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
         connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
         connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
         ui->stackedWidget->setCurrentIndex(3);
@@ -264,7 +270,7 @@ void MainWindow::onConnected() {
         ui->ifCardCheckBox->setEnabled(false);
         ui->ifAiCheckBox->setEnabled(false);
         ui->PreparePageStartButton->setText("准备");
-        disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
+        disconnect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
         disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonUserClicked);
         connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
         connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonUserClicked);
@@ -445,6 +451,10 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
 
     ui->horizontalLayout_3->setStretch(0,2);
     ui->horizontalLayout_3->setStretch(1,1);
+
+    ui->horizontalLayout_6->setStretch(0, 1);
+    ui->horizontalLayout_6->setStretch(1, 3);
+    ui->horizontalLayout_6->setStretch(2, 1);
 }
 
 void MainWindow::onSettingButtonClicked() {

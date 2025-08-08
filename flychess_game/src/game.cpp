@@ -91,6 +91,15 @@ namespace flychess_game {
     int rollDice() {
         return game_utils::get_random(1, 6);
     }
+
+    bool FlychessGameRoom::ifAllPrepared() {
+        for (const auto& player : players) {
+            if (!player.if_prepared) {
+                return false; // 只要有一个玩家未准备，返回false
+            }
+        }
+        return true; // 所有玩家都已准备
+    }
 }
 
 // JS 接口部分
