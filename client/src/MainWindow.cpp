@@ -466,9 +466,9 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
     ui->verticalLayout_GamePage->setStretch(1, 2);
 
     ui->horizontalLayout_9->setStretch(0,1);
-    ui->horizontalLayout_9->setStretch(1,2);
+    ui->horizontalLayout_9->setStretch(1,3);
 
-    ui->verticalLayout_5->setStretch(0, 3); // Top spacer
+    ui->verticalLayout_5->setStretch(0, 5); // Top spacer
     ui->verticalLayout_5->setStretch(1, 1); // Between spacer
 
 }
@@ -501,9 +501,12 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
     painter.setRenderHint(QPainter::Antialiasing);
 
     // 计算最大正方形区域
-    int boardSizePx = std::min(width(), height()) - 10;
+    int boardSizePx = std::min(width(), height()) / 34 * 34;
     int offsetX = (width()  - boardSizePx) / 2;
     int offsetY = (height() - boardSizePx) / 2;
+
+    int grid_size = boardSizePx / 17; // 每个格子的大小
+    int radius = boardSizePx / 51;
 
     // 绘制整个控件背景
     painter.fillRect(rect(), Qt::white);
@@ -514,4 +517,122 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
     // 绘制正方形边框
     painter.setPen(QPen(Qt::black, 2));
     painter.drawRect(offsetX, offsetY, boardSizePx, boardSizePx);
+
+    int grid_num = flychess_map::GetGridCount();
+    for (int i = 0; i < grid_num; i++) {
+        auto grid = flychess_map::GetGridInfo(i);
+
+        if (grid->id == -2) {
+            continue;
+        }
+
+        int type = grid->type;
+        std::vector<int> color_vector = game_utils::colorintToRGB(grid->color);
+        int p_x = grid->position_x / 40 * grid_size + offsetX;
+        int p_y = grid->position_y / 40 * grid_size + offsetY;
+        // std::cout<<"读取width:" << grid->width <<std::endl;
+
+        if(type == 0 || type == 2) {
+            // 矩形
+            int width = grid->width / 40 * grid_size;
+            // std::cout<<"type0 size:" << width << std::endl;
+            int height = grid->height / 40 * grid_size;
+            painter.setPen(QPen(Qt::black, 1));
+            painter.fillRect(QRect(p_x, p_y, width, height), QColor(color_vector[0], color_vector[1], color_vector[2])); // 浅灰色背景
+        
+            // 画圆
+            int center_x = p_x + width / 2;
+            int center_y = p_y + height / 2;
+            painter.setPen(QPen(Qt::black, 1));
+            painter.setBrush(Qt::white);
+            painter.drawEllipse(QPoint(center_x, center_y), radius, radius); // 绘制圆形
+        }
+        else if(type == 3) {
+            p_x = offsetX + boardSizePx / 2;
+            p_y = offsetY + boardSizePx / 2;
+            int c_x = p_x;
+            int c_y = p_y;
+            int height = grid->height;
+            int width = grid->width / 40.0f * grid_size;
+            // std::cout<<"type3 size:" << width << std::endl;
+            painter.setRenderHint(QPainter::Antialiasing); // 抗锯齿
+            painter.setPen(QPen(Qt::black, 1));
+            painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
+            QPolygonF triangle;
+            if (height == 0) {
+                triangle << QPointF(p_x, p_y)
+                        << QPointF(p_x - width, p_y - width)
+                        << QPointF(p_x + width, p_y - width);
+                c_y -= width / 1.5;
+            }
+            else if (height == 1) {
+                triangle << QPointF(p_x, p_y)
+                        << QPointF(p_x + width, p_y - width)
+                        << QPointF(p_x + width, p_y + width);
+                c_x += width / 1.5;
+            }
+            else if (height == 2) {
+                triangle << QPointF(p_x, p_y)
+                        << QPointF(p_x - width, p_y + width)
+                        << QPointF(p_x + width, p_y + width);
+                c_y += width / 1.5;
+            }
+            else if (height == 3) {
+                triangle << QPointF(p_x, p_y)
+                        << QPointF(p_x - width, p_y + width)
+                        << QPointF(p_x - width, p_y - width);
+                c_x -= width / 1.5;
+            }
+            painter.drawPolygon(triangle); // 绘制三角形
+
+            // 画圆
+            painter.setPen(QPen(Qt::black, 1));
+            painter.setBrush(Qt::white);
+            painter.drawEllipse(QPoint(c_x, c_y), radius, radius); // 绘制圆形
+        }
+        else {
+            int height = grid->height;
+            int width = grid->width / 40.0f * grid_size;
+            painter.setRenderHint(QPainter::Antialiasing); // 抗锯齿
+            painter.setPen(QPen(Qt::black, 1));
+            painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
+            QPolygonF triangle;
+            int c_x = p_x, c_y = p_y;
+            if (height == 0) {
+                triangle << QPointF(p_x, p_y)
+                        << QPointF(p_x + width, p_y)
+                        << QPointF(p_x, p_y + width);
+                c_x += width / 3.0;
+                c_y += width / 3.0;
+            }
+            else if (height == 1) {
+                triangle << QPointF(p_x, p_y)
+                        << QPointF(p_x - width, p_y)
+                        << QPointF(p_x, p_y + width);
+                c_x -= width / 3.0;
+                c_y += width / 3.0;
+            }
+            else if (height == 2) {
+                triangle << QPointF(p_x, p_y)
+                        << QPointF(p_x, p_y - width)
+                        << QPointF(p_x - width, p_y);
+                c_x -= width / 3.0;
+                c_y -= width / 3.0;            
+            }
+            else if (height == 3) {
+                triangle << QPointF(p_x, p_y)
+                        << QPointF(p_x, p_y - width)
+                        << QPointF(p_x + width, p_y);
+                c_x += width / 3.0;
+                c_y -= width / 3.0;            
+            }
+
+            painter.drawPolygon(triangle); // 绘制三角形
+
+            // 画圆
+            painter.setPen(QPen(Qt::black, 1));
+            painter.setBrush(Qt::white);
+            painter.drawEllipse(QPoint(c_x, c_y), radius, radius); // 绘制圆形
+        }
+    }
 }

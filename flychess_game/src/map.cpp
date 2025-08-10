@@ -154,6 +154,18 @@ namespace flychess_map{
             throw std::runtime_error("Search failed: Invalid position_id or chess_id");
         }
     }
+
+    int GetGridCount() {
+        return flychess_map::getGameMap().getGridsize();
+    }
+
+    const GridInfo* GetGridInfo(int index) {
+        if (index < 0 || index >= flychess_map::getGameMap().getGridsize()) {
+            std::cerr << "Index out of bounds: " << index << std::endl;
+            return nullptr; // 返回空指针表示索引越界
+        }
+        return &flychess_map::getGameMap().getGrid(index).getGridInfo();
+    }  
 }
 
 #ifdef __EMSCRIPTEN__

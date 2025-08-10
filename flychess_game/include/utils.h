@@ -35,6 +35,16 @@ inline std::string colorIntToString(int c) {
     }
 }
 
+inline std::vector<int> colorintToRGB(int c) {
+    switch(c) {
+        case 0: return {255, 0, 0};   // RED
+        case 1: return {0, 0, 255};   // BLUE
+        case 2: return {0, 255, 0};   // GREEN
+        case 3: return {255, 255, 0}; // YELLOW
+        default: return {200, 200, 200}; // 灰色
+    }
+}
+
 /**
  * @name get_random
  * @brief Generates a random number within the specified range.

@@ -51,3 +51,16 @@ if(WIN32)
     install(DIRECTORY "${CMAKE_PREFIX_PATH}/plugins/imageformats"
             DESTINATION ${CMAKE_INSTALL_BINDIR}/..)
 endif()
+
+# =========================
+# 4. 安装 config 目录（完整打包）
+# =========================
+set(CONFIG_DIR ${CMAKE_SOURCE_DIR}/config)
+
+if(EXISTS ${CONFIG_DIR})
+    # 复制整个 config 目录到 bin 同级
+    install(DIRECTORY ${CONFIG_DIR}
+            DESTINATION ${CMAKE_INSTALL_BINDIR}/..)
+else()
+    message(WARNING "配置目录 ${CONFIG_DIR} 未找到，安装时将跳过。")
+endif()

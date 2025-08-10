@@ -64,7 +64,7 @@ public:
     const GridInfo& searchGridInfo(int position_id, int color, int chess_id);
 
 private:
-    const int grid_size = 80;  // 地图宽度
+    const int grid_size = 80;
     const int map_size = 680;
 
     /**
@@ -80,6 +80,9 @@ inline Map& getGameMap() {
     static Map instance;
     return instance;
 }
+
+int GetGridCount();
+const GridInfo* GetGridInfo(int index);
 
 }
 
