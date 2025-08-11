@@ -120,7 +120,7 @@ namespace flychess_game {
 
         for(int i = 0; i < chess_piece_count; i++){
             chess_pieces.push_back(ChessPiece(i, color, -1, 0));
-            std::cout<<"init posisiton: "<< chess_pieces[i].GetChessPieceInfo().position << std::endl;
+            // std::cout<<"init posisiton: "<< chess_pieces[i].GetChessPieceInfo().position << std::endl;
         }
 
         // std::cout<< "Player created with color: " << static_cast<int>(color) << " and " << chess_piece_count << " chess pieces." << std::endl;

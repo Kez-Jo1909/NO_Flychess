@@ -90,9 +90,12 @@ public:
         return players.size();
     }
 
+    inline void setChessCount(int count) {
+        chess_count_per_player = count;
+    }
+
     const int GetChessPieceCount() const {
-        if (players.empty()) return -1;
-        return players.back().GetChessPieceCount();
+        return chess_count_per_player;
     }
 
     Player& GetPlayer(int player_id);
@@ -104,6 +107,7 @@ public:
     void IfPositionTaken(int position, int player_id, int chess_id);
 private:
     std::vector<Player> players; // 玩家列表
+    int chess_count_per_player = 4;
 };
 
 // 原本给js前端预留的接口

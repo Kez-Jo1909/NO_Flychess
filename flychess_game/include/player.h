@@ -18,6 +18,11 @@ struct ChessPieceInfo {
     game_utils::Color color = game_utils::Color::UNDEFINED; // 棋子颜色
     int position = -1; // 棋子位置
     int if_pre_goal = 0;
+    
+    ChessPieceInfo() = default;
+
+    ChessPieceInfo(int id, game_utils::Color color, int position = -1, int if_pre_goal = 0)
+        : id(id), color(color), position(position), if_pre_goal(if_pre_goal) {}
 };
 
 class ChessPiece{

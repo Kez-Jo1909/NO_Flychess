@@ -64,18 +64,23 @@ private slots:
     void onNewPlayerJoined(QString name, game_utils::Color color);
     void onRegisterResult(game_utils::Color color);
     void onPlayerListUpdated(const QList<QVariantList>& players);
+    void onAllPieceInfo(const QList<QVariantList>& pieces);
     void onPlayerLeaveRoom(QString name, game_utils::Color color);
     void onPlayerCountUpdate(int num);
     void onChessCountUpdate(int num);
     void onPlayerCountUpdateFailed(int min_num);
     void onGameStart();
     void onGameStartFailed();
+    void onGameStartNotEnough();
 private:
     // void repositionStartMenu();
 
     void onConnected();
     void onDisconnected();
     void onConnectTimeout();
+
+signals:
+    void AllPieceInfo(QList<QVariantList> pieces);
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -95,15 +100,18 @@ private:
     bool prepared = false;
 
     game_utils::Color user_color_ = game_utils::Color::UNDEFINED; // 默认颜色
+
+    std::vector<flychess_game::ChessPieceInfo> chess_pieces_; // 棋子信息列表
 };
 
 }// namespace flychess_client
 
-class ChessBoardWidget : public QWidget
-{
+class ChessBoardWidget : public QWidget {
     Q_OBJECT
 public:
     explicit ChessBoardWidget(QWidget *parent = nullptr);
+public slots:
+    void updatePieces(const QList<QVariantList> &pieces);
 
 protected:
     // void resizeEvent(QResizeEvent *event) override;
@@ -111,6 +119,7 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
+    std::vector<flychess_game::ChessPieceInfo> chess_pieces_; // 棋子信息列表
 };
 
 

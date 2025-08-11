@@ -3,6 +3,8 @@
 #include "ui_MainWindow.h"
 #include "utils.h"
 #include <QDebug>
+#include <qlist.h>
+#include <qobject.h>
 
 namespace flychess_client{
 MainWindow::MainWindow(QWidget *parent)
@@ -39,13 +41,15 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::newPlayerJoined, this, &MainWindow::onNewPlayerJoined);
     connect(client_, &FlychessClient::registerResult, this, &MainWindow::onRegisterResult);
     connect(client_, &FlychessClient::playerListUpdated, this, &MainWindow::onPlayerListUpdated);
+    connect(client_, &FlychessClient::allPieceInfo, this, &MainWindow::onAllPieceInfo);
     connect(client_, &FlychessClient::playerLeaveRoom, this, &MainWindow::onPlayerLeaveRoom);
     connect(client_, &FlychessClient::updatePlayerCount, this, &MainWindow::onPlayerCountUpdate);
     connect(client_, &FlychessClient::updateChessCount, this, &MainWindow::onChessCountUpdate);
     connect(client_, &FlychessClient::updatePlayerCountFailed, this, &MainWindow::onPlayerCountUpdateFailed);
     connect(client_, &FlychessClient::GameStart, this, &MainWindow::onGameStart);
     connect(client_, &FlychessClient::GameStartFailed, this, &MainWindow::onGameStartFailed);
-
+    connect(client_, &FlychessClient::GameStartNotEnough, this, &MainWindow::onGameStartNotEnough);
+    connect(this, &MainWindow::AllPieceInfo, ui->chessBoardWidget, &ChessBoardWidget::updatePieces);
 
     // 初始化定时器
     connectTimer_ = new QTimer(this);
@@ -70,6 +74,10 @@ void MainWindow::onGameStart() {
 
 void MainWindow::onGameStartFailed() {
     QMessageBox::warning(this, "游戏开始失败", "有玩家未准备好，无法开始游戏！");
+}
+
+void MainWindow::onGameStartNotEnough() {
+    QMessageBox::warning(this, "游戏开始失败", "玩家人数不足，无法开始游戏！");
 }
 
 void MainWindow::onPlayerLeaveRoom(QString name, game_utils::Color color) {
@@ -154,6 +162,29 @@ void MainWindow::showAboutDialog() {
     }
 
     msgBox.exec();
+}
+
+void MainWindow::onAllPieceInfo(const QList<QVariantList>& pieces) {
+    if (pieces.isEmpty()) {
+        qDebug() << "Received empty piece info.";
+        return;
+    }
+
+    if (!chess_pieces_.empty()) {
+        // 清空之前的棋子信息
+        chess_pieces_.clear();
+    }
+
+    for (const QVariantList& piece : pieces) {
+        int id = piece[0].toInt();
+        int color = piece[1].toInt();
+        int position = piece[2].toInt();
+        int player_id = piece[3].toInt();
+        chess_pieces_.push_back(flychess_game::ChessPieceInfo(id, static_cast<game_utils::Color>(color), position, player_id));
+    }
+
+    // 之后直接转发信号
+    emit AllPieceInfo(pieces);
 }
 
 void MainWindow::onPlayerListUpdated(const QList<QVariantList>& players) {
@@ -465,8 +496,9 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
     ui->verticalLayout_GamePage->setStretch(0, 5);
     ui->verticalLayout_GamePage->setStretch(1, 2);
 
-    ui->horizontalLayout_9->setStretch(0,1);
-    ui->horizontalLayout_9->setStretch(1,3);
+    ui->horizontalLayout_9->setStretch(0,2);
+    ui->horizontalLayout_9->setStretch(1,1);
+    ui->horizontalLayout_9->setStretch(2,6);
 
     ui->verticalLayout_5->setStretch(0, 5); // Top spacer
     ui->verticalLayout_5->setStretch(1, 1); // Between spacer
@@ -635,4 +667,23 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
             painter.drawEllipse(QPoint(c_x, c_y), radius, radius); // 绘制圆形
         }
     }
+
+    // 绘制棋子
+}
+
+void ChessBoardWidget::updatePieces(const QList<QVariantList> &pieces) {
+    // 清空之前的棋子信息
+    chess_pieces_.clear();
+
+    // 遍历接收到的棋子信息
+    for (const QVariantList &piece : pieces) {
+        int id = piece[0].toInt();
+        int color = piece[1].toInt();
+        int position = piece[2].toInt();
+        int player_id = piece[3].toInt();
+        chess_pieces_.emplace_back(id, static_cast<game_utils::Color>(color), position, player_id);
+    }
+
+    // 触发重绘
+    update();
 }

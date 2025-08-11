@@ -91,7 +91,7 @@
                         // std::cout << "[Server] 广播 add_player_broadcast: " << std::endl;
 
                         this->BroadCastPlayerList();
-                        this->BoradCastRoomInfo();
+                        this->BroadCastRoomInfo();
                     }
                     else if(type == "get_prepared") {
                         this->game_room_->setPrepared(std::stoi(client_id));
@@ -201,7 +201,7 @@
         this->BroadCast(update_cc_ret.dump());
     }
 
-    void FlychessServer::BoradCastRoomInfo() {
+    void FlychessServer::BroadCastRoomInfo() {
         this->BroadCastPlayerCount();
         this->BroadCastChessCount();
     }
@@ -254,6 +254,7 @@
         return true;
     }
 
+    // 直接在MainWindow里调用
     void FlychessServer::GameStart() {
         // 先判断是否全部准备
         bool all_prepared = game_room_->ifAllPrepared();
@@ -264,12 +265,61 @@
             this->BroadCast(not_ready_msg.dump());
         }
         else {
+            const int player_count = game_room_->getPlayerCount();
+            if(player_count != game_room_->getMaxPlayerCount()) {
+                nlohmann::json not_enough_msg;
+                not_enough_msg["type"] = "not_enough_players";
+                this->BroadCast(not_enough_msg.dump());
+                return;
+            }
+            
+            // 创建游戏实例
+            game_ = new flychess_game::FlychessGame();
+            const int cp_count = game_room_->getChessPerPlayer();
+            game_->setChessCount(cp_count);
+            // 开始添加玩家
+            for(int i = 0; i<player_count; i++) {
+                const auto& player_info = game_room_->getPlayer(i);
+                game_->AddNewPlayer(player_info.color, cp_count);
+            }
+
+            // 检查玩家数量
+            if (game_->GetPlayerCount() != player_count) {
+                // TODO 发出信号
+                nlohmann::json player_count_error_msg;
+                player_count_error_msg["type"] = "player_count_error";
+                this->BroadCast(player_count_error_msg.dump());
+                // std::cerr << "玩家数量不匹配，预期: " << player_count << ", 实际: " << game_->GetPlayerCount() << std::endl;
+                return;
+            } else {
+                // std::cout << "玩家数量检查完成" << std::endl;
+                // 发送棋子初始状态
+                BroadCastPieceInfo(player_count, cp_count);
+            }
+
             // 发出开始游戏
             nlohmann::json start_game_msg;
             start_game_msg["type"] = "game_start";
             this->BroadCast(start_game_msg.dump());
         }
 
+    }
+
+    void FlychessServer::BroadCastPieceInfo(int player_count, int cp_count) {
+        nlohmann::json piece_info_msg;
+        piece_info_msg["type"] = "all_piece_info";
+        for(int i = 0; i < player_count; i++) {
+            for(int j = 0; j < cp_count; j++) {
+                auto chess_piece = game_->GetPlayerChess(i, j);
+                piece_info_msg["pieces"].push_back({
+                    {"id", chess_piece.id},
+                    {"color", static_cast<int>(chess_piece.color)},
+                    {"position", chess_piece.position},
+                    {"player_id", i}
+                });
+            }
+        }
+        BroadCast(piece_info_msg.dump());
     }
 
 }// flychess_server

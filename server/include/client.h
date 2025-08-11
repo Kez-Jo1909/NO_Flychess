@@ -51,6 +51,8 @@ signals:
     void updateChessCount(int new_cc);
     void GameStart();
     void GameStartFailed();
+    void GameStartNotEnough();
+    void allPieceInfo(QList<QVariantList> pieces);
 private:
     ix::WebSocket ws_;
 

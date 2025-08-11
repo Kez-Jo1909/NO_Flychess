@@ -10,6 +10,6 @@ make -j16
 
 cd ..
 
-./wasm_build.sh
+# ./wasm_build.sh
 
 echo "✅ 编译全部完成"
