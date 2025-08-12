@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <qlist.h>
 #include <qobject.h>
+#include <vector>
 
 namespace flychess_client{
 MainWindow::MainWindow(QWidget *parent)
@@ -569,9 +570,12 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
             int width = grid->width / 40 * grid_size;
             // std::cout<<"type0 size:" << width << std::endl;
             int height = grid->height / 40 * grid_size;
+            QRect rect(p_x, p_y, width, height);
             painter.setPen(QPen(Qt::black, 1));
-            painter.fillRect(QRect(p_x, p_y, width, height), QColor(color_vector[0], color_vector[1], color_vector[2])); // 浅灰色背景
-        
+            painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
+            painter.drawRect(rect);
+
+
             // 画圆
             int center_x = p_x + width / 2;
             int center_y = p_y + height / 2;
@@ -669,6 +673,81 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
     }
 
     // 绘制棋子
+    std::cout<< "size:" << chess_pieces_.size() <<std::endl;
+    for(int i = 0; i < chess_pieces_.size(); i++) {
+        int c_position = chess_pieces_[i].position;
+        auto grid_info = &flychess_map::getGameMap().searchGridInfo(c_position, static_cast<int>(chess_pieces_[i].color), chess_pieces_[i].id);
+        if (grid_info == nullptr) {
+            std::cerr << "Error: Grid info not found for chess piece at position " << c_position << std::endl;
+            continue;
+        }
+
+        int p_x = grid_info->position_x / 40 * grid_size + offsetX;
+        int p_y = grid_info->position_y / 40 * grid_size + offsetY;
+        int width = grid_info->width / 40 * grid_size;
+        int type = grid_info->type;
+        std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
+        if (type == 0 || type == 2) {
+            int center_x = p_x + width / 2;
+            int height = grid_info->height / 40 * grid_size;
+            int center_y = p_y + height / 2;
+            painter.setPen(QPen(Qt::black, 1));
+            // std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
+            painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
+            painter.drawEllipse(QPoint(center_x, center_y), radius, radius); // 绘制圆形
+        }
+        else if(type == 3) {
+            p_x = offsetX + boardSizePx / 2;
+            p_y = offsetY + boardSizePx / 2;
+            int c_x = p_x;
+            int c_y = p_y;
+            int height = grid_info->height;
+            int width = grid_info->width / 40.0f * grid_size;
+            if (height == 0) {
+                c_y -= width / 1.5;
+            }
+            else if (height == 1) {
+                c_x += width / 1.5;
+            }
+            else if (height == 2) {
+                c_y += width / 1.5;
+            }
+            else if (height == 3) {
+                c_x -= width / 1.5;
+            }
+            painter.setPen(QPen(Qt::black, 1));
+            // std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
+            painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
+            painter.drawEllipse(QPoint(c_x, c_y), radius, radius); // 绘制圆形
+        }
+        else {
+            int height = grid_info->height;
+            int width = grid_info->width / 40.0f * grid_size;
+            painter.setPen(QPen(Qt::black, 1));
+            int c_x = p_x, c_y = p_y;
+            if (height == 0) {
+                c_x += width / 3.0;
+                c_y += width / 3.0;
+            }
+            else if (height == 1) {
+                c_x -= width / 3.0;
+                c_y += width / 3.0;
+            }
+            else if (height == 2) {
+                c_x -= width / 3.0;
+                c_y -= width / 3.0;            
+            }
+            else if (height == 3) {
+                c_x += width / 3.0;
+                c_y -= width / 3.0;            
+            }
+            // 画圆
+            painter.setPen(QPen(Qt::black, 1));
+            painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
+            painter.drawEllipse(QPoint(c_x, c_y), radius, radius); // 绘制圆形
+        }
+
+    }
 }
 
 void ChessBoardWidget::updatePieces(const QList<QVariantList> &pieces) {
