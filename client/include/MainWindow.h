@@ -117,9 +117,16 @@ protected:
     // void resizeEvent(QResizeEvent *event) override;
     QSize minimumSizeHint() const override;
     void paintEvent(QPaintEvent *event) override;
-
+    void mousePressEvent(QMouseEvent *event) override;
+private:
+    std::pair<int,int> getGridCenter(int px, int py, int width, int height, int type);
 private:
     std::vector<flychess_game::ChessPieceInfo> chess_pieces_; // 棋子信息列表
+    int boardSizePx;
+    int offsetX;
+    int offsetY;
+    int radius;
+    int grid_size;
 };
 
 

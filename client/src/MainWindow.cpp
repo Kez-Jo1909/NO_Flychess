@@ -534,12 +534,12 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
     painter.setRenderHint(QPainter::Antialiasing);
 
     // 计算最大正方形区域
-    int boardSizePx = std::min(width(), height()) / 34 * 34;
-    int offsetX = (width()  - boardSizePx) / 2;
-    int offsetY = (height() - boardSizePx) / 2;
+    boardSizePx = std::min(width(), height()) / 34 * 34;
+    offsetX = (width()  - boardSizePx) / 2;
+    offsetY = (height() - boardSizePx) / 2;
 
-    int grid_size = boardSizePx / 17; // 每个格子的大小
-    int radius = boardSizePx / 51;
+    grid_size = boardSizePx / 17; // 每个格子的大小
+    radius = boardSizePx / 51;
 
     // 绘制整个控件背景
     painter.fillRect(rect(), Qt::white);
@@ -577,11 +577,12 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
 
 
             // 画圆
-            int center_x = p_x + width / 2;
-            int center_y = p_y + height / 2;
+            // int center_x = p_x + width / 2;
+            // int center_y = p_y + height / 2;
+            std::pair<int,int> center_position = getGridCenter(p_x, p_y, width, height, type);
             painter.setPen(QPen(Qt::black, 1));
             painter.setBrush(Qt::white);
-            painter.drawEllipse(QPoint(center_x, center_y), radius, radius); // 绘制圆形
+            painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 绘制圆形
         }
         else if(type == 3) {
             p_x = offsetX + boardSizePx / 2;
@@ -589,7 +590,7 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
             int c_x = p_x;
             int c_y = p_y;
             int height = grid->height;
-            int width = grid->width / 40.0f * grid_size;
+            int width = grid->width / 40.0f * grid_size;// 这里一定是40.0f * grid_size,float不能省
             // std::cout<<"type3 size:" << width << std::endl;
             painter.setRenderHint(QPainter::Antialiasing); // 抗锯齿
             painter.setPen(QPen(Qt::black, 1));
@@ -599,32 +600,33 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
                 triangle << QPointF(p_x, p_y)
                         << QPointF(p_x - width, p_y - width)
                         << QPointF(p_x + width, p_y - width);
-                c_y -= width / 1.5;
+                // c_y -= width / 1.5;
             }
             else if (height == 1) {
                 triangle << QPointF(p_x, p_y)
                         << QPointF(p_x + width, p_y - width)
                         << QPointF(p_x + width, p_y + width);
-                c_x += width / 1.5;
+                // c_x += width / 1.5;
             }
             else if (height == 2) {
                 triangle << QPointF(p_x, p_y)
                         << QPointF(p_x - width, p_y + width)
                         << QPointF(p_x + width, p_y + width);
-                c_y += width / 1.5;
+                // c_y += width / 1.5;
             }
             else if (height == 3) {
                 triangle << QPointF(p_x, p_y)
                         << QPointF(p_x - width, p_y + width)
                         << QPointF(p_x - width, p_y - width);
-                c_x -= width / 1.5;
+                // c_x -= width / 1.5;
             }
             painter.drawPolygon(triangle); // 绘制三角形
 
             // 画圆
+            std::pair<int,int> center_position = getGridCenter(p_x, p_y, width, height, type);
             painter.setPen(QPen(Qt::black, 1));
             painter.setBrush(Qt::white);
-            painter.drawEllipse(QPoint(c_x, c_y), radius, radius); // 绘制圆形
+            painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 绘制圆形
         }
         else {
             int height = grid->height;
@@ -638,42 +640,43 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
                 triangle << QPointF(p_x, p_y)
                         << QPointF(p_x + width, p_y)
                         << QPointF(p_x, p_y + width);
-                c_x += width / 3.0;
-                c_y += width / 3.0;
+                // c_x += width / 3.0;
+                // c_y += width / 3.0;
             }
             else if (height == 1) {
                 triangle << QPointF(p_x, p_y)
                         << QPointF(p_x - width, p_y)
                         << QPointF(p_x, p_y + width);
-                c_x -= width / 3.0;
-                c_y += width / 3.0;
+                // c_x -= width / 3.0;
+                // c_y += width / 3.0;
             }
             else if (height == 2) {
                 triangle << QPointF(p_x, p_y)
                         << QPointF(p_x, p_y - width)
                         << QPointF(p_x - width, p_y);
-                c_x -= width / 3.0;
-                c_y -= width / 3.0;            
+                // c_x -= width / 3.0;
+                // c_y -= width / 3.0;            
             }
             else if (height == 3) {
                 triangle << QPointF(p_x, p_y)
                         << QPointF(p_x, p_y - width)
                         << QPointF(p_x + width, p_y);
-                c_x += width / 3.0;
-                c_y -= width / 3.0;            
+                // c_x += width / 3.0;
+                // c_y -= width / 3.0;            
             }
 
             painter.drawPolygon(triangle); // 绘制三角形
 
             // 画圆
+            std::pair<int,int> center_position = getGridCenter(p_x, p_y, width, height, type);
             painter.setPen(QPen(Qt::black, 1));
             painter.setBrush(Qt::white);
-            painter.drawEllipse(QPoint(c_x, c_y), radius, radius); // 绘制圆形
+            painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); 
         }
     }
 
     // 绘制棋子
-    std::cout<< "size:" << chess_pieces_.size() <<std::endl;
+    // std::cout<< "size:" << chess_pieces_.size() <<std::endl;
     for(int i = 0; i < chess_pieces_.size(); i++) {
         int c_position = chess_pieces_[i].position;
         auto grid_info = &flychess_map::getGameMap().searchGridInfo(c_position, static_cast<int>(chess_pieces_[i].color), chess_pieces_[i].id);
@@ -687,66 +690,35 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
         int width = grid_info->width / 40 * grid_size;
         int type = grid_info->type;
         std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
+        std::pair<int,int> center_position;
         if (type == 0 || type == 2) {
-            int center_x = p_x + width / 2;
             int height = grid_info->height / 40 * grid_size;
-            int center_y = p_y + height / 2;
-            painter.setPen(QPen(Qt::black, 1));
-            // std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
-            painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
-            painter.drawEllipse(QPoint(center_x, center_y), radius, radius); // 绘制圆形
+            center_position = getGridCenter(p_x, p_y, width, height, type);
+            // painter.setPen(QPen(Qt::black, 1));
+            // // std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
+            // painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
+            // painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 绘制圆形
         }
-        else if(type == 3) {
+        else if (type == 3){
             p_x = offsetX + boardSizePx / 2;
             p_y = offsetY + boardSizePx / 2;
-            int c_x = p_x;
-            int c_y = p_y;
             int height = grid_info->height;
-            int width = grid_info->width / 40.0f * grid_size;
-            if (height == 0) {
-                c_y -= width / 1.5;
-            }
-            else if (height == 1) {
-                c_x += width / 1.5;
-            }
-            else if (height == 2) {
-                c_y += width / 1.5;
-            }
-            else if (height == 3) {
-                c_x -= width / 1.5;
-            }
-            painter.setPen(QPen(Qt::black, 1));
-            // std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
-            painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
-            painter.drawEllipse(QPoint(c_x, c_y), radius, radius); // 绘制圆形
+            width = grid_info->width / 40.0f * grid_size;
+            center_position = getGridCenter(p_x, p_y, width, height, type);
+            // painter.setPen(QPen(Qt::black, 1));
+            // // std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
+            // painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
+            // painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 绘制圆形
         }
         else {
             int height = grid_info->height;
             int width = grid_info->width / 40.0f * grid_size;
-            painter.setPen(QPen(Qt::black, 1));
-            int c_x = p_x, c_y = p_y;
-            if (height == 0) {
-                c_x += width / 3.0;
-                c_y += width / 3.0;
-            }
-            else if (height == 1) {
-                c_x -= width / 3.0;
-                c_y += width / 3.0;
-            }
-            else if (height == 2) {
-                c_x -= width / 3.0;
-                c_y -= width / 3.0;            
-            }
-            else if (height == 3) {
-                c_x += width / 3.0;
-                c_y -= width / 3.0;            
-            }
-            // 画圆
-            painter.setPen(QPen(Qt::black, 1));
-            painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
-            painter.drawEllipse(QPoint(c_x, c_y), radius, radius); // 绘制圆形
+            center_position = getGridCenter(p_x, p_y, width, height, type);
         }
-
+        painter.setPen(QPen(Qt::black, 1));
+        // std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
+        painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
+        painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 绘制圆形
     }
 }
 
@@ -765,4 +737,92 @@ void ChessBoardWidget::updatePieces(const QList<QVariantList> &pieces) {
 
     // 触发重绘
     update();
+}
+
+std::pair<int,int> ChessBoardWidget::getGridCenter(int px, int py, int width, int height, int type){
+    int c_x = px, c_y = py;
+    if(type == 0 || type == 2){
+        c_x += width / 2;
+        c_y += height / 2;
+    }
+    else if (type == 3){
+        if (height == 0) {
+            c_y -= width / 1.5;
+        }
+        else if (height == 1) {
+            c_x += width / 1.5;
+        }
+        else if (height == 2) {
+            c_y += width / 1.5;
+        }
+        else if (height == 3) {
+            c_x -= width / 1.5;
+        }
+    }
+    else{
+        if (height == 0) {
+            c_x += width / 3.0;
+            c_y += width / 3.0;
+        }
+        else if (height == 1) {
+            c_x -= width / 3.0;
+            c_y += width / 3.0;
+        }
+        else if (height == 2) {
+            c_x -= width / 3.0;
+            c_y -= width / 3.0;            
+        }
+        else if (height == 3) {
+            c_x += width / 3.0;
+            c_y -= width / 3.0;            
+        }   
+    }
+    return std::pair<int,int> (c_x, c_y);
+}
+
+void ChessBoardWidget::mousePressEvent(QMouseEvent *event) {
+    QPoint pos = event->pos(); // 点击位置
+
+    // qDebug() << "点击坐标:" << pos;
+    // 计算棋盘区域的大小
+    // int actual_x = pos.x() - offsetX;
+    // int actual_y = pos.y() - offsetY;
+    // qDebug() << "实际坐标:" << actual_x << actual_y;
+
+    // 查找这是哪个格子
+    for (auto chess_piece : chess_pieces_) {
+        int c_position = chess_piece.position;
+        auto grid_info = &flychess_map::getGameMap().searchGridInfo(c_position, static_cast<int>(chess_piece.color), chess_piece.id);
+        auto type = grid_info->type;    
+        int p_x = grid_info->position_x / 40 * grid_size + offsetX;
+        int p_y = grid_info->position_y / 40 * grid_size + offsetY;
+        int width = grid_info->width / 40 * grid_size;
+
+        std::pair<int,int> center_position;
+        if (type == 0 || type == 2) {
+            int height = grid_info->height / 40 * grid_size;
+            center_position = getGridCenter(p_x, p_y, width, height, type);
+        }
+        else if (type == 3) {
+            p_x = offsetX + boardSizePx / 2;
+            p_y = offsetY + boardSizePx / 2;
+            int height = grid_info->height;
+            width = grid_info->width / 40.0f * grid_size;
+            center_position = getGridCenter(p_x, p_y, width, height, type);
+        }
+        else {
+            int height = grid_info->height;
+            int width = grid_info->width / 40.0f * grid_size;
+            center_position = getGridCenter(p_x, p_y, width, height, type);
+        }
+
+        double dx = center_position.first - pos.x();
+        double dy = center_position.second - pos.y();
+        if (dx * dx + dy * dy <= radius * radius) {
+            int id = chess_piece.id;
+            game_utils::Color picked_color = chess_piece.color;
+            qDebug() << "点击了棋子ID:" << id << "颜色:" << game_utils::colorToString(picked_color).c_str();
+            return;
+        }
+    }
 }
