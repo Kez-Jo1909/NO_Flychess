@@ -32,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->UrlEdit, &QLineEdit::returnPressed, this, &MainWindow::UrlEditEnter);
     connect(ui->PlayerCountBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onPlayerCountChanged);
     connect(ui->ChessCountBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onChessCountChanged);
+    connect(ui->RollDiceButton, &QPushButton::clicked, this, &MainWindow::onRollDiceButton);
 
     connect(client_, &FlychessClient::connected,    this, &MainWindow::onConnected);
     connect(client_, &FlychessClient::disconnected, this, &MainWindow::onDisconnected);
@@ -50,6 +51,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::GameStart, this, &MainWindow::onGameStart);
     connect(client_, &FlychessClient::GameStartFailed, this, &MainWindow::onGameStartFailed);
     connect(client_, &FlychessClient::GameStartNotEnough, this, &MainWindow::onGameStartNotEnough);
+    connect(client_, &FlychessClient::rollDiceResult, this, &MainWindow::onRollDiceResult);
     connect(this, &MainWindow::AllPieceInfo, ui->chessBoardWidget, &ChessBoardWidget::updatePieces);
 
     // 初始化定时器
@@ -92,6 +94,20 @@ void MainWindow::onPlayerCountUpdate(int num) {
     if (index >= 0 && index < ui->PlayerCountBox->count()) {
         ui->PlayerCountBox->setCurrentIndex(index);
     }
+}
+
+void MainWindow::onRollDiceButton() {
+    this->client_->sendRollDiceRequest();
+}
+
+void MainWindow::onRollDiceResult(int result, QString player_name, int player_color) {
+    std::string color_str = game_utils::colorIntToString(player_color);
+    QString message = QString("玩家 %1 (%2) \n 掷骰结果: %3")
+                          .arg(player_name)
+                          .arg(QString::fromStdString(color_str))
+                          .arg(result);
+    // ui->DiceTextLabel->setWordWrap(true); // 启用自动换行
+    ui->DiceTextLabel->setText(message);
 }
 
 void MainWindow::onChessCountUpdate(int num) {
@@ -497,12 +513,17 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
     ui->verticalLayout_GamePage->setStretch(0, 5);
     ui->verticalLayout_GamePage->setStretch(1, 2);
 
-    ui->horizontalLayout_9->setStretch(0,2);
-    ui->horizontalLayout_9->setStretch(1,1);
-    ui->horizontalLayout_9->setStretch(2,6);
+    ui->horizontalLayout_9->setStretch(0,6);
+    ui->horizontalLayout_9->setStretch(1,2);
+    ui->horizontalLayout_9->setStretch(2,2);
+    ui->horizontalLayout_9->setStretch(3,2);
+    ui->horizontalLayout_9->setStretch(4,6);
 
     ui->verticalLayout_5->setStretch(0, 5); // Top spacer
     ui->verticalLayout_5->setStretch(1, 1); // Between spacer
+
+    ui->verticalLayout_8->setStretch(0, 1); // Top spacer
+    ui->verticalLayout_8->setStretch(1, 1); // Between spacer
 
 }
 

@@ -50,6 +50,9 @@ private slots:
 
     void onCreateGameButtonClicked();
 
+    void onRollDiceButton();
+    void onRollDiceResult(int result, QString player_name, int player_color);
+
     void onPreparePageExitButtonClicked();
     void onPreparePageExitButtonUserClicked();
 

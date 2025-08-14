@@ -37,6 +37,8 @@ public:
 
     void sendPlayerCount(int num);
     void sendChessCount(int num);
+
+    void sendRollDiceRequest();
 signals:
     void connected();
     void disconnected();
@@ -53,6 +55,7 @@ signals:
     void GameStartFailed();
     void GameStartNotEnough();
     void allPieceInfo(QList<QVariantList> pieces);
+    void rollDiceResult(int result, QString player_name, int player_color);
 private:
     ix::WebSocket ws_;
 

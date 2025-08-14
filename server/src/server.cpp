@@ -167,10 +167,12 @@
         nlohmann::json message_json;
         message_json["type"] = "dice_result";
         message_json["dice_result"] = dice_result;
+        message_json["player_color"] = game_room_->getPlayerByWebId(std::stoi(client_id)).color;
+        message_json["name"] = game_room_->getPlayerByWebId(std::stoi(client_id)).player_name;
 
-        std::string message_str = message_json.dump();
         if (server_) {
-            this->sendToClient(client_id, message_str);
+            // this->sendToClient(client_id, message_str);
+            BroadCast(message_json.dump());
         } else {
             std::cerr<< "server异常" << std::endl;
         }

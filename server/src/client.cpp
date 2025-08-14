@@ -143,6 +143,15 @@ namespace flychess_client {
                                 emit GameStartNotEnough();
                             }, Qt::QueuedConnection);
                         }
+                        else if(type == "dice_result") {
+                            int result = j.at("dice_result");
+                            std::string player_name = j.at("name");
+                            int player_color = j.at("player_color");
+
+                            QMetaObject::invokeMethod(this, [this, result, player_name, player_color]() {
+                                emit rollDiceResult(result, QString::fromStdString(player_name), player_color);
+                            }, Qt::QueuedConnection);
+                        }
                         else {
                             std::cout<< "未知消息类型,内容:";
                             std::cout<< msg_text << std::endl;
@@ -208,6 +217,12 @@ namespace flychess_client {
     void FlychessClient::sendGetUnPrepared() {
         nlohmann::json msg;
         msg["type"] = "get_unprepared";
+        ws_.send(msg.dump());
+    }
+
+    void FlychessClient::sendRollDiceRequest() {
+        nlohmann::json msg;
+        msg["type"] = "rolldice";
         ws_.send(msg.dump());
     }
 
