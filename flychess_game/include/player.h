@@ -8,9 +8,11 @@ namespace flychess_game {
 
 enum class PlayerState {
     UNDEFINED = -1,
-    WAITING = 0,
-    PLAYING = 1,
-    FINISHED = 2
+    WAITING = 0,    // 非当前玩家回合
+    ROLLING = 1,    // 等待掷骰子
+    SELECTING = 2,  // 等待挑选棋子
+    CARDING = 3,   // 等待出牌
+    FINISHED = 4 // 完成游戏
 };
 
 struct ChessPieceInfo {
@@ -112,8 +114,6 @@ public:
         return chess_pieces[index].GetChessPieceInfo();
     }
 
-    int GameTurn();
-
     int GetStartedChessPieceCount() const {
         int count = 0;
         for (const auto& chess_piece : chess_pieces) {
@@ -144,6 +144,14 @@ public:
 
     inline const int GetIfPreGoal(int chess_id) {
         return chess_pieces[chess_id].ifPreGoal();
+    }
+
+    inline const PlayerState GetPlayerState() const {
+        return player_state;
+    }
+
+    inline void setPlayerState(const PlayerState ps) {
+        player_state = ps;
     }
 
     /**

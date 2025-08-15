@@ -100,6 +100,24 @@ namespace flychess_game {
         }
         return true; // 所有玩家都已准备
     }
+
+    void FlychessGame::InitGame() {
+        // 初始化游戏状态
+        for (auto& player : players) {
+            player.setPlayerState(PlayerState::WAITING);
+        }
+        players[0].setPlayerState(PlayerState::ROLLING);
+    }
+
+    int FlychessGame::GetPlayerToRollDice() {
+        for (const auto& player : players) {
+            if (player.GetPlayerState() == PlayerState::ROLLING) {
+                game_utils::Color ret_color =  player.GetColor();
+                return static_cast<int>(ret_color);
+            }
+        }
+        return -1;
+    }
 }
 
 // JS 接口部分

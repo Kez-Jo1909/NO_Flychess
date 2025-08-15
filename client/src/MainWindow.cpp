@@ -53,6 +53,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::GameStartNotEnough, this, &MainWindow::onGameStartNotEnough);
     connect(client_, &FlychessClient::rollDiceResult, this, &MainWindow::onRollDiceResult);
     connect(this, &MainWindow::AllPieceInfo, ui->chessBoardWidget, &ChessBoardWidget::updatePieces);
+    connect(client_, &FlychessClient::toRollDice, this, &MainWindow::onToRollDice);
+    connect(client_, &FlychessClient::OtherToRollDice, this, &MainWindow::onOtherToRollDice);
 
     // 初始化定时器
     connectTimer_ = new QTimer(this);
@@ -73,6 +75,7 @@ void MainWindow::onNewPlayerJoined(QString name, game_utils::Color color) {
 
 void MainWindow::onGameStart() {
     ui->stackedWidget->setCurrentIndex(4);
+    ui->RollDiceButton->setEnabled(false);
 }
 
 void MainWindow::onGameStartFailed() {
@@ -108,6 +111,20 @@ void MainWindow::onRollDiceResult(int result, QString player_name, int player_co
                           .arg(result);
     // ui->DiceTextLabel->setWordWrap(true); // 启用自动换行
     ui->DiceTextLabel->setText(message);
+}
+
+void MainWindow::onToRollDice() {
+    this->waiting_to_roll = true;
+    ui->DiceTextLabel->setText("请掷骰子...");
+    ui->RollDiceButton->setEnabled(true);
+}
+
+void MainWindow::onOtherToRollDice(int color) {
+    if (this->waiting_to_roll)
+        return;
+    
+    std::string color_str = game_utils::colorIntToString(color);
+    ui->DiceTextLabel->setText("等待 " + QString::fromStdString(color_str) + " 玩家掷骰子...");
 }
 
 void MainWindow::onChessCountUpdate(int num) {
@@ -317,7 +334,7 @@ void MainWindow::onConnected() {
         disconnect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
         connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
         connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
-        ui->stackedWidget->setCurrentIndex(3);
+        // ui->stackedWidget->setCurrentIndex(3);
     } else {
         ui->PlayerCountBox->setEnabled(false);
         ui->ChessCountBox->setEnabled(false);
@@ -328,8 +345,9 @@ void MainWindow::onConnected() {
         disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonUserClicked);
         connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
         connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonUserClicked);
-        ui->stackedWidget->setCurrentIndex(3);
+        // ui->stackedWidget->setCurrentIndex(3);
     }
+    ui->stackedWidget->setCurrentIndex(3);
     // 准备发送用户信息
     client_->sendUserInfo("player");
 

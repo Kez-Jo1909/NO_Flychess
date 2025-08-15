@@ -45,10 +45,10 @@ private:
     void BroadCastChessCount();
     void BroadCastRoomInfo();
     void BroadCastPieceInfo(int player_count, int cp_count);
+    void BroadCastToRollDice(int color_to_roll);
 
     flychess_game::FlychessGame *game_; // 游戏实例
     flychess_game::FlychessGameRoom *game_room_; // 游戏房间实例
-
 };
 
 }

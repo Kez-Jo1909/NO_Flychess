@@ -126,14 +126,6 @@ namespace flychess_game {
         // std::cout<< "Player created with color: " << static_cast<int>(color) << " and " << chess_piece_count << " chess pieces." << std::endl;
     }
 
-    int Player::GameTurn(){
-        if(this->player_state == PlayerState::FINISHED){
-            return -1; // 玩家游戏已结束，直接跳过
-        }
-        this->player_state = PlayerState::PLAYING;
-        return 1;
-    }
-
     int Player::MoveChessPiece(int chess_id, int steps){
         std::cout<< "Player " << static_cast<int>(player_color) << " is moving chess piece " << chess_id << " with steps: " << steps << std::endl;
 

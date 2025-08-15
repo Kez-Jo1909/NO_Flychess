@@ -56,6 +56,8 @@ signals:
     void GameStartNotEnough();
     void allPieceInfo(QList<QVariantList> pieces);
     void rollDiceResult(int result, QString player_name, int player_color);
+    void toRollDice();
+    void OtherToRollDice(int color);
 private:
     ix::WebSocket ws_;
 

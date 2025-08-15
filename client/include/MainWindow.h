@@ -61,6 +61,9 @@ private slots:
     void onPreparePageStartButtonClicked();
     void onPreparePagePrepareButtonClicked();
 
+    void onToRollDice();
+    void onOtherToRollDice(int color);
+
     void onPlayerCountChanged(int index);
     void onChessCountChanged(int index);
 
@@ -101,6 +104,9 @@ private:
 
     bool is_server = false;
     bool prepared = false;
+
+    bool waiting_to_roll = false;
+    bool waiting_to_use_card = false;
 
     game_utils::Color user_color_ = game_utils::Color::UNDEFINED; // 默认颜色
 

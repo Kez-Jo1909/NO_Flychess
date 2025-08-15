@@ -303,8 +303,33 @@
             nlohmann::json start_game_msg;
             start_game_msg["type"] = "game_start";
             this->BroadCast(start_game_msg.dump());
-        }
 
+            game_->InitGame();
+
+            int color_to_roll = game_->GetPlayerToRollDice();
+            if (color_to_roll != -1 && color_to_roll <= 3) {
+                // 发送给需要掷骰子的玩家
+                BroadCastToRollDice(color_to_roll);
+            } else {
+                std::cerr << "颜色值无效。" << std::endl;
+            }
+        }
+    }
+
+    void FlychessServer::BroadCastToRollDice(int color_to_roll) {
+        for (int i = 0; i < game_room_->getPlayerCount(); i++) {
+            auto p_info = game_room_->getPlayer(i);
+            if (static_cast<int>(p_info.color) == color_to_roll) {
+                nlohmann::json roll_dice_msg;
+                roll_dice_msg["type"] = "to_roll_dice";
+                this->sendToClient(std::to_string(p_info.websocket_id), roll_dice_msg.dump());
+
+                nlohmann::json roll_dice_broadcast_msg;
+                roll_dice_broadcast_msg["type"] = "to_roll_dice_broadcast";
+                roll_dice_broadcast_msg["color"] = color_to_roll;
+                this->BroadCast(roll_dice_broadcast_msg.dump());
+            }
+        }
     }
 
     void FlychessServer::BroadCastPieceInfo(int player_count, int cp_count) {

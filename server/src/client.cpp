@@ -143,13 +143,24 @@ namespace flychess_client {
                                 emit GameStartNotEnough();
                             }, Qt::QueuedConnection);
                         }
-                        else if(type == "dice_result") {
+                        else if (type == "dice_result") {
                             int result = j.at("dice_result");
                             std::string player_name = j.at("name");
                             int player_color = j.at("player_color");
 
                             QMetaObject::invokeMethod(this, [this, result, player_name, player_color]() {
                                 emit rollDiceResult(result, QString::fromStdString(player_name), player_color);
+                            }, Qt::QueuedConnection);
+                        }
+                        else if (type == "to_roll_dice") {
+                            QMetaObject::invokeMethod(this, [this]() {
+                                emit toRollDice();
+                            }, Qt::QueuedConnection);
+                        }
+                        else if (type == "to_roll_dice_broadcast") {
+                            int color = j.at("color");
+                            QMetaObject::invokeMethod(this, [this, color]() {
+                                emit OtherToRollDice(color);
                             }, Qt::QueuedConnection);
                         }
                         else {
