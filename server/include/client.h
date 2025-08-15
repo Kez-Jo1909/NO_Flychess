@@ -39,6 +39,10 @@ public:
     void sendChessCount(int num);
 
     void sendRollDiceRequest();
+
+    void sendChosenChessPiece(int id, int color);
+
+    void sendFinishUseCard(int color);
 signals:
     void connected();
     void disconnected();
@@ -58,6 +62,7 @@ signals:
     void rollDiceResult(int result, QString player_name, int player_color);
     void toRollDice();
     void OtherToRollDice(int color);
+    void toUseCard();
 private:
     ix::WebSocket ws_;
 

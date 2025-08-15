@@ -103,12 +103,16 @@ public:
     const ChessPieceInfo& GetPlayerChess(int player_id, int chess_id) {
         return players[player_id].GetChessPieceInfo(chess_id);
     }
+    
+    void changePlayerState(game_utils::Color color, PlayerState new_state);
 
     void IfPositionTaken(int position, int player_id, int chess_id);
 
     void InitGame();
 
     int GetPlayerToRollDice();
+
+    int MoveChessPiece(int player_id, int chess_id, int steps);
 private:
     std::vector<Player> players; // 玩家列表
     int chess_count_per_player = 4;

@@ -70,8 +70,12 @@
 
                     if (type == "rolldice") {
                         std::cout<< "rolldice request from player " << j["playerId"] << std::endl;
-                        int dice_result = flychess_game::rollDice();
-                        sendDiceNum(dice_result, client_id);
+                        steps = flychess_game::rollDice();
+                        sendDiceNum(steps, client_id);
+                        auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
+                        
+                        // 将状态改为待选择棋子
+                        game_->changePlayerState(player.color, flychess_game::PlayerState::SELECTING);
                     }
                     else if (type == "userInfo") {// 新加入玩家在这里
                         std::string user_name = j.at("name");
@@ -121,6 +125,31 @@
                         this->game_room_->setChessCount(num);
 
                         this->BroadCastChessCount();
+                    }
+                    else if (type == "choose_chess_piece") {
+                        int id = j.at("id");
+                        int color = j.at("color");
+
+                        // 移动棋子
+                        this->game_->MoveChessPiece(color, id, steps);
+                        steps = -1;
+                        game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::CARDING);
+                        
+                        BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
+
+                        nlohmann::json to_use_card_msg;
+                        to_use_card_msg["type"] = "to_use_card";
+                        this->sendToClient(client_id, to_use_card_msg.dump());
+                    }
+                    else if (type == "finish_use_card") {
+                        // 将该玩家状态设置为WAITING
+                        int color = j.at("color");
+                        game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::WAITING);
+
+                        // 将下一个玩家状态设置为ROLLING
+                        int next_color = (color + 1) % game_room_->getMaxPlayerCount();
+                        game_->changePlayerState(static_cast<game_utils::Color>(next_color), flychess_game::PlayerState::ROLLING);
+                        BroadCastToRollDice(next_color);
                     }
                     else {
                         std::cout<< "未知消息类型,内容:";

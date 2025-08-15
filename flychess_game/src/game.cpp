@@ -118,6 +118,35 @@ namespace flychess_game {
         }
         return -1;
     }
+
+    void FlychessGame::changePlayerState(game_utils::Color color, PlayerState new_state) {
+        int index = static_cast<int>(color);
+        if (index >= 0 && index < players.size()) {
+            players[index].setPlayerState(new_state);
+        }
+    }
+
+
+    int FlychessGame::MoveChessPiece(int player_id, int chess_id, int steps) {
+        if (player_id < 0 || player_id >= this->GetPlayerCount()) {
+            std::cerr << "Invalid player ID: " << player_id << std::endl;
+            return -2;
+        }
+
+        auto& player = this->GetPlayer(player_id);
+        int ret = player.MoveChessPiece(chess_id, steps);
+        
+        // 如果有问题直接返回错误码
+        if(ret <= 0)
+            return ret;
+        else {
+            // 移动成功开始检查格子是否占用
+            auto chess_piece_info = player.GetChessPieceInfo(chess_id);
+            auto position  = chess_piece_info.position;
+            this->IfPositionTaken(position, player_id, chess_id);
+        }
+        return ret;
+    }
 }
 
 // JS 接口部分

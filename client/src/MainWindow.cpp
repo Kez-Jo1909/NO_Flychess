@@ -55,6 +55,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this, &MainWindow::AllPieceInfo, ui->chessBoardWidget, &ChessBoardWidget::updatePieces);
     connect(client_, &FlychessClient::toRollDice, this, &MainWindow::onToRollDice);
     connect(client_, &FlychessClient::OtherToRollDice, this, &MainWindow::onOtherToRollDice);
+    connect(ui->chessBoardWidget, &ChessBoardWidget::selectedChessPiece, this, &MainWindow::onSelectedChessPiece);
+    connect(client_, &FlychessClient::toUseCard, this, &MainWindow::onToUseCard);
 
     // 初始化定时器
     connectTimer_ = new QTimer(this);
@@ -76,6 +78,16 @@ void MainWindow::onNewPlayerJoined(QString name, game_utils::Color color) {
 void MainWindow::onGameStart() {
     ui->stackedWidget->setCurrentIndex(4);
     ui->RollDiceButton->setEnabled(false);
+    this->player_state_ = flychess_game::PlayerState::WAITING;
+}
+
+void MainWindow::onToUseCard() {
+    this->player_state_ = flychess_game::PlayerState::CARDING;
+    
+    // TODO
+    // 由于没有牌，先在这里直接跳过
+    this->client_->sendFinishUseCard(static_cast<int>(user_color_));
+    this->player_state_ = flychess_game::PlayerState::WAITING;
 }
 
 void MainWindow::onGameStartFailed() {
@@ -101,27 +113,33 @@ void MainWindow::onPlayerCountUpdate(int num) {
 
 void MainWindow::onRollDiceButton() {
     this->client_->sendRollDiceRequest();
+    ui->RollDiceButton->setEnabled(false);
+    ui->DiceTextLabel->setText("正在掷骰子,请稍等...");
 }
 
 void MainWindow::onRollDiceResult(int result, QString player_name, int player_color) {
-    std::string color_str = game_utils::colorIntToString(player_color);
-    QString message = QString("玩家 %1 (%2) \n 掷骰结果: %3")
-                          .arg(player_name)
-                          .arg(QString::fromStdString(color_str))
-                          .arg(result);
-    // ui->DiceTextLabel->setWordWrap(true); // 启用自动换行
-    ui->DiceTextLabel->setText(message);
+    if (this->player_state_ == flychess_game::PlayerState::ROLLING) {
+        ui->DiceTextLabel->setText("掷骰结果: " + QString::number(result) + "\n请选择棋子");
+        this->player_state_ = flychess_game::PlayerState::SELECTING;
+    } else{
+        std::string color_str = game_utils::colorIntToString(player_color);
+        QString message = QString("玩家 %1 (%2) \n 掷骰结果: %3")
+                            .arg(player_name)
+                            .arg(QString::fromStdString(color_str))
+                            .arg(result);
+        // ui->DiceTextLabel->setWordWrap(true); // 启用自动换行
+        ui->DiceTextLabel->setText(message);
+    }
 }
 
 void MainWindow::onToRollDice() {
-    this->waiting_to_roll = true;
+    player_state_ = flychess_game::PlayerState::ROLLING;
     ui->DiceTextLabel->setText("请掷骰子...");
     ui->RollDiceButton->setEnabled(true);
 }
 
 void MainWindow::onOtherToRollDice(int color) {
-    if (this->waiting_to_roll)
-        return;
+    if (this->player_state_ == flychess_game::PlayerState::ROLLING) return;
     
     std::string color_str = game_utils::colorIntToString(color);
     ui->DiceTextLabel->setText("等待 " + QString::fromStdString(color_str) + " 玩家掷骰子...");
@@ -165,6 +183,21 @@ void MainWindow::onChessCountChanged(int index) {
     int chess_count = text.left(text.length() - 1).toInt();
 
     client_->sendChessCount(chess_count);
+}
+
+void MainWindow::onSelectedChessPiece(int id, int color) {
+    if (this->player_state_ != flychess_game::PlayerState::SELECTING) {
+        std::cout << "当前非选择棋子状态" << std::endl;
+        return;
+    }
+
+    if (color != static_cast<int>(user_color_)) {
+        std::cout << "非当前玩家的棋子" << std::endl;
+        return;
+    }
+
+    this->client_->sendChosenChessPiece(id, color);
+    this->player_state_ = flychess_game::PlayerState::WAITING;
 }
 
 
@@ -861,6 +894,7 @@ void ChessBoardWidget::mousePressEvent(QMouseEvent *event) {
             int id = chess_piece.id;
             game_utils::Color picked_color = chess_piece.color;
             qDebug() << "点击了棋子ID:" << id << "颜色:" << game_utils::colorToString(picked_color).c_str();
+            emit selectedChessPiece(id, static_cast<int>(picked_color));
             return;
         }
     }

@@ -78,6 +78,8 @@ private slots:
     void onGameStart();
     void onGameStartFailed();
     void onGameStartNotEnough();
+    void onSelectedChessPiece(int id, int color);
+    void onToUseCard();
 private:
     // void repositionStartMenu();
 
@@ -105,8 +107,7 @@ private:
     bool is_server = false;
     bool prepared = false;
 
-    bool waiting_to_roll = false;
-    bool waiting_to_use_card = false;
+    flychess_game::PlayerState player_state_ = flychess_game::PlayerState::UNDEFINED;
 
     game_utils::Color user_color_ = game_utils::Color::UNDEFINED; // 默认颜色
 
@@ -121,7 +122,8 @@ public:
     explicit ChessBoardWidget(QWidget *parent = nullptr);
 public slots:
     void updatePieces(const QList<QVariantList> &pieces);
-
+signals:
+    void selectedChessPiece(int id, int color);
 protected:
     // void resizeEvent(QResizeEvent *event) override;
     QSize minimumSizeHint() const override;

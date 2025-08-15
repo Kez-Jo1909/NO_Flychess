@@ -163,6 +163,11 @@ namespace flychess_client {
                                 emit OtherToRollDice(color);
                             }, Qt::QueuedConnection);
                         }
+                        else if (type == "to_use_card") {
+                            QMetaObject::invokeMethod(this, [this]() {
+                                emit toUseCard();
+                            }, Qt::QueuedConnection);
+                        }
                         else {
                             std::cout<< "未知消息类型,内容:";
                             std::cout<< msg_text << std::endl;
@@ -189,6 +194,22 @@ namespace flychess_client {
         ws_.close();
         ws_.stop();
         // std::cout << "客户端主动断开连接" << std::endl;
+    }
+
+    void FlychessClient::sendChosenChessPiece(int id, int color) {
+        nlohmann::json msg;
+        msg["type"] = "choose_chess_piece";
+        msg["id"] = id;
+        msg["color"] = color;
+
+        ws_.send(msg.dump());
+    }
+
+    void FlychessClient::sendFinishUseCard(int color) {
+        nlohmann::json msg;
+        msg["type"] = "finish_use_card";
+        msg["color"] = color;
+        ws_.send(msg.dump());
     }
 
     void FlychessClient::sendPlayerCount(int num) {
