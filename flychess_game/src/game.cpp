@@ -167,6 +167,26 @@ namespace flychess_game {
         }
         return this->GetPlayer(player_id).GetFinishedChessPieceCount();
     }
+
+    int FlychessGame::FlyChessPiece(int player_id, int chess_id) {
+        if (player_id < 0 || player_id >= this->GetPlayerCount()) {
+            std::cerr << "Invalid player ID: " << player_id << std::endl;
+            return -2;
+        }
+
+        auto& player = this->GetPlayer(player_id);
+        int ret = player.FlyChessPiece(chess_id);
+
+        if (ret <= 0)
+            return ret; // 如果没有飞行或发生错误，直接返回
+        else {
+            // 飞行成功开始检查格子是否占用
+            auto chess_piece_info = player.GetChessPieceInfo(chess_id);
+            auto position = chess_piece_info.position;
+            this->IfPositionTaken(position, player_id, chess_id);
+            return ret; // 返回飞行结果
+        }
+    }
 }
 
 // JS 接口部分

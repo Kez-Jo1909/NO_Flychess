@@ -144,10 +144,12 @@
                         int color = j.at("color");
 
                         // 移动棋子
-                        this->game_->MoveChessPiece(color, id, steps);
+                        this->game_->MoveChessPiece(color, id, 6);
                         // 移动后检查是否结束
-                        int finished_piece_count = this->game_->GetFinishedChessCount(color);
                         BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
+                        int ret = this->game_->FlyChessPiece(color, id);
+                        BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
+                        int finished_piece_count = this->game_->GetFinishedChessCount(color);
                         if (finished_piece_count == this->game_room_->getChessPerPlayer()) {
                             // 该玩家结束游戏
                             BroadCastSomeoneFinished(color);
