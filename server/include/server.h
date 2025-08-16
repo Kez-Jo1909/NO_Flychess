@@ -48,9 +48,14 @@ private:
     void BroadCastRoomInfo();
     void BroadCastPieceInfo(int player_count, int cp_count);
     void BroadCastToRollDice(int color_to_roll);
+    void BroadCastSomeoneFinished(int color_finished);
+    void BroadCastAllFinished();
 
     flychess_game::FlychessGame *game_; // 游戏实例
     flychess_game::FlychessGameRoom *game_room_; // 游戏房间实例
+
+    // int finished_player_count = 0;
+    std::vector<int> finished_players;
 
     int steps = -1;
 };

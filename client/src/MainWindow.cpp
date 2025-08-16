@@ -58,6 +58,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->chessBoardWidget, &ChessBoardWidget::selectedChessPiece, this, &MainWindow::onSelectedChessPiece);
     connect(client_, &FlychessClient::toUseCard, this, &MainWindow::onToUseCard);
     connect(client_, &FlychessClient::NoAvailableChess, this, &MainWindow::onNoAvailableChess);
+    connect(client_, &FlychessClient::SomeoneFinished, this, &MainWindow::onSomeoneFinished);
+    connect(client_, &FlychessClient::AllPlayerFinished, this, &MainWindow::onAllPlayerFinished);
 
     // 初始化定时器
     connectTimer_ = new QTimer(this);
@@ -80,6 +82,45 @@ void MainWindow::onGameStart() {
     ui->stackedWidget->setCurrentIndex(4);
     ui->RollDiceButton->setEnabled(false);
     this->player_state_ = flychess_game::PlayerState::WAITING;
+}
+
+void MainWindow::onAllPlayerFinished(const QList<QVariantList>& rank_list) {
+    std::vector<std::string> color_rank;
+    for (const QVariantList& rank : rank_list) {
+        int color = rank[0].toInt();
+        color_rank.push_back(game_utils::colorIntToString(color));
+    }
+
+    // 拼接显示内容
+    QString msg = "游戏结束，排名如下：\n";
+    for (size_t i = 0; i < color_rank.size(); ++i) {
+        msg += QString("第%1名: %2\n").arg(i + 1).arg(QString::fromStdString(color_rank[i]));
+    }
+
+    QMessageBox::information(this, "排名结果", msg);
+    // TODO 解算页面
+
+    // 回到房间
+    ui->stackedWidget->setCurrentIndex(3);
+}
+
+void MainWindow::onSomeoneFinished(int color) {
+    if (static_cast<int>(user_color_) == color) {
+        // auto reply = QMessageBox::question(
+        //     this,
+        //     "留在房间确认",
+        //     "已完成游戏\n还要留在房间吗?",
+        //     QMessageBox::Yes | QMessageBox::No
+        // );
+        // if (reply == QMessageBox::Yes) {
+        //     // nothing to do
+        // } else {
+        //     ui->stackedWidget->setCurrentIndex(3);
+        // }
+        QMessageBox::warning(this, "恭喜", "您已经完成游戏");
+    } else {
+        // nothing to do?
+    }
 }
 
 void MainWindow::onToUseCard() {

@@ -39,7 +39,7 @@
 
     void FlychessServer::stop() {
         if (server_) {
-            server_->stop();     
+            server_->stop();  
         }
     }
 
@@ -145,12 +145,27 @@
 
                         // 移动棋子
                         this->game_->MoveChessPiece(color, id, steps);
-                        steps = -1;
-                        game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::CARDING);
-                        
+                        // 移动后检查是否结束
+                        int finished_piece_count = this->game_->GetFinishedChessCount(color);
                         BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
-
-                        this->CardState(client_id);
+                        if (finished_piece_count == this->game_room_->getChessPerPlayer()) {
+                            // 该玩家结束游戏
+                            BroadCastSomeoneFinished(color);
+                            this->game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::FINISHED);
+                            // finished_player_count++;
+                            finished_players.push_back(color);
+                            // 在这里检查是不是所有都结束了
+                            if (finished_players.size() == game_room_->getPlayerCount()) {
+                                this->BroadCastAllFinished();
+                                // TODO 将所有都设置为非准备
+                                // 销毁game_
+                                return;
+                            }
+                        } else {
+                            game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::CARDING);
+                            this->CardState(client_id);
+                        }
+                        steps = -1;
                     }
                     else if (type == "finish_use_card") {
                         // 将该玩家状态设置为WAITING
@@ -158,9 +173,14 @@
                         game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::WAITING);
 
                         // 将下一个玩家状态设置为ROLLING
-                        int next_color = (color + 1) % game_room_->getMaxPlayerCount();
-                        game_->changePlayerState(static_cast<game_utils::Color>(next_color), flychess_game::PlayerState::ROLLING);
-                        BroadCastToRollDice(next_color);
+                        int next_color = color;
+                        while(1) {
+                            next_color = (next_color + 1) % game_room_->getMaxPlayerCount();
+                            if (game_->getPlayerState(next_color) != flychess_game::PlayerState::FINISHED) {
+                                game_->changePlayerState(static_cast<game_utils::Color>(next_color), flychess_game::PlayerState::ROLLING);
+                                BroadCastToRollDice(next_color);
+                            }
+                        }
                     }
                     else {
                         std::cout<< "未知消息类型,内容:";
@@ -282,6 +302,16 @@
         this->BroadCast(player_list_json.dump());
     }
 
+    void FlychessServer::BroadCastAllFinished() {
+        nlohmann::json msg;
+        msg["type"] = "all_finished";
+        for(const auto i : finished_players) {
+            msg["rank"].push_back({
+                {"color", i}
+            });
+        }
+        this->BroadCast(msg.dump());
+    }
 
     bool FlychessServer::start() {
         auto res = server_->listen();
@@ -350,6 +380,7 @@
             start_game_msg["type"] = "game_start";
             this->BroadCast(start_game_msg.dump());
 
+            this->finished_players.clear();
             game_->InitGame();
 
             int color_to_roll = game_->GetPlayerToRollDice();
@@ -376,6 +407,13 @@
                 this->BroadCast(roll_dice_broadcast_msg.dump());
             }
         }
+    }
+    
+    void FlychessServer::BroadCastSomeoneFinished(int color_finished) {
+        nlohmann::json msg;
+        msg["type"] = "someone_finished";
+        msg["color"] = color_finished;
+        this->BroadCast(msg.dump());
     }
 
     void FlychessServer::BroadCastPieceInfo(int player_count, int cp_count) {

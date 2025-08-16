@@ -126,6 +126,10 @@ namespace flychess_game {
         }
     }
 
+    PlayerState FlychessGame::getPlayerState(int color) {
+        return players[color].GetPlayerState();
+    }
+
 
     int FlychessGame::MoveChessPiece(int player_id, int chess_id, int steps) {
         if (player_id < 0 || player_id >= this->GetPlayerCount()) {
@@ -154,6 +158,14 @@ namespace flychess_game {
             return -1;
         }
         return this->GetPlayer(player_id).GetStartedChessPieceCount();
+    }
+
+    int FlychessGame::GetFinishedChessCount(int player_id) {
+        if (player_id < 0 || player_id >= this->GetPlayerCount()) {
+            std::cerr << "Invalid player ID: " << player_id << std::endl;
+            return -1;
+        }
+        return this->GetPlayer(player_id).GetFinishedChessPieceCount();
     }
 }
 

@@ -79,6 +79,12 @@ namespace flychess_client {
                                 emit playerListUpdated(players);
                             }, Qt::QueuedConnection);
                         }
+                        else if (type == "someone_finished") {
+                            int color = j.at("color");
+                            QMetaObject::invokeMethod(this, [this, color]() {
+                                emit SomeoneFinished(color);
+                            }, Qt::QueuedConnection);
+                        }
                         else if(type == "all_piece_info") {
                             QList<QVariantList> pieces;
                             for(auto& piece : j["pieces"]) {
@@ -96,6 +102,15 @@ namespace flychess_client {
                             // 发信号给 Qt 主线程
                             QMetaObject::invokeMethod(this, [this, pieces = std::move(pieces)]() {
                                 emit allPieceInfo(pieces);
+                            }, Qt::QueuedConnection);
+                        }
+                        else if (type == "all_finished") {
+                            QList<QVariantList> rank_list;
+                            for(auto rank : j["rank"]) {
+                                int color = rank.at("color");
+                            }
+                            QMetaObject::invokeMethod(this, [this, rank_list = std::move(rank_list)]() {
+                                emit AllPlayerFinished(rank_list);
                             }, Qt::QueuedConnection);
                         }
                         else if(type == "leave_room"){

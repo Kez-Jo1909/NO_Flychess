@@ -71,6 +71,7 @@ private slots:
     void onRegisterResult(game_utils::Color color);
     void onPlayerListUpdated(const QList<QVariantList>& players);
     void onAllPieceInfo(const QList<QVariantList>& pieces);
+    void onAllPlayerFinished(const QList<QVariantList>& rank_list);
     void onPlayerLeaveRoom(QString name, game_utils::Color color);
     void onPlayerCountUpdate(int num);
     void onChessCountUpdate(int num);
@@ -81,6 +82,7 @@ private slots:
     void onSelectedChessPiece(int id, int color);
     void onToUseCard();
     void onNoAvailableChess(int color);
+    void onSomeoneFinished(int color);
 private:
     // void repositionStartMenu();
 

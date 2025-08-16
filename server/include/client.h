@@ -66,6 +66,8 @@ signals:
     void OtherToRollDice(int color);
     void toUseCard();
     void NoAvailableChess(int color);
+    void SomeoneFinished(int color);
+    void AllPlayerFinished(QList<QVariantList> rank_list);
 private:
     ix::WebSocket ws_;
 
