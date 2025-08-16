@@ -147,6 +147,14 @@ namespace flychess_game {
         }
         return ret;
     }
+
+    int FlychessGame::GetStartedChessCount(int player_id) {
+        if (player_id < 0 || player_id >= this->GetPlayerCount()) {
+            std::cerr << "Invalid player ID: " << player_id << std::endl;
+            return -1;
+        }
+        return this->GetPlayer(player_id).GetStartedChessPieceCount();
+    }
 }
 
 // JS 接口部分

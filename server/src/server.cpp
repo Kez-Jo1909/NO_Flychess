@@ -71,11 +71,24 @@
                     if (type == "rolldice") {
                         std::cout<< "rolldice request from player " << j["playerId"] << std::endl;
                         steps = flychess_game::rollDice();
-                        sendDiceNum(steps, client_id);
                         auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
-                        
-                        // 将状态改为待选择棋子
-                        game_->changePlayerState(player.color, flychess_game::PlayerState::SELECTING);
+                        if (steps != 6 && game_->GetStartedChessCount(static_cast<int>(player.color)) == 0) {
+                            std::cout << "No avialable chess piece" << std::endl;
+
+                            nlohmann::json no_avialable_msg;
+                            no_avialable_msg["type"] = "no_avialable_piece";
+                            no_avialable_msg["color"] = static_cast<int>(player.color);
+                            this->sendToClient(client_id, no_avialable_msg.dump());
+                        } else {
+                            sendDiceNum(steps, client_id);
+                            // 将状态改为待选择棋子
+                            game_->changePlayerState(player.color, flychess_game::PlayerState::SELECTING);
+                        }
+                    }
+                    else if (type == "finish_text_waiting") {
+                        auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
+                        game_->changePlayerState(player.color, flychess_game::PlayerState::CARDING);
+                        this->CardState(client_id);
                     }
                     else if (type == "userInfo") {// 新加入玩家在这里
                         std::string user_name = j.at("name");
@@ -137,9 +150,7 @@
                         
                         BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
 
-                        nlohmann::json to_use_card_msg;
-                        to_use_card_msg["type"] = "to_use_card";
-                        this->sendToClient(client_id, to_use_card_msg.dump());
+                        this->CardState(client_id);
                     }
                     else if (type == "finish_use_card") {
                         // 将该玩家状态设置为WAITING
@@ -235,6 +246,12 @@
     void FlychessServer::BroadCastRoomInfo() {
         this->BroadCastPlayerCount();
         this->BroadCastChessCount();
+    }
+
+    void FlychessServer::CardState(const std::string client_id) {
+        nlohmann::json to_use_card_msg;
+        to_use_card_msg["type"] = "to_use_card";
+        this->sendToClient(client_id, to_use_card_msg.dump());
     }
 
     void FlychessServer::BroadCast(const std::string& msg) {

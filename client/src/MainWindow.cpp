@@ -57,6 +57,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::OtherToRollDice, this, &MainWindow::onOtherToRollDice);
     connect(ui->chessBoardWidget, &ChessBoardWidget::selectedChessPiece, this, &MainWindow::onSelectedChessPiece);
     connect(client_, &FlychessClient::toUseCard, this, &MainWindow::onToUseCard);
+    connect(client_, &FlychessClient::NoAvailableChess, this, &MainWindow::onNoAvailableChess);
 
     // 初始化定时器
     connectTimer_ = new QTimer(this);
@@ -88,6 +89,20 @@ void MainWindow::onToUseCard() {
     // 由于没有牌，先在这里直接跳过
     this->client_->sendFinishUseCard(static_cast<int>(user_color_));
     this->player_state_ = flychess_game::PlayerState::WAITING;
+}
+
+void MainWindow::onNoAvailableChess(int color) {
+    if (static_cast<int>(user_color_) != color) {
+        ui->DiceTextLabel->setText("玩家无可用棋子...");
+    }
+    else {
+        ui->DiceTextLabel->setText("无可用棋子\n自动跳过选择...");
+        this->player_state_ = flychess_game::PlayerState::WAITING;
+
+        QTimer::singleShot(500, this, [this]() {
+            this->client_->sendFinishTextWaiting();
+        });
+    }
 }
 
 void MainWindow::onGameStartFailed() {

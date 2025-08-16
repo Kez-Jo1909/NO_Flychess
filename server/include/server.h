@@ -41,6 +41,8 @@ private:
 
     void BroadCastPlayerList();
 
+    void CardState(const std::string client_id);
+
     void BroadCastPlayerCount();
     void BroadCastChessCount();
     void BroadCastRoomInfo();

@@ -168,6 +168,13 @@ namespace flychess_client {
                                 emit toUseCard();
                             }, Qt::QueuedConnection);
                         }
+                        else if (type == "no_avialable_piece") {
+                            int color = j.at("color");
+
+                            QMetaObject::invokeMethod(this, [this, color]() {
+                                emit NoAvailableChess(color);
+                            }, Qt::QueuedConnection);
+                        }
                         else {
                             std::cout<< "未知消息类型,内容:";
                             std::cout<< msg_text << std::endl;
@@ -188,6 +195,12 @@ namespace flychess_client {
 
     void FlychessClient::sendMessage(const std::string &msg) {
         ws_.send(msg);
+    }
+
+    void FlychessClient::sendFinishTextWaiting() {
+        nlohmann::json msg;
+        msg["type"] = "finish_text_waiting";
+        this->sendMessage(msg.dump());
     }
 
     void FlychessClient::close() {

@@ -80,6 +80,7 @@ private slots:
     void onGameStartNotEnough();
     void onSelectedChessPiece(int id, int color);
     void onToUseCard();
+    void onNoAvailableChess(int color);
 private:
     // void repositionStartMenu();
 

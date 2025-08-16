@@ -43,6 +43,8 @@ public:
     void sendChosenChessPiece(int id, int color);
 
     void sendFinishUseCard(int color);
+
+    void sendFinishTextWaiting();
 signals:
     void connected();
     void disconnected();
@@ -63,6 +65,7 @@ signals:
     void toRollDice();
     void OtherToRollDice(int color);
     void toUseCard();
+    void NoAvailableChess(int color);
 private:
     ix::WebSocket ws_;
 
