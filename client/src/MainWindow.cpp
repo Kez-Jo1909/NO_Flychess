@@ -118,6 +118,8 @@ void MainWindow::onSomeoneFinished(int color) {
         //     ui->stackedWidget->setCurrentIndex(3);
         // }
         QMessageBox::warning(this, "恭喜", "您已经完成游戏");
+        // 很屎的修复
+        this->client_->sendFinishUseCard(color);
     } else {
         // nothing to do?
     }

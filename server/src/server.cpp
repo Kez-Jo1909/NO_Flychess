@@ -179,6 +179,7 @@
                             if (game_->getPlayerState(next_color) != flychess_game::PlayerState::FINISHED) {
                                 game_->changePlayerState(static_cast<game_utils::Color>(next_color), flychess_game::PlayerState::ROLLING);
                                 BroadCastToRollDice(next_color);
+                                return;
                             }
                         }
                     }
