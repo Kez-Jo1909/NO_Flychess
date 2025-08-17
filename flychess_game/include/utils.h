@@ -41,7 +41,7 @@ inline std::vector<int> colorintToRGB(int c) {
         case 1: return {0, 0, 255};   // BLUE
         case 2: return {0, 255, 0};   // GREEN
         case 3: return {255, 255, 0}; // YELLOW
-        default: return {200, 200, 200}; // 灰色
+        default: return {200, 200, 200}; // 
     }
 }
 
@@ -61,7 +61,7 @@ T get_random(T min, T max) {
         std::uniform_real_distribution<T> dist(min, max);
         return dist(gen);
     } else {
-        static_assert(std::is_arithmetic<T>::value, "不支持的类型");
+        static_assert(std::is_arithmetic<T>::value, "");
     }
 }
 

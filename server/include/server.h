@@ -17,8 +17,8 @@ class FlychessServer : public QObject {
 public:
     explicit FlychessServer(int port = 8080, QObject* parent = nullptr);
 
-    bool start();                     // 启动服务器
-    void stop();                       // 停止服务器
+    bool start();                     // 
+    void stop();                       // 
     void handleMessage(const ix::WebSocketMessagePtr& msg, const std::string& client_id);
 
     void GameStart();
@@ -32,7 +32,7 @@ signals:
 private:
     int port_;
     std::unique_ptr<ix::WebSocketServer> server_;
-    std::unordered_map<std::string, std::shared_ptr<ix::WebSocket>> clients_;// client_id -> WebSocket映射
+    std::unordered_map<std::string, std::shared_ptr<ix::WebSocket>> clients_;// client_id -> WebSocket
 
     void setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket, const std::string& client_id);
     void sendDiceNum(int dice_num_, const std::string& client_id);
@@ -51,8 +51,8 @@ private:
     void BroadCastSomeoneFinished(int color_finished);
     void BroadCastAllFinished();
 
-    flychess_game::FlychessGame *game_; // 游戏实例
-    flychess_game::FlychessGameRoom *game_room_; // 游戏房间实例
+    flychess_game::FlychessGame *game_; // 
+    flychess_game::FlychessGameRoom *game_room_; // 
 
     // int finished_player_count = 0;
     std::vector<int> finished_players;

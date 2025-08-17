@@ -48,7 +48,7 @@ public:
 signals:
     void connected();
     void disconnected();
-    void messageReceived(QString msg);  // 发给 Qt 的信号
+    void messageReceived(QString msg);  //  Qt 
     void registerResult(game_utils::Color color);
     void newPlayerJoined(QString name, game_utils::Color color);
     void unknownMessage(QString msg);

@@ -15,10 +15,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->RoomListTableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->RoomTableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
-    // 创建客户端实例
+    // 
     client_ = new flychess_client::FlychessClient(this);
 
-    // 连接信号和槽函数
+    // 
     connect(ui->StartButton, &QPushButton::clicked, this, &MainWindow::StartButtonClicked);
     connect(ui->ExitButton, &QPushButton::clicked, this, &MainWindow::onExitButtonClicked);
     connect(ui->SettingButton, &QPushButton::clicked, this, &MainWindow::onSettingButtonClicked);
@@ -37,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::connected,    this, &MainWindow::onConnected);
     connect(client_, &FlychessClient::disconnected, this, &MainWindow::onDisconnected);
 
-    // 绑定菜单栏-关于
+    // -
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::showAboutDialog);
 
     connect(client_, &FlychessClient::newPlayerJoined, this, &MainWindow::onNewPlayerJoined);
@@ -61,9 +61,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::SomeoneFinished, this, &MainWindow::onSomeoneFinished);
     connect(client_, &FlychessClient::AllPlayerFinished, this, &MainWindow::onAllPlayerFinished);
 
-    // 初始化定时器
+    // 
     connectTimer_ = new QTimer(this);
-    connectTimer_->setSingleShot(true);  // 只触发一次
+    connectTimer_->setSingleShot(true);  // 
     connect(connectTimer_, &QTimer::timeout, this, &MainWindow::onConnectTimeout);
 
 }
@@ -74,7 +74,7 @@ MainWindow::~MainWindow() {
 
 void MainWindow::onNewPlayerJoined(QString name, game_utils::Color color) {
     std::string color_str = game_utils::colorToString(color);
-    QString message = QString("system: %1进入房间, 颜色: %2").arg(name, QString::fromStdString(color_str));
+    QString message = QString("system: %1, : %2").arg(name, QString::fromStdString(color_str));
     ui->RoomListWidget->addItem(message);   
 }
 
@@ -91,16 +91,16 @@ void MainWindow::onAllPlayerFinished(const QList<QVariantList>& rank_list) {
         color_rank.push_back(game_utils::colorIntToString(color));
     }
 
-    // 拼接显示内容
-    QString msg = "游戏结束，排名如下：\n";
+    // 
+    QString msg = "\n";
     for (size_t i = 0; i < color_rank.size(); ++i) {
-        msg += QString("第%1名: %2\n").arg(i + 1).arg(QString::fromStdString(color_rank[i]));
+        msg += QString("%1: %2\n").arg(i + 1).arg(QString::fromStdString(color_rank[i]));
     }
 
-    QMessageBox::information(this, "排名结果", msg);
-    // TODO 解算页面
+    QMessageBox::information(this, "", msg);
+    // TODO 
 
-    // 回到房间
+    // 
     ui->stackedWidget->setCurrentIndex(3);
 }
 
@@ -108,8 +108,8 @@ void MainWindow::onSomeoneFinished(int color) {
     if (static_cast<int>(user_color_) == color) {
         // auto reply = QMessageBox::question(
         //     this,
-        //     "留在房间确认",
-        //     "已完成游戏\n还要留在房间吗?",
+        //     "",
+        //     "\n?",
         //     QMessageBox::Yes | QMessageBox::No
         // );
         // if (reply == QMessageBox::Yes) {
@@ -117,8 +117,8 @@ void MainWindow::onSomeoneFinished(int color) {
         // } else {
         //     ui->stackedWidget->setCurrentIndex(3);
         // }
-        QMessageBox::warning(this, "恭喜", "您已经完成游戏");
-        // 很屎的修复
+        QMessageBox::warning(this, "", "");
+        // 
         this->client_->sendFinishUseCard(color);
     } else {
         // nothing to do?
@@ -129,17 +129,17 @@ void MainWindow::onToUseCard() {
     this->player_state_ = flychess_game::PlayerState::CARDING;
     
     // TODO
-    // 由于没有牌，先在这里直接跳过
+    // 
     this->client_->sendFinishUseCard(static_cast<int>(user_color_));
     this->player_state_ = flychess_game::PlayerState::WAITING;
 }
 
 void MainWindow::onNoAvailableChess(int color) {
     if (static_cast<int>(user_color_) != color) {
-        ui->DiceTextLabel->setText("玩家无可用棋子...");
+        ui->DiceTextLabel->setText("...");
     }
     else {
-        ui->DiceTextLabel->setText("无可用棋子\n自动跳过选择...");
+        ui->DiceTextLabel->setText("\n...");
         this->player_state_ = flychess_game::PlayerState::WAITING;
 
         QTimer::singleShot(500, this, [this]() {
@@ -149,16 +149,16 @@ void MainWindow::onNoAvailableChess(int color) {
 }
 
 void MainWindow::onGameStartFailed() {
-    QMessageBox::warning(this, "游戏开始失败", "有玩家未准备好，无法开始游戏！");
+    QMessageBox::warning(this, "", "");
 }
 
 void MainWindow::onGameStartNotEnough() {
-    QMessageBox::warning(this, "游戏开始失败", "玩家人数不足，无法开始游戏！");
+    QMessageBox::warning(this, "", "");
 }
 
 void MainWindow::onPlayerLeaveRoom(QString name, game_utils::Color color) {
     std::string color_str = game_utils::colorToString(color);
-    QString message = QString("system: %1(%2) 离开房间").arg(name, QString::fromStdString(color_str));
+    QString message = QString("system: %1(%2) ").arg(name, QString::fromStdString(color_str));
     ui->RoomListWidget->addItem(message);  
 }
 
@@ -172,27 +172,27 @@ void MainWindow::onPlayerCountUpdate(int num) {
 void MainWindow::onRollDiceButton() {
     this->client_->sendRollDiceRequest();
     ui->RollDiceButton->setEnabled(false);
-    ui->DiceTextLabel->setText("正在掷骰子,请稍等...");
+    ui->DiceTextLabel->setText(",...");
 }
 
 void MainWindow::onRollDiceResult(int result, QString player_name, int player_color) {
     if (this->player_state_ == flychess_game::PlayerState::ROLLING) {
-        ui->DiceTextLabel->setText("掷骰结果: " + QString::number(result) + "\n请选择棋子");
+        ui->DiceTextLabel->setText(": " + QString::number(result) + "\n");
         this->player_state_ = flychess_game::PlayerState::SELECTING;
     } else{
         std::string color_str = game_utils::colorIntToString(player_color);
-        QString message = QString("玩家 %1 (%2) \n 掷骰结果: %3")
+        QString message = QString(" %1 (%2) \n : %3")
                             .arg(player_name)
                             .arg(QString::fromStdString(color_str))
                             .arg(result);
-        // ui->DiceTextLabel->setWordWrap(true); // 启用自动换行
+        // ui->DiceTextLabel->setWordWrap(true); // 
         ui->DiceTextLabel->setText(message);
     }
 }
 
 void MainWindow::onToRollDice() {
     player_state_ = flychess_game::PlayerState::ROLLING;
-    ui->DiceTextLabel->setText("请掷骰子...");
+    ui->DiceTextLabel->setText("...");
     ui->RollDiceButton->setEnabled(true);
 }
 
@@ -200,7 +200,7 @@ void MainWindow::onOtherToRollDice(int color) {
     if (this->player_state_ == flychess_game::PlayerState::ROLLING) return;
     
     std::string color_str = game_utils::colorIntToString(color);
-    ui->DiceTextLabel->setText("等待 " + QString::fromStdString(color_str) + " 玩家掷骰子...");
+    ui->DiceTextLabel->setText(" " + QString::fromStdString(color_str) + " ...");
 }
 
 void MainWindow::onChessCountUpdate(int num) {
@@ -212,32 +212,32 @@ void MainWindow::onChessCountUpdate(int num) {
 
 void MainWindow::onPlayerCountUpdateFailed(int min_num) {
     QMessageBox::warning(this,
-                         "错误",
-                         QString("当前房间已有 %1 人!").arg(min_num));
+                         "",
+                         QString(" %1 !").arg(min_num));
 }
 
 void MainWindow::onRegisterResult(game_utils::Color color) {
     this->user_color_ = color;
     std::string color_str = game_utils::colorToString(color);
-    QString message = QString("system: 当前颜色: %1").arg(QString::fromStdString(color_str));
+    QString message = QString("system: : %1").arg(QString::fromStdString(color_str));
     ui->RoomListWidget->addItem(message);  
 }
 
 void MainWindow::onPlayerCountChanged(int index) {
-    // 通过索引获取文本，例如 "3人"
+    //  "3"
     QString text = ui->PlayerCountBox->itemText(index);
 
-    // 去掉最后的“人”，并转为整数
+    // 
     int playerCount = text.left(text.length() - 1).toInt();
 
-    // qDebug() << "当前选择人数:" << playerCount;
+    // qDebug() << ":" << playerCount;
     client_->sendPlayerCount(playerCount);
 }
 
 void MainWindow::onChessCountChanged(int index) {
     QString text = ui->ChessCountBox->itemText(index);
 
-    // 去掉最后的“子”，并转为整数
+    // 
     int chess_count = text.left(text.length() - 1).toInt();
 
     client_->sendChessCount(chess_count);
@@ -245,12 +245,12 @@ void MainWindow::onChessCountChanged(int index) {
 
 void MainWindow::onSelectedChessPiece(int id, int color) {
     if (this->player_state_ != flychess_game::PlayerState::SELECTING) {
-        std::cout << "当前非选择棋子状态" << std::endl;
+        std::cout << "" << std::endl;
         return;
     }
 
     if (color != static_cast<int>(user_color_)) {
-        std::cout << "非当前玩家的棋子" << std::endl;
+        std::cout << "" << std::endl;
         return;
     }
 
@@ -261,23 +261,23 @@ void MainWindow::onSelectedChessPiece(int id, int color) {
 
 void MainWindow::showAboutDialog() {
     QMessageBox msgBox(this);
-    msgBox.setWindowTitle("关于");
+    msgBox.setWindowTitle("");
 
-    // 设置富文本并允许点击链接
+    // 
     msgBox.setTextFormat(Qt::RichText);
     msgBox.setTextInteractionFlags(Qt::TextBrowserInteraction);
 
     QString text = R"(
-        <h3>关于项目</h3>
-        <p>这是一个基于 Qt 的飞行棋游戏客户端。</p>
-        作者: KezJo<br>
-        版本: 0.1.0<br>
-        <a href='https://github.com/Kez-Jo1909/NO_Flychess'>访问 GitHub 项目主页</a>
+        <h3></h3>
+        <p> Qt </p>
+        : KezJo<br>
+        : 0.1.0<br>
+        <a href='https://github.com/Kez-Jo1909/NO_Flychess'> GitHub </a>
     )";
 
     msgBox.setText(text);
 
-    // 捕获链接点击
+    // 
     QLabel* label = msgBox.findChild<QLabel*>("qt_msgbox_label");
     if (label) {
         QObject::connect(label, &QLabel::linkActivated,
@@ -296,7 +296,7 @@ void MainWindow::onAllPieceInfo(const QList<QVariantList>& pieces) {
     }
 
     if (!chess_pieces_.empty()) {
-        // 清空之前的棋子信息
+        // 
         chess_pieces_.clear();
     }
 
@@ -308,37 +308,37 @@ void MainWindow::onAllPieceInfo(const QList<QVariantList>& pieces) {
         chess_pieces_.push_back(flychess_game::ChessPieceInfo(id, static_cast<game_utils::Color>(color), position, player_id));
     }
 
-    // 之后直接转发信号
+    // 
     emit AllPieceInfo(pieces);
 }
 
 void MainWindow::onPlayerListUpdated(const QList<QVariantList>& players) {
-    // 清空表格
+    // 
     ui->RoomTableWidget->setRowCount(0);
 
-    // 遍历玩家列表
+    // 
     int row = 0;
     for (const QVariantList& player : players) {
-        // 确保 player 里有三列：[name(QString), colorInt(int), is_ready(bool)]
+        //  player [name(QString), colorInt(int), is_ready(bool)]
         if (player.size() < 3) continue;
 
         QString name = player[0].toString();
         int colorInt = player[1].toInt();
         bool isReady = player[2].toBool();
 
-        // 插入新行
+        // 
         ui->RoomTableWidget->insertRow(row);
 
-        // ID 列（这里我理解你想显示玩家名字）
+        // ID 
         ui->RoomTableWidget->setItem(row, 0, new QTableWidgetItem(name));
 
-        // 颜色列（转换成字符串）
+        // 
         std::string colorStr = game_utils::colorIntToString(colorInt);
         QString colorQStr = QString::fromStdString(colorStr);
         ui->RoomTableWidget->setItem(row, 1, new QTableWidgetItem(colorQStr));
 
-        // 准备列
-        ui->RoomTableWidget->setItem(row, 2, new QTableWidgetItem(isReady ? "已准备" : "未准备"));
+        // 
+        ui->RoomTableWidget->setItem(row, 2, new QTableWidgetItem(isReady ? "" : ""));
 
         row++;
     }
@@ -351,29 +351,29 @@ void MainWindow::onPlayerListUpdated(const QList<QVariantList>& players) {
 void MainWindow::UrlEditEnter() {
     QString url = ui->UrlEdit->text().trimmed();
     if (url.isEmpty()) {
-        QMessageBox::warning(this, "错误", "请输入服务器URL!");
+        QMessageBox::warning(this, "", "URL!");
         return;
     }
-    // qDebug() << "按回车输入的URL是:" << url;
+    // qDebug() << "URL:" << url;
     auto reply = QMessageBox::question(
         this,
-        "加入房间确认",
-        "确定要加入房间吗？",
+        "",
+        "",
         QMessageBox::Yes | QMessageBox::No
     );
 
     if (reply == QMessageBox::Yes) {
         is_server = false;
-        // 弹出“正在连接”提示框（非阻塞）
+        // 
         connectingBox_ = new QMessageBox(QMessageBox::Information,
-                                        "连接中",
-                                        "正在连接服务器，请稍候…",
+                                        "",
+                                        "",
                                         QMessageBox::NoButton,
                                         this);
         connectingBox_->setModal(false);
         connectingBox_->show();
 
-        // 启动超时计时器（5秒）
+        // 5
         connectTimer_->start(5000);
 
         client_->connectToServer("ws://" + url.toStdString());
@@ -381,11 +381,11 @@ void MainWindow::UrlEditEnter() {
 }
 
 void MainWindow::onPreparePageStartButtonClicked() {
-    // 开始游戏
+    // 
     auto reply = QMessageBox::question(
         this,
-        "开始游戏",
-        "确定要开始游戏吗？",
+        "",
+        "",
         QMessageBox::Yes | QMessageBox::No
     );
 
@@ -397,30 +397,30 @@ void MainWindow::onPreparePageStartButtonClicked() {
 
 void MainWindow::onPreparePagePrepareButtonClicked() {
     if(prepared){
-        ui->PreparePageStartButton->setText("准备");
+        ui->PreparePageStartButton->setText("");
         this->client_->sendGetUnPrepared();
     } else {
-        ui->PreparePageStartButton->setText("取消准备");
+        ui->PreparePageStartButton->setText("");
         this->client_->sendGetPrepared();
     }
     prepared = !prepared;
 }
 
 void MainWindow::onConnected() {
-    // 停止超时计时
+    // 
     connectTimer_->stop();  
 
     if (connectingBox_) {
         connectingBox_->close();
         connectingBox_ = nullptr;
     }
-    // QMessageBox::information(this, "提示", "连接服务器成功！");
+    // QMessageBox::information(this, "", "");
     if (is_server) {
         ui->PlayerCountBox->setEnabled(true);
         ui->ChessCountBox->setEnabled(true);
         ui->ifCardCheckBox->setEnabled(true);
         ui->ifAiCheckBox->setEnabled(true);
-        ui->PreparePageStartButton->setText("开始游戏");
+        ui->PreparePageStartButton->setText("");
         disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
         disconnect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
         connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
@@ -431,7 +431,7 @@ void MainWindow::onConnected() {
         ui->ChessCountBox->setEnabled(false);
         ui->ifCardCheckBox->setEnabled(false);
         ui->ifAiCheckBox->setEnabled(false);
-        ui->PreparePageStartButton->setText("准备");
+        ui->PreparePageStartButton->setText("");
         disconnect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
         disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonUserClicked);
         connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
@@ -439,17 +439,17 @@ void MainWindow::onConnected() {
         // ui->stackedWidget->setCurrentIndex(3);
     }
     ui->stackedWidget->setCurrentIndex(3);
-    // 准备发送用户信息
+    // 
     client_->sendUserInfo("player");
 
     if(server_) {
-        // 默认准备
+        // 
         this->client_->sendGetPrepared();
     }
 }
 
 void MainWindow::onDisconnected() {
-    connectTimer_->stop(); // 如果是断开也需要停掉定时器
+    connectTimer_->stop(); // 
 
     if (connectingBox_) {
         connectingBox_->close();
@@ -458,7 +458,7 @@ void MainWindow::onDisconnected() {
 
     if (!is_server) {
         client_->close();
-        QMessageBox::warning(this, "提示", "连接失败或已断开！\n 即将返回上一个界面");
+        QMessageBox::warning(this, "", "\n ");
         ui->stackedWidget->setCurrentIndex(2);
     }
 }
@@ -468,17 +468,17 @@ void MainWindow::onConnectTimeout() {
         connectingBox_->close();
         connectingBox_ = nullptr;
     }
-    QMessageBox::warning(this, "提示", "连接超时，请检查服务器是否可用！");
-    // 这里可以选择断开 WebSocket
+    QMessageBox::warning(this, "", "");
+    //  WebSocket
     client_->disconnectFromServer();
 }
 
 void MainWindow::StartButtonClicked() {
-    ui->stackedWidget->setCurrentIndex(2); // 切换到第三页
+    ui->stackedWidget->setCurrentIndex(2); // 
 }
 
 void MainWindow::onSettingExitClicked() {
-    ui->stackedWidget->setCurrentIndex(0); // 切换回第一页
+    ui->stackedWidget->setCurrentIndex(0); // 
 }
 
 void MainWindow::onCreateGameButtonClicked() {
@@ -493,18 +493,18 @@ void MainWindow::onCreateGameButtonClicked() {
 
         if (!server_ret) {
             QMetaObject::invokeMethod(this, [this]() {
-                QMessageBox::critical(this, "错误", "服务器启动失败！");
+                QMessageBox::critical(this, "", "");
                 ui->stackedWidget->setCurrentIndex(2);
                 ui->RoomListWidget->clear();
             }, Qt::QueuedConnection);
         } else {
-            // 这里发起本地客户端连接
+            // 
             client_->connectToServer("ws://127.0.0.1:8080");
             // game_ = new flychess_game::FlychessGame();
 
             QMetaObject::invokeMethod(this, [this]() {
-                ui->RoomListWidget->addItem("system: 创建游戏成功,服务器已建立");
-                ui->RoomListWidget->addItem("system: 本地用户进入房间");
+                ui->RoomListWidget->addItem("system: ,");
+                ui->RoomListWidget->addItem("system: ");
             }, Qt::QueuedConnection);
         }
     }).detach();
@@ -513,8 +513,8 @@ void MainWindow::onCreateGameButtonClicked() {
 void MainWindow::onPreparePageExitButtonUserClicked() {
     auto reply = QMessageBox::question(
         this,
-        "返回确认",
-        "确定要退出房间吗？",
+        "",
+        "",
         QMessageBox::Yes | QMessageBox::No
     );
 
@@ -529,8 +529,8 @@ void MainWindow::onPreparePageExitButtonUserClicked() {
 void MainWindow::onPreparePageExitButtonClicked() {
     auto reply = QMessageBox::question(
         this,
-        "返回确认",
-        "确定要退出并解散房间吗？",
+        "",
+        "",
         QMessageBox::Yes | QMessageBox::No
     );
 
@@ -539,11 +539,11 @@ void MainWindow::onPreparePageExitButtonClicked() {
             client_->close();
             server_->stop();
 
-            // 延迟执行reset，确保后台线程有时间退出
+            // reset
             QTimer::singleShot(100, this, [this]() {
                 server_.reset();
                 std::cout << "server stopped." << std::endl;
-                ui->RoomListWidget->addItem("system: 服务器已关闭");
+                ui->RoomListWidget->addItem("system: ");
             });
         }
 
@@ -556,8 +556,8 @@ void MainWindow::onPreparePageExitButtonClicked() {
 void MainWindow::onSettingReButtonClicked() {
     auto reply = QMessageBox::question(
         this,
-        "重置确认",
-        "确定要重置设定吗？",
+        "",
+        "",
         QMessageBox::Yes | QMessageBox::No
     );
 
@@ -569,8 +569,8 @@ void MainWindow::onSettingReButtonClicked() {
 void MainWindow::onSettingSaveButtonClicked() {
     auto reply = QMessageBox::question(
         this,
-        "保存确认",
-        "确定要保存设定吗？",
+        "",
+        "",
         QMessageBox::Yes | QMessageBox::No
     );
 
@@ -582,8 +582,8 @@ void MainWindow::onSettingSaveButtonClicked() {
 void MainWindow::onExitButtonClicked() {
     auto reply = QMessageBox::question(
         this,
-        "退出确认",
-        "确定要退出吗？",
+        "",
+        "",
         QMessageBox::Yes | QMessageBox::No
     );
 
@@ -593,7 +593,7 @@ void MainWindow::onExitButtonClicked() {
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event) {
-    QMainWindow::resizeEvent(event); // 保留父类处理
+    QMainWindow::resizeEvent(event); // 
 
     ui->verticalLayout_page->setStretch(0, 3); // Top spacer
     // ui->verticalLayout_page->setStretch(2, 0); // Between2 spacer
@@ -637,7 +637,7 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
 }
 
 void MainWindow::onSettingButtonClicked() {
-    // 切换到第二页
+    // 
     ui->stackedWidget->setCurrentIndex(1);
 }
 
@@ -655,7 +655,7 @@ QSize ChessBoardWidget::minimumSizeHint() const {
 
 // void ChessBoardWidget::resizeEvent(QResizeEvent *event) {
 //     int size = std::min(width(), height());
-//     resize(size, size); // 保持正方形
+//     resize(size, size); // 
 //     QWidget::resizeEvent(event);
 // }
 
@@ -663,21 +663,21 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // 计算最大正方形区域
+    // 
     boardSizePx = std::min(width(), height()) / 34 * 34;
     offsetX = (width()  - boardSizePx) / 2;
     offsetY = (height() - boardSizePx) / 2;
 
-    grid_size = boardSizePx / 17; // 每个格子的大小
+    grid_size = boardSizePx / 17; // 
     radius = boardSizePx / 51;
 
-    // 绘制整个控件背景
+    // 
     painter.fillRect(rect(), Qt::white);
 
-    // 绘制棋盘区域的浅色背景
+    // 
     painter.fillRect(QRect(offsetX, offsetY, boardSizePx, boardSizePx), QColor(255, 255, 255));
 
-    // 绘制正方形边框
+    // 
     painter.setPen(QPen(Qt::black, 2));
     painter.drawRect(offsetX, offsetY, boardSizePx, boardSizePx);
 
@@ -694,10 +694,10 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
         std::vector<int> color_vector = game_utils::colorintToRGB(grid->color);
         int p_x = grid->position_x / 40 * grid_size + offsetX;
         int p_y = grid->position_y / 40 * grid_size + offsetY;
-        // std::cout<<"读取width:" << grid->width <<std::endl;
+        // std::cout<<"width:" << grid->width <<std::endl;
 
         if(type == 0 || type == 2) {
-            // 矩形
+            // 
             int width = grid->width / 40 * grid_size;
             // std::cout<<"type0 size:" << width << std::endl;
             int height = grid->height / 40 * grid_size;
@@ -707,13 +707,13 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
             painter.drawRect(rect);
 
 
-            // 画圆
+            // 
             // int center_x = p_x + width / 2;
             // int center_y = p_y + height / 2;
             std::pair<int,int> center_position = getGridCenter(p_x, p_y, width, height, type);
             painter.setPen(QPen(Qt::black, 1));
             painter.setBrush(Qt::white);
-            painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 绘制圆形
+            painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 
         }
         else if(type == 3) {
             p_x = offsetX + boardSizePx / 2;
@@ -721,9 +721,9 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
             int c_x = p_x;
             int c_y = p_y;
             int height = grid->height;
-            int width = grid->width / 40.0f * grid_size;// 这里一定是40.0f * grid_size,float不能省
+            int width = grid->width / 40.0f * grid_size;// 40.0f * grid_size,float
             // std::cout<<"type3 size:" << width << std::endl;
-            painter.setRenderHint(QPainter::Antialiasing); // 抗锯齿
+            painter.setRenderHint(QPainter::Antialiasing); // 
             painter.setPen(QPen(Qt::black, 1));
             painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
             QPolygonF triangle;
@@ -751,18 +751,18 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
                         << QPointF(p_x - width, p_y - width);
                 // c_x -= width / 1.5;
             }
-            painter.drawPolygon(triangle); // 绘制三角形
+            painter.drawPolygon(triangle); // 
 
-            // 画圆
+            // 
             std::pair<int,int> center_position = getGridCenter(p_x, p_y, width, height, type);
             painter.setPen(QPen(Qt::black, 1));
             painter.setBrush(Qt::white);
-            painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 绘制圆形
+            painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 
         }
         else {
             int height = grid->height;
             int width = grid->width / 40.0f * grid_size;
-            painter.setRenderHint(QPainter::Antialiasing); // 抗锯齿
+            painter.setRenderHint(QPainter::Antialiasing); // 
             painter.setPen(QPen(Qt::black, 1));
             painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
             QPolygonF triangle;
@@ -796,9 +796,9 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
                 // c_y -= width / 3.0;            
             }
 
-            painter.drawPolygon(triangle); // 绘制三角形
+            painter.drawPolygon(triangle); // 
 
-            // 画圆
+            // 
             std::pair<int,int> center_position = getGridCenter(p_x, p_y, width, height, type);
             painter.setPen(QPen(Qt::black, 1));
             painter.setBrush(Qt::white);
@@ -806,7 +806,7 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
         }
     }
 
-    // 绘制棋子
+    // 
     // std::cout<< "size:" << chess_pieces_.size() <<std::endl;
     for(int i = 0; i < chess_pieces_.size(); i++) {
         int c_position = chess_pieces_[i].position;
@@ -834,7 +834,7 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
             // painter.setPen(QPen(Qt::black, 1));
             // // std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
             // painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
-            // painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 绘制圆形
+            // painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 
         }
         else if (type == 3){
             p_x = offsetX + boardSizePx / 2;
@@ -845,7 +845,7 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
             // painter.setPen(QPen(Qt::black, 1));
             // // std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
             // painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
-            // painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 绘制圆形
+            // painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 
         }
         else {
             int height = grid_info->height;
@@ -855,15 +855,15 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
         painter.setPen(QPen(Qt::black, 1));
         // std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
         painter.setBrush(QColor(color_vector[0], color_vector[1], color_vector[2]));
-        painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 绘制圆形
+        painter.drawEllipse(QPoint(center_position.first, center_position.second), radius, radius); // 
     }
 }
 
 void ChessBoardWidget::updatePieces(const QList<QVariantList> &pieces) {
-    // 清空之前的棋子信息
+    // 
     chess_pieces_.clear();
 
-    // 遍历接收到的棋子信息
+    // 
     for (const QVariantList &piece : pieces) {
         int id = piece[0].toInt();
         int color = piece[1].toInt();
@@ -872,7 +872,7 @@ void ChessBoardWidget::updatePieces(const QList<QVariantList> &pieces) {
         chess_pieces_.emplace_back(id, static_cast<game_utils::Color>(color), position, player_id);
     }
 
-    // 触发重绘
+    // 
     update();
 }
 
@@ -918,15 +918,15 @@ std::pair<int,int> ChessBoardWidget::getGridCenter(int px, int py, int width, in
 }
 
 void ChessBoardWidget::mousePressEvent(QMouseEvent *event) {
-    QPoint pos = event->pos(); // 点击位置
+    QPoint pos = event->pos(); // 
 
-    // qDebug() << "点击坐标:" << pos;
-    // 计算棋盘区域的大小
+    // qDebug() << ":" << pos;
+    // 
     // int actual_x = pos.x() - offsetX;
     // int actual_y = pos.y() - offsetY;
-    // qDebug() << "实际坐标:" << actual_x << actual_y;
+    // qDebug() << ":" << actual_x << actual_y;
 
-    // 查找这是哪个格子
+    // 
     for (auto chess_piece : chess_pieces_) {
         int c_position = chess_piece.position;
         auto grid_info = &flychess_map::getGameMap().searchGridInfo(c_position, static_cast<int>(chess_piece.color), chess_piece.id);
@@ -958,7 +958,7 @@ void ChessBoardWidget::mousePressEvent(QMouseEvent *event) {
         if (dx * dx + dy * dy <= radius * radius) {
             int id = chess_piece.id;
             game_utils::Color picked_color = chess_piece.color;
-            qDebug() << "点击了棋子ID:" << id << "颜色:" << game_utils::colorToString(picked_color).c_str();
+            qDebug() << "ID:" << id << ":" << game_utils::colorToString(picked_color).c_str();
             emit selectedChessPiece(id, static_cast<int>(picked_color));
             return;
         }

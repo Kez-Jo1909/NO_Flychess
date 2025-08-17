@@ -10,17 +10,17 @@ namespace flychess_client {
     }
 
     void FlychessClient::connectToServer(const std::string &url) {
-        std::cout<<"调用 connectToServer, url: " << url << std::endl;
-        ws_.stop();  // 先停掉旧连接，防止重复
+        std::cout<<" connectToServer, url: " << url << std::endl;
+        ws_.stop();  // 
 
 
         ws_.setUrl(url);
 
-            // 注册消息回调
+            // 
         ws_.setOnMessageCallback([this](const ix::WebSocketMessagePtr &msg) {
             if (msg->type == ix::WebSocketMessageType::Open)
             {
-                // 在回调线程，使用 Qt 的事件系统发信号
+                //  Qt 
                 QMetaObject::invokeMethod(this, [this]() {
                     emit connected();
                 }, Qt::QueuedConnection);
@@ -45,7 +45,7 @@ namespace flychess_client {
                             std::string color = j.at("color");
                             this->user_color_ = static_cast<game_utils::Color>(std::stoi(color));
 
-                            // 发信号给 Qt 主线程
+                            //  Qt 
                             QMetaObject::invokeMethod(this, [this]() {
                                 emit registerResult(this->user_color_);
                             }, Qt::QueuedConnection);
@@ -54,9 +54,9 @@ namespace flychess_client {
                             std::string new_player_name = j.at("name");
                             std::string new_player_color = j.at("color");
                             // game_utils::Color color = static_cast<game_utils::Color>(std::stoi(new_player_color));
-                            // std::cout << "[DEBUG] 收到 add_player_broadcast: "
+                            // std::cout << "[DEBUG]  add_player_broadcast: "
                             //     << new_player_name << " color=" << new_player_color << std::endl;
-                            // 发信号给 Qt 主线程
+                            //  Qt 
                             QMetaObject::invokeMethod(this, [this, new_player_name, new_player_color]() {
                                 emit newPlayerJoined(QString::fromStdString(new_player_name),
                                                      static_cast<game_utils::Color>(std::stoi(new_player_color)));
@@ -74,7 +74,7 @@ namespace flychess_client {
                                     is_ready
                                 });
                             }
-                            // 发信号给 Qt 主线程
+                            //  Qt 
                             QMetaObject::invokeMethod(this, [this, players = std::move(players)]() {
                                 emit playerListUpdated(players);
                             }, Qt::QueuedConnection);
@@ -99,7 +99,7 @@ namespace flychess_client {
                                     player_id
                                 });
                             }
-                            // 发信号给 Qt 主线程
+                            //  Qt 
                             QMetaObject::invokeMethod(this, [this, pieces = std::move(pieces)]() {
                                 emit allPieceInfo(pieces);
                             }, Qt::QueuedConnection);
@@ -195,7 +195,7 @@ namespace flychess_client {
                             }, Qt::QueuedConnection);
                         }
                         else {
-                            std::cout<< "未知消息类型,内容:";
+                            std::cout<< ",:";
                             std::cout<< msg_text << std::endl;
                             // QMetaObject::invokeMethod(this, [this, msg_text]() {
                             //     emit unknownMessage(QString::fromStdString(msg_text));
@@ -225,7 +225,7 @@ namespace flychess_client {
     void FlychessClient::close() {
         ws_.close();
         ws_.stop();
-        // std::cout << "客户端主动断开连接" << std::endl;
+        // std::cout << "" << std::endl;
     }
 
     void FlychessClient::sendChosenChessPiece(int id, int color) {

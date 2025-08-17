@@ -10,7 +10,7 @@ namespace flychess_game {
 
 struct PlayerInfo {
     int websocket_id;
-    std::string player_name = "player";// TODO : 也许未来可以本地存储用户名
+    std::string player_name = "player";// TODO : 
     game_utils::Color color;
     bool if_prepared = false;
 
@@ -70,9 +70,9 @@ public:
 
     void DeletePlayer(int web_id);
 private:
-    int player_count = 4; // 玩家数量
+    int player_count = 4; // 
     int chess_count_per_player = 4;
-    std::vector<PlayerInfo> players; // 玩家信息列表
+    std::vector<PlayerInfo> players; // 
 };
 
 
@@ -80,10 +80,10 @@ class FlychessGame {
 public:
     FlychessGame() = default;
 
-    // 添加玩家
+    // 
     void AddNewPlayer(game_utils::Color color, int chess_piece_count = 4);
     
-    // 重设游戏状态
+    // 
     void Reset();
 
     inline const int GetPlayerCount() const {
@@ -121,11 +121,11 @@ public:
     int GetFinishedChessCount(int player_id);
     int FlyChessPiece(int player_id, int chess_id);
 private:
-    std::vector<Player> players; // 玩家列表
+    std::vector<Player> players; // 
     int chess_count_per_player = 4;
 };
 
-// 原本给js前端预留的接口
+// js
 FlychessGame& get_instance();
 
 int rollDice();
@@ -133,7 +133,7 @@ int rollDice();
 }
 
 
-/*以下为JS接口*/
+/*JS*/
 #ifdef __EMSCRIPTEN__
 
 #include <emscripten/emscripten.h>
