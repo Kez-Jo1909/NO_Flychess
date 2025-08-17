@@ -106,9 +106,13 @@ namespace flychess_client {
                         }
                         else if (type == "all_finished") {
                             QList<QVariantList> rank_list;
-                            for(auto rank : j["rank"]) {
-                                int color = rank.at("color");
+                            for (auto &rank : j["rank"]) {
+                                int color = rank["color"].get<int>();
+                                QVariantList item;
+                                item << color;
+                                rank_list.push_back(item);
                             }
+
                             QMetaObject::invokeMethod(this, [this, rank_list = std::move(rank_list)]() {
                                 emit AllPlayerFinished(rank_list);
                             }, Qt::QueuedConnection);
