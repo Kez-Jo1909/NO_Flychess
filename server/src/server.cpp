@@ -144,7 +144,7 @@
                         int color = j.at("color");
 
                         // 移动棋子
-                        this->game_->MoveChessPiece(color, id, 6);
+                        this->game_->MoveChessPiece(color, id, steps);
                         // 移动后检查是否结束
                         BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
                         int ret = this->game_->FlyChessPiece(color, id);
@@ -172,7 +172,9 @@
                     else if (type == "finish_use_card") {
                         // 将该玩家状态设置为WAITING
                         int color = j.at("color");
-                        game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::WAITING);
+                        if (this->game_->getPlayerState(color) != flychess_game::PlayerState::FINISHED) {
+                            game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::WAITING);   
+                        }
 
                         // 将下一个玩家状态设置为ROLLING
                         int next_color = color;

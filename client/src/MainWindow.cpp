@@ -821,6 +821,11 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
         int type = grid_info->type;
         std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
         std::pair<int,int> center_position;
+
+        if (chess_pieces_[i].id == -2) {
+            continue;
+        }
+
         if (type == 0 || type == 2) {
             int height = grid_info->height / 40 * grid_size;
             center_position = getGridCenter(p_x, p_y, width, height, type);
