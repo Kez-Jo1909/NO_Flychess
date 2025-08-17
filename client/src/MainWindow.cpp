@@ -685,6 +685,7 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
     for (int i = 0; i < grid_num; i++) {
         auto grid = flychess_map::GetGridInfo(i);
 
+        // std::cout << "grid_id" << grid->id << std::endl;
         if (grid->id == -2) {
             continue;
         }
@@ -821,8 +822,9 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
         int type = grid_info->type;
         std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
         std::pair<int,int> center_position;
-
-        if (chess_pieces_[i].id == -2) {
+        
+        // std::cout << "grid_id" << grid_info->id << std::endl;
+        if (grid_info->id == -2) {
             continue;
         }
 
