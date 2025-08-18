@@ -1,6 +1,6 @@
 # README
 
-![version](https://img.shields.io/badge/version-0.1.0-black)
+![version](https://img.shields.io/badge/version-0.2.0-black)
 
 ## 依赖项
 
@@ -97,6 +97,6 @@ gh-pages -d frontend
 git submodule update --init --recursive
 cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE="D:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_PREFIX_PATH="C:/Qt/5.15.19/msvc2019_64" -DCMAKE_INSTALL_PREFIX="%cd%/dist"
 cmake --build . --config Release
-cmake --install . build --config Release
+cmake --install . --config Release
 & "C:\Qt\5.15.19\msvc2019_64\bin\windeployqt.exe" .\Flychess_QT_Client.exe
 ```

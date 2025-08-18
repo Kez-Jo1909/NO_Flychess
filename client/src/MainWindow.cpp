@@ -664,7 +664,10 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
     painter.setRenderHint(QPainter::Antialiasing);
 
     // 计算最大正方形区域
-    boardSizePx = std::min(width(), height()) / 34 * 34;
+    // boardSizePx = std::min(width(), height()) / 34 * 34;
+    int tmpW = width(), tmpH = height();
+    int tmpMin = (tmpW < tmpH) ? tmpW : tmpH;
+    boardSizePx = tmpMin / 34 * 34;
     offsetX = (width()  - boardSizePx) / 2;
     offsetY = (height() - boardSizePx) / 2;
 
