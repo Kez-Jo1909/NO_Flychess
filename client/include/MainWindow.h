@@ -17,7 +17,20 @@
 #include "server.h"
 #include "client.h"
 #include "utils.h"
-#include "utils.h"
+
+
+#ifdef _WIN32
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #pragma comment(lib, "ws2_32.lib")
+#else
+    #include <arpa/inet.h>
+    #include <netinet/in.h>
+    #include <sys/socket.h>
+    #include <unistd.h>
+#endif
+
+std::string getLocalIP();
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -83,6 +96,7 @@ private slots:
     void onToUseCard();
     void onNoAvailableChess(int color);
     void onSomeoneFinished(int color);
+    void onURLReceived(QString url);
 private:
     // void repositionStartMenu();
 

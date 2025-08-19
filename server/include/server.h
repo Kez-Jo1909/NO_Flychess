@@ -15,13 +15,17 @@ namespace flychess_server{
 class FlychessServer : public QObject {
     Q_OBJECT
 public:
-    explicit FlychessServer(int port = 8080, QObject* parent = nullptr);
+    explicit FlychessServer(int port = 8080, const std::string& host = "0.0.0.0", QObject* parent = nullptr);
 
     bool start();                     // 启动服务器
     void stop();                       // 停止服务器
     void handleMessage(const ix::WebSocketMessagePtr& msg, const std::string& client_id);
 
     void GameStart();
+
+    inline void setUrlString(std::string url) {
+        url_to_show = url;
+    }
 
 signals:
     void clientConnected(const QString& client_id, const QString& ip);
@@ -58,6 +62,8 @@ private:
     std::vector<int> finished_players;
 
     int steps = -1;
+    std::string host_;
+    std::string url_to_show;
 };
 
 }

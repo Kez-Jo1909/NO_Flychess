@@ -79,6 +79,13 @@ namespace flychess_client {
                                 emit playerListUpdated(players);
                             }, Qt::QueuedConnection);
                         }
+                        else if (type == "url") {
+                            std::string url = j.at("url");
+                            // 发信号给 Qt 主线程
+                            QMetaObject::invokeMethod(this, [this, url]() {
+                                emit UrlReceived(QString::fromStdString(url));
+                            }, Qt::QueuedConnection);
+                        }
                         else if (type == "someone_finished") {
                             int color = j.at("color");
                             QMetaObject::invokeMethod(this, [this, color]() {

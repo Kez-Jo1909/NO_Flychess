@@ -68,6 +68,7 @@ signals:
     void NoAvailableChess(int color);
     void SomeoneFinished(int color);
     void AllPlayerFinished(QList<QVariantList> rank_list);
+    void UrlReceived(QString url);
 private:
     ix::WebSocket ws_;
 

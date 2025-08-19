@@ -1,4 +1,5 @@
 #include "../include/MainWindow.h"
+#include "client.h"
 #include "game.h"
 #include "ui_MainWindow.h"
 #include "utils.h"
@@ -60,6 +61,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::NoAvailableChess, this, &MainWindow::onNoAvailableChess);
     connect(client_, &FlychessClient::SomeoneFinished, this, &MainWindow::onSomeoneFinished);
     connect(client_, &FlychessClient::AllPlayerFinished, this, &MainWindow::onAllPlayerFinished);
+    connect(client_, &FlychessClient::UrlReceived, this, &MainWindow::onURLReceived);
 
     // 初始化定时器
     connectTimer_ = new QTimer(this);
@@ -481,12 +483,20 @@ void MainWindow::onSettingExitClicked() {
     ui->stackedWidget->setCurrentIndex(0); // 切换回第一页
 }
 
+void MainWindow::onURLReceived(QString url) {
+    ui->UrlLabel->setText("服务器ip:" + url + ":8080");
+}
+
 void MainWindow::onCreateGameButtonClicked() {
+    std::string ip = getLocalIP();
+    std::cout<< "本地IP地址: " << ip << std::endl;
+    ui->UrlLabel->setText("服务器ip:" + QString::fromStdString(ip) + ":8080");
     is_server = true;
 
     // ui->stackedWidget->setCurrentIndex(3);
 
-    server_ = std::make_unique<flychess_server::FlychessServer>(8080);
+    server_ = std::make_unique<flychess_server::FlychessServer>(8080, "0.0.0.0");
+    server_->setUrlString(ip);
 
     std::thread([this] {
         bool server_ret = server_->start();
@@ -966,4 +976,45 @@ void ChessBoardWidget::mousePressEvent(QMouseEvent *event) {
             return;
         }
     }
+}
+
+std::string getLocalIP() {
+#ifdef _WIN32
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
+        return "WSAStartup failed";
+    }
+#endif
+
+    std::string localIP = "127.0.0.1"; // 默认值
+
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        return localIP;
+    }
+
+    sockaddr_in serv;
+    serv.sin_family = AF_INET;
+    serv.sin_addr.s_addr = inet_addr("8.8.8.8"); // 任意外部地址（不需要真的能连通）
+    serv.sin_port = htons(80);
+
+    if (connect(sock, (sockaddr*)&serv, sizeof(serv)) == 0) {
+        sockaddr_in name;
+        socklen_t namelen = sizeof(name);
+        if (getsockname(sock, (sockaddr*)&name, &namelen) == 0) {
+            char buffer[INET_ADDRSTRLEN];
+            if (inet_ntop(AF_INET, &name.sin_addr, buffer, sizeof(buffer))) {
+                localIP = buffer;
+            }
+        }
+    }
+
+#ifdef _WIN32
+    closesocket(sock);
+    WSACleanup();
+#else
+    close(sock);
+#endif
+
+    return localIP;
 }

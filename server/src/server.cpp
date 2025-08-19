@@ -6,8 +6,8 @@
 
     namespace flychess_server {
 
-    FlychessServer::FlychessServer(int port, QObject* parent)
-        : QObject(parent), port_(port), server_(std::make_unique<ix::WebSocketServer>(port)) 
+    FlychessServer::FlychessServer(int port, const std::string& host, QObject* parent)
+        : QObject(parent), port_(port), host_(host), server_(std::make_unique<ix::WebSocketServer>(port, host)) 
     {
         // 初始连接回调
         server_->setOnConnectionCallback(
@@ -106,6 +106,11 @@
                         register_msg["color"] = std::to_string(color);
                         this->sendToClient(client_id, register_msg.dump());
                         // std::cout << "[Server] 广播 add_player_broadcast: " << std::endl;
+
+                        nlohmann::json url_msg;
+                        url_msg["type"] = "url";
+                        url_msg["url"] = this->url_to_show;
+                        this->sendToClient(client_id, url_msg.dump());
 
                         this->BroadCastPlayerList();
                         this->BroadCastRoomInfo();
@@ -334,6 +339,7 @@
 
         server_->start();
         std::cout << "WebSocket server started on port " << port_ << std::endl;
+        
         return true;
     }
 
