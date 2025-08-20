@@ -62,6 +62,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::SomeoneFinished, this, &MainWindow::onSomeoneFinished);
     connect(client_, &FlychessClient::AllPlayerFinished, this, &MainWindow::onAllPlayerFinished);
     connect(client_, &FlychessClient::UrlReceived, this, &MainWindow::onURLReceived);
+    connect(ui->JoinGameButton, &QPushButton::clicked, this, &MainWindow::onJoinGameButtonClicked);
 
     // 初始化定时器
     connectTimer_ = new QTimer(this);
@@ -147,6 +148,38 @@ void MainWindow::onNoAvailableChess(int color) {
         QTimer::singleShot(500, this, [this]() {
             this->client_->sendFinishTextWaiting();
         });
+    }
+}
+
+void MainWindow::onJoinGameButtonClicked() {
+    QString url = ui->UrlEdit->text().trimmed();
+    if (url.isEmpty()) {
+        QMessageBox::warning(this, "错误", "请输入服务器URL!");
+        return;
+    }
+    // qDebug() << "按回车输入的URL是:" << url;
+    auto reply = QMessageBox::question(
+        this,
+        "加入房间确认",
+        "确定要加入房间:" + url + "吗？",
+        QMessageBox::Yes | QMessageBox::No
+    );
+
+    if (reply == QMessageBox::Yes) {
+        is_server = false;
+        // 弹出“正在连接”提示框（非阻塞）
+        connectingBox_ = new QMessageBox(QMessageBox::Information,
+                                        "连接中",
+                                        "正在连接服务器，请稍候…",
+                                        QMessageBox::NoButton,
+                                        this);
+        connectingBox_->setModal(false);
+        connectingBox_->show();
+
+        // 启动超时计时器（5秒）
+        connectTimer_->start(5000);
+
+        client_->connectToServer("ws://" + url.toStdString());
     }
 }
 

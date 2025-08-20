@@ -97,6 +97,8 @@ private slots:
     void onNoAvailableChess(int color);
     void onSomeoneFinished(int color);
     void onURLReceived(QString url);
+
+    void onJoinGameButtonClicked();
 private:
     // void repositionStartMenu();
 
