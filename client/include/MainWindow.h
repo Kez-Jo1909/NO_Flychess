@@ -99,6 +99,8 @@ private slots:
     void onURLReceived(QString url);
 
     void onJoinGameButtonClicked();
+    void ChatEditEnter();
+    void onChatMessageRecieved(QString name, QString message, int color);
 private:
     // void repositionStartMenu();
 

@@ -119,6 +119,16 @@
                         this->game_room_->setPrepared(std::stoi(client_id));
                         BroadCastPlayerList();
                     }
+                    else if (type == "chat_message") {
+                        std::string chat_str  = j.at("message");
+
+                        nlohmann::json msg;
+                        msg["type"] = "chat_message_broadcast";
+                        msg["chat_msg"] = chat_str;
+                        msg["name"] = game_room_->getPlayerByWebId(std::stoi(client_id)).player_name;
+                        msg["color"] = static_cast<int>(game_room_->getPlayerByWebId(std::stoi(client_id)).color);
+                        this->BroadCast(msg.dump());
+                    }
                     else if(type == "get_unprepared") {
                         this->game_room_->setUnPrepared(std::stoi(client_id));
                         BroadCastPlayerList();

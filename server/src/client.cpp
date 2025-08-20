@@ -111,6 +111,15 @@ namespace flychess_client {
                                 emit allPieceInfo(pieces);
                             }, Qt::QueuedConnection);
                         }
+                        else if (type == "chat_message_broadcast") {
+                            std::string message = j.at("chat_msg");
+                            std::string player_name = j.at("name");
+                            int player_color = j.at("color");
+
+                            QMetaObject::invokeMethod(this, [this, message, player_name, player_color]() {
+                                emit chatMessageRecieved(QString::fromStdString(player_name), QString::fromStdString(message), player_color);
+                            }, Qt::QueuedConnection);
+                        }
                         else if (type == "all_finished") {
                             QList<QVariantList> rank_list;
                             for (auto &rank : j["rank"]) {
@@ -248,6 +257,14 @@ namespace flychess_client {
         nlohmann::json msg;
         msg["type"] = "finish_use_card";
         msg["color"] = color;
+        ws_.send(msg.dump());
+    }
+
+    void FlychessClient::sendChatMsg(std::string chat_msg) {
+        nlohmann::json msg;
+        msg["type"] = "chat_message";
+        msg["message"] = chat_msg;
+
         ws_.send(msg.dump());
     }
 

@@ -31,6 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->CreateGameButton, &QPushButton::clicked, this, &MainWindow::onCreateGameButtonClicked);
     // connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
     connect(ui->UrlEdit, &QLineEdit::returnPressed, this, &MainWindow::UrlEditEnter);
+    connect(ui->ChatEdit, &QLineEdit::returnPressed, this, &MainWindow::ChatEditEnter);
     connect(ui->PlayerCountBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onPlayerCountChanged);
     connect(ui->ChessCountBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onChessCountChanged);
     connect(ui->RollDiceButton, &QPushButton::clicked, this, &MainWindow::onRollDiceButton);
@@ -63,12 +64,16 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client_, &FlychessClient::AllPlayerFinished, this, &MainWindow::onAllPlayerFinished);
     connect(client_, &FlychessClient::UrlReceived, this, &MainWindow::onURLReceived);
     connect(ui->JoinGameButton, &QPushButton::clicked, this, &MainWindow::onJoinGameButtonClicked);
+    connect(ui->ChatListWidget->model(), &QAbstractItemModel::rowsInserted, ui->ChatListWidget, &QListWidget::scrollToBottom);
+    connect(client_, &FlychessClient::chatMessageRecieved, this, &MainWindow::onChatMessageRecieved);
 
     // 初始化定时器
     connectTimer_ = new QTimer(this);
     connectTimer_->setSingleShot(true);  // 只触发一次
     connect(connectTimer_, &QTimer::timeout, this, &MainWindow::onConnectTimeout);
 
+    ui->ChatListWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->RoomTableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
 
 MainWindow::~MainWindow() {
@@ -86,6 +91,33 @@ void MainWindow::onGameStart() {
     ui->RollDiceButton->setEnabled(false);
     this->player_state_ = flychess_game::PlayerState::WAITING;
 }
+
+void MainWindow::onChatMessageRecieved(QString name, QString message, int player_color) {
+    // 把颜色转换成字符串
+    std::string color_str = game_utils::colorToString(static_cast<game_utils::Color>(player_color));
+
+    // 拼接成 HTML 富文本
+    QString formatted_message = QString("<font color='%1'>%2: %3</font>")
+        .arg(QString::fromStdString(color_str)) // 颜色
+        .arg(name)                              // 玩家名字
+        .arg(message);                          // 消息内容
+
+    // 用 QLabel 作为展示控件
+    QLabel* label = new QLabel(formatted_message);
+    label->setTextFormat(Qt::RichText);   // 启用 HTML 格式
+    label->setWordWrap(true);             // 自动换行
+    label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+
+    // 新建一个 QListWidgetItem，放入 ChatListWidget
+    QListWidgetItem* item = new QListWidgetItem(ui->ChatListWidget);
+    item->setSizeHint(label->sizeHint()); // 让 item 高度适应 label
+    ui->ChatListWidget->setItemWidget(item, label);
+
+    // 自动滚动到底部，显示最新消息
+    ui->ChatListWidget->scrollToBottom();
+}
+
+
 
 void MainWindow::onAllPlayerFinished(const QList<QVariantList>& rank_list) {
     std::vector<std::string> color_rank;
@@ -306,7 +338,7 @@ void MainWindow::showAboutDialog() {
         <h3>关于项目</h3>
         <p>这是一个基于 Qt 的飞行棋游戏客户端。</p>
         作者: KezJo<br>
-        版本: 0.1.0<br>
+        版本: 0.2.2<br>
         <a href='https://github.com/Kez-Jo1909/NO_Flychess'>访问 GitHub 项目主页</a>
     )";
 
@@ -380,6 +412,22 @@ void MainWindow::onPlayerListUpdated(const QList<QVariantList>& players) {
 }
 
 
+void MainWindow::ChatEditEnter() {
+    QString message = ui->ChatEdit->text().trimmed();
+    if (message.isEmpty()) {
+        // QMessageBox::warning(this, "错误", "请输入聊天内容!");
+        return;
+    }
+
+    // QDebug(QtDebugMsg) << "发送聊天消息:" << message;
+    this->client_->sendChatMsg(message.toStdString());
+    // 清空输入框
+    ui->ChatEdit->clear();
+
+    // // 在聊天列表中添加消息
+    // QString chatMessage = QString("我: %1").arg(message);
+    // ui->ChatListWidget->addItem(chatMessage);
+}
 
 
 
@@ -393,7 +441,7 @@ void MainWindow::UrlEditEnter() {
     auto reply = QMessageBox::question(
         this,
         "加入房间确认",
-        "确定要加入房间吗？",
+        "确定要加入房间:" + url + "吗？",
         QMessageBox::Yes | QMessageBox::No
     );
 

@@ -45,6 +45,7 @@ public:
     void sendFinishUseCard(int color);
 
     void sendFinishTextWaiting();
+    void sendChatMsg(std::string chat_msg);
 signals:
     void connected();
     void disconnected();
@@ -69,6 +70,7 @@ signals:
     void SomeoneFinished(int color);
     void AllPlayerFinished(QList<QVariantList> rank_list);
     void UrlReceived(QString url);
+    void chatMessageRecieved(QString player_name, QString message, int player_color);
 private:
     ix::WebSocket ws_;
 
