@@ -41,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 绑定菜单栏-关于
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::showAboutDialog);
+    connect(ui->actionUpdate, &QAction::triggered, this, &MainWindow::showUpdateDialog);
 
     connect(client_, &FlychessClient::newPlayerJoined, this, &MainWindow::onNewPlayerJoined);
     connect(client_, &FlychessClient::registerResult, this, &MainWindow::onRegisterResult);
@@ -325,6 +326,10 @@ void MainWindow::onSelectedChessPiece(int id, int color) {
     this->player_state_ = flychess_game::PlayerState::WAITING;
 }
 
+void MainWindow::showUpdateDialog() {
+    QMessageBox::information(this, "更新公告",
+    "0.2.2版本更新内容：\n1. 新增聊天功能\n2. 加入游戏按键功能恢复\n");
+}
 
 void MainWindow::showAboutDialog() {
     QMessageBox msgBox(this);
@@ -334,13 +339,16 @@ void MainWindow::showAboutDialog() {
     msgBox.setTextFormat(Qt::RichText);
     msgBox.setTextInteractionFlags(Qt::TextBrowserInteraction);
 
-    QString text = R"(
-        <h3>关于项目</h3>
-        <p>这是一个基于 Qt 的飞行棋游戏客户端。</p>
-        作者: KezJo<br>
-        版本: 0.2.2<br>
-        <a href='https://github.com/Kez-Jo1909/NO_Flychess'>访问 GitHub 项目主页</a>
-    )";
+    QString text = QString(
+        R"(
+            <h3>关于项目</h3>
+            <p>这是一个基于 Qt 的飞行棋游戏客户端。</p>
+            作者: KezJo<br>
+            版本: %1<br>
+            <a href='https://github.com/Kez-Jo1909/NO_Flychess'>访问 GitHub 项目主页</a>
+        )"
+    ).arg(QString::fromStdString(version));
+
 
     msgBox.setText(text);
 

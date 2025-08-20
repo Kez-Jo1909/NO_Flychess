@@ -861,6 +861,7 @@
     <property name="title">
      <string>帮助</string>
     </property>
+    <addaction name="actionUpdate"/>
     <addaction name="actionAbout"/>
    </widget>
    <addaction name="AboutMenu"/>
@@ -869,6 +870,11 @@
   <action name="actionAbout">
    <property name="text">
     <string>关于</string>
+   </property>
+  </action>
+  <action name="actionUpdate">
+   <property name="text">
+    <string>更新内容</string>
    </property>
   </action>
  </widget>

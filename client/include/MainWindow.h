@@ -60,6 +60,7 @@ private slots:
     void onSettingSaveButtonClicked();
 
     void showAboutDialog();
+    void showUpdateDialog();
 
     void onCreateGameButtonClicked();
 
@@ -133,6 +134,8 @@ private:
     game_utils::Color user_color_ = game_utils::Color::UNDEFINED; // 默认颜色
 
     std::vector<flychess_game::ChessPieceInfo> chess_pieces_; // 棋子信息列表
+
+    std::string version = "0.2.2";
 };
 
 }// namespace flychess_client
