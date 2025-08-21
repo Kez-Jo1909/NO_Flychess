@@ -135,7 +135,7 @@ private:
 
     std::vector<flychess_game::ChessPieceInfo> chess_pieces_; // 棋子信息列表
 
-    std::string version = "0.2.2";
+    std::string version = "0.2.3";
 };
 
 }// namespace flychess_client

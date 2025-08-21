@@ -1,6 +1,6 @@
 # README
 
-![version](https://img.shields.io/badge/version-0.2.2-black)
+![version](https://img.shields.io/badge/version-0.2.3-black)
 
 ## 依赖项
 
@@ -46,7 +46,7 @@ chmod ./build.sh
 - [x] JS图形绘制封装
 - [x] preGoal区域移动，分前后两类
 - [x] bridge区域
-- [ ] map重构
+- [x] map重构
 
 ## MapGrid备注
 
