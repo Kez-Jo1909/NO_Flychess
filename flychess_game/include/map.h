@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <vector>
+#include <nlohmann/json.hpp>
+#include <fstream>
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #endif
@@ -63,6 +65,8 @@ public:
 
     const GridInfo& searchGridInfo(int position_id, int color, int chess_id);
 
+    void SaveToJson();
+    void LoadMapFromJson();
 private:
     const int grid_size = 80;
     const int map_size = 680;
