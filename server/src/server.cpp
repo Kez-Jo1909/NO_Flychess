@@ -167,7 +167,7 @@
                         int finished_piece_count = this->game_->GetFinishedChessCount(color);
                         if (finished_piece_count == this->game_room_->getChessPerPlayer()) {
                             // 该玩家结束游戏
-                            BroadCastSomeoneFinished(color);
+                            // BroadCastSomeoneFinished(color);
                             this->game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::FINISHED);
                             // finished_player_count++;
                             finished_players.push_back(color);
@@ -175,9 +175,11 @@
                             if (finished_players.size() == game_room_->getPlayerCount()) {
                                 this->BroadCastAllFinished();
                                 // TODO 将所有都设置为非准备
-                                // 销毁game_
+                                // delete game_;
+                                // game_ = nullptr;
                                 return;
                             }
+                            BroadCastSomeoneFinished(color);
                         } else {
                             game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::CARDING);
                             this->CardState(client_id);
@@ -191,9 +193,17 @@
                             game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::WAITING);   
                         }
 
+                        if (finished_players.size() == game_room_->getPlayerCount()) {
+                            // 在这里销毁
+                            delete game_;
+                            game_ = nullptr;
+                            return;
+                        }
+
                         // 将下一个玩家状态设置为ROLLING
                         int next_color = color;
                         while(1) {
+                            // std::cout << "循环中..." << std::endl;
                             next_color = (next_color + 1) % game_room_->getMaxPlayerCount();
                             if (game_->getPlayerState(next_color) != flychess_game::PlayerState::FINISHED) {
                                 game_->changePlayerState(static_cast<game_utils::Color>(next_color), flychess_game::PlayerState::ROLLING);

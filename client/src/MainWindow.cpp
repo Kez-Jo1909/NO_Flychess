@@ -15,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->RoomListTableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->RoomTableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    this->setWindowFlags(Qt::Window | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
 
     // 创建客户端实例
     client_ = new flychess_client::FlychessClient(this);
@@ -98,9 +99,9 @@ void MainWindow::onChatMessageRecieved(QString name, QString message, int player
     std::string color_str = game_utils::colorToString(static_cast<game_utils::Color>(player_color));
 
     // 拼接成 HTML 富文本
-    QString formatted_message = QString("<font color='%1'>%2: %3</font>")
-        .arg(QString::fromStdString(color_str)) // 颜色
-        .arg(name)                              // 玩家名字
+    QString formatted_message = QString("<font color='black'>%1(%2): %3</font>")
+        .arg(name) // 颜色
+        .arg(QString::fromStdString(color_str))                              // 玩家名字
         .arg(message);                          // 消息内容
 
     // 用 QLabel 作为展示控件
