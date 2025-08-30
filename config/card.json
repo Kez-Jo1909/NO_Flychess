@@ -1,0 +1,17 @@
+[
+    {
+        "id": 0,
+        "name": "6",
+        "description": "使自己投出一个6",
+        "function_time": 3,
+        "image_path": "img/cards/6.png",
+    },
+    {
+        "id": 1,
+        "name": "极端天气",
+        "description": "使用后使所有处于待飞区的飞机返回重生点",
+        "function_time": 0,
+        "image_path": "img/cards/extreme_weather.png",
+    }
+]
+  

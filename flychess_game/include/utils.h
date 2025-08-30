@@ -65,6 +65,14 @@ T get_random(T min, T max) {
     }
 }
 
+enum class CardFunctionTime {
+    ANYTIME = 0,
+    YOUR_TURN = 1,
+    BEFORE_ROLL = 2,// 这里BEFORE_ROLL是指一定在掷骰子前使用
+    BEFORE_MOVE = 3,// 而BEFORE_MOVE只要是在移动棋子前使用即可
+    AFTER_MOVE = 4
+};
+
 }
 
 

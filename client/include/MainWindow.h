@@ -14,6 +14,7 @@
 #include <QList>
 #include <QComboBox>
 #include "game.h"
+#include "card.h"
 #include "server.h"
 #include "client.h"
 #include "utils.h"
