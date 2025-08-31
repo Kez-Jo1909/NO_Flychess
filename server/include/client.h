@@ -66,7 +66,7 @@ signals:
     void toRollDice();
     void OtherToRollDice(int color);
     void toUseCard();
-    void NoAvailableChess(int color);
+    void NoAvailableChess(int color, int dice_num);
     void SomeoneFinished(int color);
     void AllPlayerFinished(QList<QVariantList> rank_list);
     void UrlReceived(QString url);

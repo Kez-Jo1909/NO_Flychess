@@ -96,7 +96,7 @@ private slots:
     void onGameStartNotEnough();
     void onSelectedChessPiece(int id, int color);
     void onToUseCard();
-    void onNoAvailableChess(int color);
+    void onNoAvailableChess(int color, int dice_num);
     void onSomeoneFinished(int color);
     void onURLReceived(QString url);
 

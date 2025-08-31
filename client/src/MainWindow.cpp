@@ -171,12 +171,14 @@ void MainWindow::onToUseCard() {
     this->player_state_ = flychess_game::PlayerState::WAITING;
 }
 
-void MainWindow::onNoAvailableChess(int color) {
+void MainWindow::onNoAvailableChess(int color, int dice_num) {
     if (static_cast<int>(user_color_) != color) {
         ui->DiceTextLabel->setText("玩家无可用棋子...");
     }
     else {
-        ui->DiceTextLabel->setText("无可用棋子\n自动跳过选择...");
+        std::string msg = "掷骰结果: " + std::to_string(dice_num) + "\n";
+        msg += "无可用棋子\n自动跳过选择...";
+        ui->DiceTextLabel->setText(QString::fromStdString(msg));
         this->player_state_ = flychess_game::PlayerState::WAITING;
 
         QTimer::singleShot(500, this, [this]() {

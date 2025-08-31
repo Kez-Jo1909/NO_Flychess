@@ -205,9 +205,10 @@ namespace flychess_client {
                         }
                         else if (type == "no_avialable_piece") {
                             int color = j.at("color");
+                            int dice_num = j.at("dice_num");
 
-                            QMetaObject::invokeMethod(this, [this, color]() {
-                                emit NoAvailableChess(color);
+                            QMetaObject::invokeMethod(this, [this, color, dice_num]() {
+                                emit NoAvailableChess(color, dice_num);
                             }, Qt::QueuedConnection);
                         }
                         else {

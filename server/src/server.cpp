@@ -77,6 +77,7 @@
 
                             nlohmann::json no_avialable_msg;
                             no_avialable_msg["type"] = "no_avialable_piece";
+                            no_avialable_msg["dice_num"] = steps;
                             no_avialable_msg["color"] = static_cast<int>(player.color);
                             this->sendToClient(client_id, no_avialable_msg.dump());
                         } else {
@@ -159,7 +160,11 @@
                         int color = j.at("color");
 
                         // 移动棋子
-                        this->game_->MoveChessPiece(color, id, steps);
+                        int move_ret = this->game_->MoveChessPiece(color, id, steps);
+                        if (move_ret == 0) {
+                            sendDiceNum(steps, client_id);
+                            return;
+                        }
                         // 移动后检查是否结束
                         BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
                         int ret = this->game_->FlyChessPiece(color, id);
