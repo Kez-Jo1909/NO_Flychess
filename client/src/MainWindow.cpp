@@ -168,6 +168,7 @@ void MainWindow::onToUseCard() {
     // TODO
     // 由于没有牌，先在这里直接跳过
     this->client_->sendFinishUseCard(static_cast<int>(user_color_));
+    // std::cout <<"fuckcard"<< std::endl;
     this->player_state_ = flychess_game::PlayerState::WAITING;
 }
 
@@ -179,6 +180,7 @@ void MainWindow::onNoAvailableChess(int color, int dice_num) {
         std::string msg = "掷骰结果: " + std::to_string(dice_num) + "\n";
         msg += "无可用棋子\n自动跳过选择...";
         ui->DiceTextLabel->setText(QString::fromStdString(msg));
+        // std::cout << "玩家无可用棋子,自动跳过选择..." << std::endl;
         this->player_state_ = flychess_game::PlayerState::WAITING;
 
         QTimer::singleShot(500, this, [this]() {
@@ -249,8 +251,10 @@ void MainWindow::onRollDiceButton() {
 void MainWindow::onRollDiceResult(int result, QString player_name, int player_color) {
     if (this->player_state_ == flychess_game::PlayerState::ROLLING) {
         ui->DiceTextLabel->setText("掷骰结果: " + QString::number(result) + "\n请选择棋子");
+        std::cout << "收到骰子结果,result=" << result << std::endl;
         this->player_state_ = flychess_game::PlayerState::SELECTING;
     } else{
+        std::cout<< "收到其他玩家骰子结果,result=" << result << std::endl;
         std::string color_str = game_utils::colorIntToString(player_color);
         QString message = QString("玩家 %1 (%2) \n 掷骰结果: %3")
                             .arg(player_name)
@@ -263,6 +267,7 @@ void MainWindow::onRollDiceResult(int result, QString player_name, int player_co
 
 void MainWindow::onToRollDice() {
     player_state_ = flychess_game::PlayerState::ROLLING;
+    // std::cout<< "轮到你掷骰子" << std::endl;
     ui->DiceTextLabel->setText("请掷骰子...");
     ui->RollDiceButton->setEnabled(true);
 }
@@ -317,6 +322,7 @@ void MainWindow::onChessCountChanged(int index) {
 void MainWindow::onSelectedChessPiece(int id, int color) {
     if (this->player_state_ != flychess_game::PlayerState::SELECTING) {
         std::cout << "当前非选择棋子状态" << std::endl;
+        // std::cout << "当前状态: " << static_cast<int>(this->player_state_) << std::endl;
         return;
     }
 
@@ -326,7 +332,8 @@ void MainWindow::onSelectedChessPiece(int id, int color) {
     }
 
     this->client_->sendChosenChessPiece(id, color);
-    this->player_state_ = flychess_game::PlayerState::WAITING;
+    // std::cout<< "fuck" <<std::endl;
+    // this->player_state_ = flychess_game::PlayerState::WAITING;
 }
 
 void MainWindow::showUpdateDialog() {

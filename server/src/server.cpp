@@ -60,16 +60,8 @@
                     auto j = nlohmann::json::parse(msg->str);
                     std::string type = j.at("type");
 
-                    // // 通过 Qt 信号通知
-                    // QMetaObject::invokeMethod(this, [this, client_id, j]() {
-                    //     QJsonObject obj = QJsonDocument::fromJson(
-                    //         QByteArray::fromStdString(j.dump())
-                    //     ).object();
-                    //     emit jsonReceived(QString::fromStdString(client_id), obj);
-                    // }, Qt::QueuedConnection);
-
                     if (type == "rolldice") {
-                        std::cout<< "rolldice request from player " << j["playerId"] << std::endl;
+                        std::cout<< "rolldice request from player " << client_id << std::endl;
                         steps = flychess_game::rollDice();
                         auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
                         if (steps != 6 && game_->GetStartedChessCount(static_cast<int>(player.color)) == 0) {
@@ -186,6 +178,13 @@
                             }
                             BroadCastSomeoneFinished(color);
                         } else {
+                            if (steps == 6) {
+                                // 如果掷出了6点，继续掷一次骰子
+                                game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::ROLLING);
+                                BroadCastToRollDice(color);
+                                steps = -1;
+                                return;
+                            }
                             game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::CARDING);
                             this->CardState(client_id);
                         }
