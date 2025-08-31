@@ -524,6 +524,8 @@ void MainWindow::onConnected() {
         ui->PreparePageStartButton->setText("开始游戏");
         disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
         disconnect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
+        disconnect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
+        disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonUserClicked);
         connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
         connect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
         // ui->stackedWidget->setCurrentIndex(3);
@@ -533,6 +535,8 @@ void MainWindow::onConnected() {
         ui->ifCardCheckBox->setEnabled(false);
         ui->ifAiCheckBox->setEnabled(false);
         ui->PreparePageStartButton->setText("准备");
+        disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonClicked);
+        disconnect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePageStartButtonClicked);
         disconnect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
         disconnect(ui->PreparePageExitButton, &QPushButton::clicked, this, &MainWindow::onPreparePageExitButtonUserClicked);
         connect(ui->PreparePageStartButton, &QPushButton::clicked, this, &MainWindow::onPreparePagePrepareButtonClicked);
