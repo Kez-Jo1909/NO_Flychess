@@ -8,6 +8,7 @@
 #include <functional>
 #include <nlohmann/json.hpp>
 #include "./utils.h"
+#include "./game.h"
 
 namespace flychess_game {
 
@@ -43,8 +44,9 @@ public:
     //     // Additional initialization if needed
     // }
 
-    static void function() {
+    static void function(FlychessGame& game, int player_id, int target_player_id) {
         std::cout << "Card_Six function executed!" << std::endl;
+        game.setDice(6);
     }
 };
 
@@ -77,7 +79,33 @@ private:
 
 };
 
+using CardFunction = std::function<void(FlychessGame& game, int player_id, int target_player_id)>;
+
+class CardFunctionRegistery {
+public:
+    static CardFunctionRegistery& get_instance() {
+        static CardFunctionRegistery instance;
+        return instance;
+    }
+
+    void register_function(int card_id, CardFunction func) {
+        effects_[card_id] = func;
+    }
+
+    void applyFunction(int card_id, FlychessGame& game, int player_id, int target_player_id) {
+        auto it = effects_.find(card_id);
+        if (it != effects_.end()) {
+            it->second(game, player_id, target_player_id);
+        } else {
+            std::cerr << "[CardFunctionRegistery] No function registered for card id: " << card_id << std::endl;
+        }
+    }
+private:
+    std::unordered_map<int, CardFunction> effects_;
+};
+
 void register_cards();
+void register_functions();
 
 }
 

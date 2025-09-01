@@ -126,6 +126,10 @@ public:
     int GetDice() const {
         return steps;
     }
+
+    void setDice(int num) {
+        steps = num;
+    }
 private:
     std::vector<Player> players; // 玩家列表
     int chess_count_per_player = 4;

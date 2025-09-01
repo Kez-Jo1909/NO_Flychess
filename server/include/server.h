@@ -9,6 +9,7 @@
 #include <nlohmann/json.hpp>
 #include "game.h"
 #include "utils.h"
+#include "card.h"
 
 namespace flychess_server{
 

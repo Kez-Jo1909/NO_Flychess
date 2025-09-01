@@ -2,6 +2,7 @@
     #include <QMetaObject>
     #include <QJsonDocument>
     #include <QJsonObject>
+#include "card.h"
     #include "game.h"
 
     namespace flychess_server {
@@ -65,6 +66,8 @@
                         // steps = flychess_game::rollDice();
                         int steps = game_->RollDice();
                         auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
+                        flychess_game::CardFunctionRegistery::get_instance().applyFunction(0, *game_, static_cast<int>(player.color), static_cast<int>(player.color));
+                        steps = game_->GetDice();
                         if (steps != 6 && game_->GetStartedChessCount(static_cast<int>(player.color)) == 0) {
                             std::cout << "No avialable chess piece" << std::endl;
 
