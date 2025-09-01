@@ -13,7 +13,6 @@ namespace flychess_game {
 
 class flychess_card {
 public:
-    virtual void function() = 0;
     virtual ~flychess_card() = default;
 
     flychess_card(const nlohmann::json &j) {
@@ -24,6 +23,11 @@ public:
         img_path_ = j.at("image_path");
     }
 
+    int get_id() const { return id_; }
+    std::string get_name() const { return name_; }
+    std::string get_desc() const { return description_; }
+    std::string get_img() const { return img_path_; }
+    game_utils::CardFunctionTime get_time() const { return function_time_; }
 protected:
     int id_;
     std::string name_;
@@ -39,8 +43,8 @@ public:
     //     // Additional initialization if needed
     // }
 
-    void function() override {
-        std::cout << "Card_Six function executed." << std::endl;
+    static void function() {
+        std::cout << "Card_Six function executed!" << std::endl;
     }
 };
 

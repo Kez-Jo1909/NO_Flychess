@@ -120,9 +120,16 @@ public:
 
     int GetFinishedChessCount(int player_id);
     int FlyChessPiece(int player_id, int chess_id);
+
+    int RollDice();
+
+    int GetDice() const {
+        return steps;
+    }
 private:
     std::vector<Player> players; // 玩家列表
     int chess_count_per_player = 4;
+    int steps = -1; // 当前掷骰子的点数
 };
 
 // 原本给js前端预留的接口

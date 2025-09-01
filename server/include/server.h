@@ -61,7 +61,6 @@ private:
     // int finished_player_count = 0;
     std::vector<int> finished_players;
 
-    int steps = -1;
     std::string host_;
     std::string url_to_show;
 };

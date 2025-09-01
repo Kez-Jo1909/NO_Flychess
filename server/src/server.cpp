@@ -62,7 +62,8 @@
 
                     if (type == "rolldice") {
                         std::cout<< "rolldice request from player " << client_id << std::endl;
-                        steps = flychess_game::rollDice();
+                        // steps = flychess_game::rollDice();
+                        int steps = game_->RollDice();
                         auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
                         if (steps != 6 && game_->GetStartedChessCount(static_cast<int>(player.color)) == 0) {
                             std::cout << "No avialable chess piece" << std::endl;
@@ -152,9 +153,10 @@
                         int color = j.at("color");
 
                         // 移动棋子
-                        int move_ret = this->game_->MoveChessPiece(color, id, steps);
+                        int steps_to_move = this->game_->GetDice();
+                        int move_ret = this->game_->MoveChessPiece(color, id, steps_to_move);
                         if (move_ret == 0) {
-                            sendDiceNum(steps, client_id);
+                            sendDiceNum(steps_to_move, client_id);
                             return;
                         }
                         // 移动后检查是否结束
@@ -178,17 +180,17 @@
                             }
                             BroadCastSomeoneFinished(color);
                         } else {
-                            if (steps == 6) {
+                            int last_steps = this->game_->GetDice();
+                            if (last_steps == 6) {
                                 // 如果掷出了6点，继续掷一次骰子
                                 game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::ROLLING);
                                 BroadCastToRollDice(color);
-                                steps = -1;
+                                last_steps = -1;
                                 return;
                             }
                             game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::CARDING);
                             this->CardState(client_id);
                         }
-                        steps = -1;
                     }
                     else if (type == "finish_use_card") {
                         // 将该玩家状态设置为WAITING
