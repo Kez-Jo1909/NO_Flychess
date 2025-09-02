@@ -4,6 +4,8 @@
 #include <iostream>
 #include <random>
 #include <type_traits>
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 namespace game_utils {
 
@@ -72,6 +74,8 @@ enum class CardFunctionTime {
     BEFORE_MOVE = 3,// 而BEFORE_MOVE只要是在移动棋子前使用即可
     AFTER_MOVE = 4
 };
+
+std::string getCardPathById(const std::string& filepath, int target_id);
 
 }
 

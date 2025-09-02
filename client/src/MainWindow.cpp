@@ -3,7 +3,7 @@
 #include "game.h"
 #include "ui_MainWindow.h"
 #include "utils.h"
-#include <QDebug>
+// #include <QDebug>
 #include <qlist.h>
 #include <qobject.h>
 #include <vector>
@@ -68,6 +68,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->JoinGameButton, &QPushButton::clicked, this, &MainWindow::onJoinGameButtonClicked);
     connect(ui->ChatListWidget->model(), &QAbstractItemModel::rowsInserted, ui->ChatListWidget, &QListWidget::scrollToBottom);
     connect(client_, &FlychessClient::chatMessageRecieved, this, &MainWindow::onChatMessageRecieved);
+    connect(client_, &FlychessClient::GetNewCard, this, &MainWindow::onGetNewCard);
 
     // 初始化定时器
     connectTimer_ = new QTimer(this);
@@ -119,7 +120,13 @@ void MainWindow::onChatMessageRecieved(QString name, QString message, int player
     ui->ChatListWidget->scrollToBottom();
 }
 
+void MainWindow::onGetNewCard(int card_id) {
+    std::string card_img_path = game_utils::getCardPathById("../config/card.json", card_id);
+    std::cout << "获得新卡牌, id=" << card_id << ", img_path=" << card_img_path << std::endl;
 
+    // 添加卡牌
+    ui->cardView->addCard(QString::fromStdString(card_img_path), card_id);
+}
 
 void MainWindow::onAllPlayerFinished(const QList<QVariantList>& rank_list) {
     std::vector<std::string> color_rank;
@@ -733,13 +740,13 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
     // ui->horizontalLayout_6->setStretch(2, 1);
 
     ui->verticalLayout_GamePage->setStretch(0, 5);
-    ui->verticalLayout_GamePage->setStretch(1, 2);
+    ui->verticalLayout_GamePage->setStretch(1, 3);
 
     ui->horizontalLayout_9->setStretch(0,6);
-    ui->horizontalLayout_9->setStretch(1,2);
-    ui->horizontalLayout_9->setStretch(2,2);
-    ui->horizontalLayout_9->setStretch(3,2);
-    ui->horizontalLayout_9->setStretch(4,6);
+    ui->horizontalLayout_9->setStretch(1,1);
+    ui->horizontalLayout_9->setStretch(2,1);
+    ui->horizontalLayout_9->setStretch(3,1);
+    ui->horizontalLayout_9->setStretch(4,10);
 
     ui->verticalLayout_5->setStretch(0, 5); // Top spacer
     ui->verticalLayout_5->setStretch(1, 1); // Between spacer

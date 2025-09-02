@@ -66,8 +66,41 @@
                         // steps = flychess_game::rollDice();
                         int steps = game_->RollDice();
                         auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
-                        flychess_game::CardFunctionRegistery::get_instance().applyFunction(0, *game_, static_cast<int>(player.color), static_cast<int>(player.color));
-                        steps = game_->GetDice();
+
+                        // 这是卡牌6的实现
+                        // flychess_game::CardFunctionRegistery::get_instance().applyFunction(0, *game_, static_cast<int>(player.color), static_cast<int>(player.color));
+                        // steps = game_->GetDice();
+                        
+                        if (steps == 5) {
+                            // 抽卡
+                            int available_cards_count = flychess_game::CardFactory::get_instance().registered_count();
+                            int card_id = -1;
+                            // while(1) {
+                            card_id = game_utils::get_random(0, available_cards_count - 1);
+
+                            //     // 检查是否能抽到该卡
+                            //     if (card_id < 0 || card_id >= available_cards_count) {
+                            //         std::cerr << "Error: Invalid card ID generated: " << card_id << std::endl;
+                            //         continue;
+                            //     }
+                            //     else if (card_counts[card_id] >= 4) {
+                            //         std::cout << "Card_Six limit reached, re-drawing..." << std::endl;
+                            //     }
+                            //     else {
+                            //         card_counts[card_id]++;
+                            //         if (card_counts[card_id] == 4) {
+                            //             limited_card_id.push_back(card_id);
+                            //         }
+                            //         break;
+                            //     }
+                            // }
+                            std::cout<< "抽到卡牌: " << card_id << std::endl;
+                            nlohmann::json card_msg;
+                            card_msg["type"] = "get_card";
+                            card_msg["card_id"] = card_id;
+                            this->sendToClient(client_id, card_msg.dump());
+                        }
+
                         if (steps != 6 && game_->GetStartedChessCount(static_cast<int>(player.color)) == 0) {
                             std::cout << "No avialable chess piece" << std::endl;
 

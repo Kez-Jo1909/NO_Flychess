@@ -211,6 +211,13 @@ namespace flychess_client {
                                 emit NoAvailableChess(color, dice_num);
                             }, Qt::QueuedConnection);
                         }
+                        else if (type == "get_card") {
+                            int id = j.at("card_id");
+
+                            QMetaObject::invokeMethod(this, [this, id]() {
+                                emit GetNewCard(id);
+                            }, Qt::QueuedConnection); 
+                        }
                         else {
                             std::cout<< "未知消息类型,内容:";
                             std::cout<< msg_text << std::endl;

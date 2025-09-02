@@ -10,7 +10,10 @@
 #include <QGraphicsView>
 #include <QResizeEvent>
 #include <QVariant>
+#include <QGraphicsPixmapItem>
+#include <QGraphicsSceneMouseEvent>
 #include <QPainter>
+#include <QDebug>
 #include <QList>
 #include <QComboBox>
 #include "game.h"
@@ -103,6 +106,8 @@ private slots:
     void onJoinGameButtonClicked();
     void ChatEditEnter();
     void onChatMessageRecieved(QString name, QString message, int color);
+
+    void onGetNewCard(int card_id);
 private:
     // void repositionStartMenu();
 
@@ -163,6 +168,146 @@ private:
     int offsetY;
     int radius;
     int grid_size;
+};
+
+class CardItem : public QGraphicsObject {
+    Q_OBJECT
+public:
+    CardItem(const QString &img_path, int card_id, QGraphicsItem *parent = nullptr)
+        : QGraphicsObject(parent), card_id(card_id), img_path(img_path) {
+        originalPixmap = QPixmap(img_path);
+        qDebug() << "加载图片:" << img_path << " 是否成功:" << !originalPixmap.isNull();
+        aspectRatio = originalPixmap.isNull() ? (2.0 / 3.0) : (double)originalPixmap.width() / originalPixmap.height();
+        cardHeight = 180; // 默认高度
+        updatePixmap();
+        setFlag(QGraphicsItem::ItemIsSelectable);
+    }
+
+    void setCardHeight(int height) {
+        cardHeight = height;
+        cardWidth = int(cardHeight * aspectRatio);
+        updatePixmap();
+        prepareGeometryChange();
+        update();
+    }
+
+    QRectF boundingRect() const override {
+        return QRectF(0, 0, cardWidth, cardHeight);
+    }
+
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) override {
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter->drawPixmap(0, 0, pixmap);
+    }
+
+    int getCardId() const {
+        return card_id;
+    }
+
+signals:
+    void cardClicked(int card_id);
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override {
+        if (event->button() == Qt::LeftButton) {
+            emit cardClicked(card_id);
+        }
+        QGraphicsObject::mousePressEvent(event);
+    }
+
+private:
+    int card_id = -1;
+    QString img_path;
+    QPixmap originalPixmap;
+    QPixmap pixmap;
+    int cardWidth = 120;
+    int cardHeight = 180;
+    double aspectRatio = 2.0 / 3.0;
+
+    void updatePixmap() {
+        if (!originalPixmap.isNull()) {
+            pixmap = originalPixmap.scaled(cardWidth, cardHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        }
+    }
+};
+
+class CardView : public QGraphicsView {
+    Q_OBJECT
+public:
+    explicit CardView(QWidget* parent = nullptr)
+        : QGraphicsView(parent)
+    {
+        scene = new QGraphicsScene(this);
+        setScene(scene);
+        setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+        setBackgroundBrush(Qt::white); // 可自定义背景
+    }
+
+    void addCard(const QString& img_path, int card_id) {
+        CardItem* card = new CardItem(img_path, card_id);
+        scene->addItem(card);
+        cardItems.append(card);
+        connect(card, &CardItem::cardClicked, this, &CardView::cardClicked);
+        layoutCards();
+    }
+
+    void removeCard(int card_id) {
+        for (int i = 0; i < cardItems.size(); ++i) {
+            if (cardItems[i]->getCardId() == card_id) {
+                scene->removeItem(cardItems[i]);
+                delete cardItems[i];
+                cardItems.remove(i);
+                break;
+            }
+        }
+        layoutCards();
+    }
+
+    // 可一次性设置全部卡牌
+    void setCards(const QVector<QPair<QString, int>>& cards) {
+        // 清空
+        for (auto card : cardItems) {
+            scene->removeItem(card);
+            delete card;
+        }
+        cardItems.clear();
+        // 添加
+        for (const auto& pair : cards) {
+            addCard(pair.first, pair.second);
+        }
+        layoutCards();
+    }
+
+signals:
+    void cardClicked(int card_id);
+
+protected:
+    void resizeEvent(QResizeEvent* event) override {
+        QGraphicsView::resizeEvent(event);
+        scene->setSceneRect(rect());
+        layoutCards();
+    }
+
+private:
+    QGraphicsScene* scene;
+    QVector<CardItem*> cardItems;
+
+    void layoutCards() {
+        if (cardItems.isEmpty()) return;
+        int n = cardItems.size();
+        int areaHeight = this->viewport()->height();
+        int spacing = 10;
+        for (auto card : cardItems)
+            card->setCardHeight(areaHeight);
+
+        int cardWidth = int(cardItems[0]->boundingRect().width());
+        int totalWidth = n * cardWidth + (n - 1) * spacing;
+        int x0 = (this->viewport()->width() - totalWidth) / 2;
+        int y0 = 0;
+        for (int i = 0; i < n; ++i) {
+            cardItems[i]->setPos(x0 + i * (cardWidth + spacing), y0);
+        }
+    }
 };
 
 

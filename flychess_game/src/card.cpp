@@ -12,4 +12,8 @@ namespace flychess_game {
 
         reg.register_function(0, Card_Six::function);
     }
+
+    void Card_ExtremeWeather::function(FlychessGame &game, int player_id, int target_player_id) {
+        // TODO
+    }
 }

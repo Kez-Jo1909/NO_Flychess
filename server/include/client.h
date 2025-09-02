@@ -71,6 +71,7 @@ signals:
     void AllPlayerFinished(QList<QVariantList> rank_list);
     void UrlReceived(QString url);
     void chatMessageRecieved(QString player_name, QString message, int player_color);
+    void GetNewCard(int card_id);
 private:
     ix::WebSocket ws_;
 

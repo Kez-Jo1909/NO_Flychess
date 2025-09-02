@@ -64,6 +64,9 @@ private:
 
     std::string host_;
     std::string url_to_show;
+
+    // TODO 卡牌数量上限检测
+    // std::vector<int> limited_card_id;
 };
 
 }

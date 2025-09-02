@@ -40,16 +40,43 @@ protected:
 class Card_Six : public flychess_card {
 public:
     using flychess_card::flychess_card; // Inherit constructor
-    // Card_Six(const nlohmann::json &j) : flychess_card(j) {
-    //     // Additional initialization if needed
-    // }
+
+    Card_Six(const nlohmann::json &j) : flychess_card(j) {
+        count_++;
+    }
+
+    ~Card_Six() {
+        --count_;
+    }
 
     static void function(FlychessGame& game, int player_id, int target_player_id) {
         std::cout << "Card_Six function executed!" << std::endl;
         game.setDice(6);
     }
+
+    static int getCount() { return count_; }
+private:
+    static inline int count_ = 0; // C++17 inline 静态成员初始化
 };
 
+class Card_ExtremeWeather : public flychess_card {
+public:
+    using flychess_card::flychess_card; // Inherit constructor
+
+    Card_ExtremeWeather(const nlohmann::json &j) : flychess_card(j) {
+        count_++;
+    }
+
+    ~Card_ExtremeWeather() {
+        --count_;
+    }
+
+    static void function(FlychessGame& game, int player_id, int target_player_id);
+
+    static int getCount() { return count_; }
+private:
+    static inline int count_ = 0;
+};
 
 class CardFactory {
 public:
@@ -72,6 +99,10 @@ public:
         }
         std::cerr << "[CardFactory] Unknown card id: " << id << std::endl;
         return nullptr;
+    }
+
+    size_t registered_count() const {
+        return creators.size();
     }
 
 private:
