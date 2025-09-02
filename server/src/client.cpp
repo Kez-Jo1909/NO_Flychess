@@ -240,6 +240,14 @@ namespace flychess_client {
         ws_.send(msg);
     }
 
+    void FlychessClient::sendUseCard(int card_id) {
+        nlohmann::json msg;
+        msg["type"] = "use_card";
+        msg["card_id"] = card_id;
+
+        this->sendMessage(msg.dump());
+    }
+
     void FlychessClient::sendFinishTextWaiting() {
         nlohmann::json msg;
         msg["type"] = "finish_text_waiting";

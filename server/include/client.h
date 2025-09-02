@@ -46,6 +46,8 @@ public:
 
     void sendFinishTextWaiting();
     void sendChatMsg(std::string chat_msg);
+
+    void sendUseCard(int card_id);
 signals:
     void connected();
     void disconnected();

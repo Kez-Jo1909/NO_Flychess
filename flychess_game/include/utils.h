@@ -69,13 +69,21 @@ T get_random(T min, T max) {
 
 enum class CardFunctionTime {
     ANYTIME = 0,
-    YOUR_TURN = 1,
+    YOUR_TURN = 1,// 感觉这个没法用，不是很好实现啊
     BEFORE_ROLL = 2,// 这里BEFORE_ROLL是指一定在掷骰子前使用
     BEFORE_MOVE = 3,// 而BEFORE_MOVE只要是在移动棋子前使用即可
     AFTER_MOVE = 4
 };
 
-std::string getCardPathById(const std::string& filepath, int target_id);
+struct CardInfo {
+    int id;
+    std::string name;
+    std::string description;
+    CardFunctionTime function_time;
+    std::string image_path;
+};
+
+CardInfo getCardById(const std::string& filepath, int target_id);
 
 }
 

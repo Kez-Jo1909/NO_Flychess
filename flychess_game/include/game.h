@@ -130,10 +130,15 @@ public:
     void setDice(int num) {
         steps = num;
     }
+
+    void setNextSix() {
+        next_six = true;
+    }
 private:
     std::vector<Player> players; // 玩家列表
     int chess_count_per_player = 4;
     int steps = -1; // 当前掷骰子的点数
+    bool next_six = false; // 是否下次掷骰子必为6
 };
 
 // 原本给js前端预留的接口

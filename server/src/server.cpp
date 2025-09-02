@@ -66,10 +66,6 @@
                         // steps = flychess_game::rollDice();
                         int steps = game_->RollDice();
                         auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
-
-                        // 这是卡牌6的实现
-                        // flychess_game::CardFunctionRegistery::get_instance().applyFunction(0, *game_, static_cast<int>(player.color), static_cast<int>(player.color));
-                        // steps = game_->GetDice();
                         
                         if (steps == 5) {
                             // 抽卡
@@ -163,6 +159,13 @@
                         this->game_room_->setUnPrepared(std::stoi(client_id));
                         BroadCastPlayerList();
                     }
+                    else if (type == "use_card") {
+                        int card_to_use_id = j.at("card_id");
+                        auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
+                        // 使用时间在客户端判断，这里直接使用
+                        std::cout << "game_ ptr = " << game_ << std::endl;
+                        flychess_game::CardFunctionRegistery::get_instance().applyFunction(0, *game_, static_cast<int>(player.color), static_cast<int>(player.color));
+                    }
                     else if(type == "update_player_count") {
                         int num = j.at("new_p_num");
                         bool ret = this->game_room_->setPlayerCount(num);
@@ -229,10 +232,10 @@
                         }
                     }
                     else if (type == "finish_use_card") {
-                        // 将该玩家状态设置为WAITING
+                        // 将该玩家状态设置为OTHERS
                         int color = j.at("color");
                         if (this->game_->getPlayerState(color) != flychess_game::PlayerState::FINISHED) {
-                            game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::WAITING);   
+                            game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::OTHERS);   
                         }
 
                         if (finished_players.size() == game_room_->getPlayerCount()) {

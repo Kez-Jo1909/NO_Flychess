@@ -104,7 +104,7 @@ namespace flychess_game {
     void FlychessGame::InitGame() {
         // 初始化游戏状态
         for (auto& player : players) {
-            player.setPlayerState(PlayerState::WAITING);
+            player.setPlayerState(PlayerState::OTHERS);
         }
         players[0].setPlayerState(PlayerState::ROLLING);
     }
@@ -169,6 +169,12 @@ namespace flychess_game {
     }
 
     int FlychessGame::RollDice() {
+        if (this->next_six) {
+            this->next_six = false;
+            steps = 6;
+            return steps;
+        }
+
         steps = rollDice();
         return steps;
     }

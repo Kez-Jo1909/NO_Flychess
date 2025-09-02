@@ -3,7 +3,7 @@
         "id": 0,
         "name": "6",
         "description": "使自己投出一个6",
-        "function_time": 3,
+        "function_time": 2,
         "image_path": "../assets/cards/6.jpg"
     },
     {

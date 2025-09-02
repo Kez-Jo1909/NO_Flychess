@@ -110,6 +110,7 @@ private slots:
     void onChatMessageRecieved(QString name, QString message, int color);
 
     void onGetNewCard(int card_id);
+    void onCardClicked(int card_id);
 private:
     // void repositionStartMenu();
 

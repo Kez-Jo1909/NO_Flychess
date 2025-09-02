@@ -12,7 +12,8 @@ enum class PlayerState {
     ROLLING = 1,    // 等待掷骰子
     SELECTING = 2,  // 等待挑选棋子
     CARDING = 3,   // 等待出牌
-    FINISHED = 4 // 完成游戏
+    FINISHED = 4, // 完成游戏
+    OTHERS = 5  // 其他玩家回合
 };
 
 struct ChessPieceInfo {

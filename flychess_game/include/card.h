@@ -28,7 +28,7 @@ public:
     std::string get_name() const { return name_; }
     std::string get_desc() const { return description_; }
     std::string get_img() const { return img_path_; }
-    game_utils::CardFunctionTime get_time() const { return function_time_; }
+    game_utils::CardFunctionTime get_functiontime() const { return function_time_; }
 protected:
     int id_;
     std::string name_;
@@ -51,7 +51,8 @@ public:
 
     static void function(FlychessGame& game, int player_id, int target_player_id) {
         std::cout << "Card_Six function executed!" << std::endl;
-        game.setDice(6);
+        // game.setDice(6);
+        game.setNextSix();
     }
 
     static int getCount() { return count_; }
