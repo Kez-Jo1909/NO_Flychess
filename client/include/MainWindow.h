@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QLabel>
+#include <QPropertyAnimation>
+#include <QAbstractAnimation>
 #include <QUrl>
 #include <QTimer>
 #include <QDesktopServices>
@@ -172,16 +174,31 @@ private:
 
 class CardItem : public QGraphicsObject {
     Q_OBJECT
+    Q_PROPERTY(qreal scaleFactor READ scaleFactor WRITE setScaleFactor)
+
 public:
     CardItem(const QString &img_path, int card_id, QGraphicsItem *parent = nullptr)
-        : QGraphicsObject(parent), card_id(card_id), img_path(img_path) {
+        : QGraphicsObject(parent), card_id(card_id), img_path(img_path)
+    {
         originalPixmap = QPixmap(img_path);
-        qDebug() << "加载图片:" << img_path << " 是否成功:" << !originalPixmap.isNull();
-        aspectRatio = originalPixmap.isNull() ? (2.0 / 3.0) : (double)originalPixmap.width() / originalPixmap.height();
-        cardHeight = 180; // 默认高度
+        aspectRatio = originalPixmap.isNull() ? (2.0 / 3.0) : double(originalPixmap.width()) / originalPixmap.height();
+        cardHeight = 180;
+        scaleFactor_ = 1.0;
         updatePixmap();
         setFlag(QGraphicsItem::ItemIsSelectable);
+        setAcceptHoverEvents(true);
     }
+
+    QRectF boundingRect() const override {
+        return QRectF(0, 0, cardWidth * scaleFactor_, cardHeight * scaleFactor_);
+    }
+
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem*, QWidget*) override {
+        painter->setRenderHint(QPainter::SmoothPixmapTransform);
+        painter->drawPixmap(0, 0, pixmap);
+    }
+
+    int getCardId() const { return card_id; }
 
     void setCardHeight(int height) {
         cardHeight = height;
@@ -191,17 +208,12 @@ public:
         update();
     }
 
-    QRectF boundingRect() const override {
-        return QRectF(0, 0, cardWidth, cardHeight);
-    }
-
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) override {
-        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-        painter->drawPixmap(0, 0, pixmap);
-    }
-
-    int getCardId() const {
-        return card_id;
+    qreal scaleFactor() const { return scaleFactor_; }
+    void setScaleFactor(qreal factor) {
+        scaleFactor_ = factor;
+        updatePixmap();
+        prepareGeometryChange();
+        update();
     }
 
 signals:
@@ -209,10 +221,24 @@ signals:
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override {
-        if (event->button() == Qt::LeftButton) {
-            emit cardClicked(card_id);
-        }
+        if (event->button() == Qt::LeftButton) emit cardClicked(card_id);
         QGraphicsObject::mousePressEvent(event);
+    }
+
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override {
+        QPropertyAnimation *anim = new QPropertyAnimation(this, "scaleFactor");
+        anim->setDuration(150);
+        anim->setEndValue(1.2);
+        anim->start(QAbstractAnimation::DeleteWhenStopped);
+        QGraphicsObject::hoverEnterEvent(event);
+    }
+
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override {
+        QPropertyAnimation *anim = new QPropertyAnimation(this, "scaleFactor");
+        anim->setDuration(150);
+        anim->setEndValue(1.0);
+        anim->start(QAbstractAnimation::DeleteWhenStopped);
+        QGraphicsObject::hoverLeaveEvent(event);
     }
 
 private:
@@ -223,13 +249,17 @@ private:
     int cardWidth = 120;
     int cardHeight = 180;
     double aspectRatio = 2.0 / 3.0;
+    qreal scaleFactor_ = 1.0;
 
     void updatePixmap() {
         if (!originalPixmap.isNull()) {
-            pixmap = originalPixmap.scaled(cardWidth, cardHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            int w = int(cardWidth * scaleFactor_);
+            int h = int(cardHeight * scaleFactor_);
+            pixmap = originalPixmap.scaled(w, h, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
     }
 };
+
 
 class CardView : public QGraphicsView {
     Q_OBJECT
