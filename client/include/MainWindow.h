@@ -240,8 +240,16 @@ public:
         scene = new QGraphicsScene(this);
         setScene(scene);
         setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-        setBackgroundBrush(Qt::white); // 可自定义背景
+        setBackgroundBrush(Qt::white);
+
+        // 禁用滚动条
+        setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+        // 场景大小跟随视口
+        scene->setSceneRect(this->viewport()->rect());
     }
+
 
     void addCard(const QString& img_path, int card_id) {
         CardItem* card = new CardItem(img_path, card_id);
@@ -294,20 +302,46 @@ private:
 
     void layoutCards() {
         if (cardItems.isEmpty()) return;
-        int n = cardItems.size();
-        int areaHeight = this->viewport()->height();
-        int spacing = 10;
-        for (auto card : cardItems)
-            card->setCardHeight(areaHeight);
 
+        int n = cardItems.size();
+        int spacing = 10;
+
+        int viewWidth = this->viewport()->width();
+        int viewHeight = this->viewport()->height();
+
+        // 默认高度（不超过视口高度）
+        int defaultHeight = viewHeight - 20; 
+        if (defaultHeight < 50) defaultHeight = 50; // 不要太小
+
+        // 先用默认高度算一次宽度
+        for (auto card : cardItems) {
+            card->setCardHeight(defaultHeight);
+        }
         int cardWidth = int(cardItems[0]->boundingRect().width());
+
         int totalWidth = n * cardWidth + (n - 1) * spacing;
-        int x0 = (this->viewport()->width() - totalWidth) / 2;
-        int y0 = 0;
+
+        // 如果太宽 -> 缩放
+        double scaleFactor = 1.0;
+        if (totalWidth > viewWidth) {
+            scaleFactor = double(viewWidth - (n - 1) * spacing) / (n * cardWidth);
+            int newHeight = int(defaultHeight * scaleFactor);
+            for (auto card : cardItems) {
+                card->setCardHeight(newHeight);
+            }
+            cardWidth = int(cardItems[0]->boundingRect().width());
+            totalWidth = n * cardWidth + (n - 1) * spacing;
+        }
+
+        // 居中放置
+        int x0 = (viewWidth - totalWidth) / 2;
+        int y0 = (viewHeight - cardItems[0]->boundingRect().height()) / 2;
+
         for (int i = 0; i < n; ++i) {
             cardItems[i]->setPos(x0 + i * (cardWidth + spacing), y0);
         }
     }
+
 };
 
 
