@@ -46,6 +46,7 @@ public:
     }
 
     ~Card_Six() {
+        std::cout << "[Destruct] Card_Six: " << this << std::endl; 
         --count_;
     }
 
@@ -69,6 +70,7 @@ public:
     }
 
     ~Card_ExtremeWeather() {
+        std::cout << "[Destruct] Card_Six: " << this << std::endl; 
         --count_;
     }
 

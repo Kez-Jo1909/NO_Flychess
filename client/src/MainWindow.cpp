@@ -199,7 +199,11 @@ void MainWindow::onCardClicked(int card_id) {
         );
 
         if (reply == QMessageBox::Yes) {
-            this->client_->sendUseCard(card_id);
+            int target_id = static_cast<int>(this->user_color_);
+            if (card_info.target_selection == 1) {
+                // TODO 选择目标玩家
+            }
+            this->client_->sendUseCard(card_id, target_id);
             ui->cardView->removeCard(card_id);
         }
     }

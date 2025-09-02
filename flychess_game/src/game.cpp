@@ -179,6 +179,22 @@ namespace flychess_game {
         return steps;
     }
 
+    void FlychessGame::setAllPreBack(int player_id) {
+        // 将所有启动区的送回家
+        for (auto& player : players) {
+            int chess_piece_count = player.GetChessPieceCount();
+            for (int i = 0; i < chess_piece_count; i++) {
+                auto chess_piece_info = player.GetChessPieceInfo(i);
+                if (chess_piece_info.position == 0) {
+                    std::cout<<"fuck"<<std::endl;
+                    player.SendChessPieceBackHome(i);
+                    player.GetKilledChessPiece();
+                    players[player_id].KillChessPiece();
+                }
+            }
+        }
+    }
+
     int FlychessGame::FlyChessPiece(int player_id, int chess_id) {
         if (player_id < 0 || player_id >= this->GetPlayerCount()) {
             std::cerr << "Invalid player ID: " << player_id << std::endl;

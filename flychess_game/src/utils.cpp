@@ -19,7 +19,8 @@ namespace game_utils {
                     item.at("name").get<std::string>(),
                     item.at("description").get<std::string>(),
                     static_cast<game_utils::CardFunctionTime>(item.at("function_time").get<int>()),
-                    item.at("image_path").get<std::string>()
+                    item.at("image_path").get<std::string>(),
+                    item.at("target_selection").get<int>()
                 };
             }
         }

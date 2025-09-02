@@ -134,6 +134,8 @@ public:
     void setNextSix() {
         next_six = true;
     }
+
+    void setAllPreBack(int player_id);
 private:
     std::vector<Player> players; // 玩家列表
     int chess_count_per_player = 4;

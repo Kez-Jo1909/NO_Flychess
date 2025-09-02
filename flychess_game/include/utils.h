@@ -81,6 +81,7 @@ struct CardInfo {
     std::string description;
     CardFunctionTime function_time;
     std::string image_path;
+    int target_selection;
 };
 
 CardInfo getCardById(const std::string& filepath, int target_id);

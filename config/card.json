@@ -4,14 +4,16 @@
         "name": "6",
         "description": "使自己投出一个6",
         "function_time": 2,
-        "image_path": "../assets/cards/6.jpg"
+        "image_path": "../assets/cards/6.jpg",
+        "target_selection": 0
     },
     {
         "id": 1,
         "name": "极端天气",
         "description": "使用后使所有处于待飞区的飞机返回重生点",
         "function_time": 0,
-        "image_path": "../assets/cards/extreme_weather.jpg"
+        "image_path": "../assets/cards/extreme_weather.jpg",
+        "target_selection": 0
     }
 ]
   

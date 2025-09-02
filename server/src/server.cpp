@@ -161,10 +161,12 @@
                     }
                     else if (type == "use_card") {
                         int card_to_use_id = j.at("card_id");
+                        int target_player_color = j.at("target_id");
                         auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
                         // 使用时间在客户端判断，这里直接使用
                         std::cout << "game_ ptr = " << game_ << std::endl;
-                        flychess_game::CardFunctionRegistery::get_instance().applyFunction(0, *game_, static_cast<int>(player.color), static_cast<int>(player.color));
+                        flychess_game::CardFunctionRegistery::get_instance().applyFunction(card_to_use_id, *game_, static_cast<int>(player.color), target_player_color);
+                        BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
                     }
                     else if(type == "update_player_count") {
                         int num = j.at("new_p_num");
