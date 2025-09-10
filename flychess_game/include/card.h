@@ -52,8 +52,11 @@ public:
 
     static void function(FlychessGame& game, int player_id, int target_player_id) {
         std::cout << "Card_Six function executed!" << std::endl;
+        std::cout << "[Card_Six::function] game=" << &game << std::endl;
+
         // game.setDice(6);
         game.setNextSix();
+        std::cout << "[Debug] Card_Six function end" << std::endl;
     }
 
     static int getCount() { return count_; }
@@ -70,7 +73,7 @@ public:
     }
 
     ~Card_ExtremeWeather() {
-        std::cout << "[Destruct] Card_Six: " << this << std::endl; 
+        std::cout << "[Destruct] Card_ExtremeWeather: " << this << std::endl; 
         --count_;
     }
 

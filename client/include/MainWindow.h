@@ -165,7 +165,10 @@ protected:
 private:
     std::pair<int,int> getGridCenter(int px, int py, int width, int height, int type);
 private:
-    std::vector<flychess_game::ChessPieceInfo> chess_pieces_; // 棋子信息列表
+    std::vector<flychess_game::ChessPieceInfo> chess_pieces_front_; // 绘制使用
+    std::vector<flychess_game::ChessPieceInfo> chess_pieces_back_;  // 更新使用
+    std::mutex pieces_mutex_;
+
     int boardSizePx;
     int offsetX;
     int offsetY;
@@ -182,12 +185,17 @@ public:
         : QGraphicsObject(parent), card_id(card_id), img_path(img_path)
     {
         originalPixmap = QPixmap(img_path);
-        aspectRatio = originalPixmap.isNull() ? (2.0 / 3.0) : double(originalPixmap.width()) / originalPixmap.height();
+        aspectRatio = originalPixmap.isNull() ? (2.0 / 3.0) 
+                                              : double(originalPixmap.width()) / originalPixmap.height();
         cardHeight = 180;
         scaleFactor_ = 1.0;
         updatePixmap();
         setFlag(QGraphicsItem::ItemIsSelectable);
         setAcceptHoverEvents(true);
+    }
+
+    ~CardItem() override {
+        qDebug() << "[Debug] CardItem destroyed:" << card_id;
     }
 
     QRectF boundingRect() const override {
@@ -196,24 +204,32 @@ public:
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem*, QWidget*) override {
         painter->setRenderHint(QPainter::SmoothPixmapTransform);
-        painter->drawPixmap(0, 0, pixmap);
+        if (!pixmap.isNull()) {
+            painter->drawPixmap(0, 0, pixmap);
+        }
     }
 
     int getCardId() const { return card_id; }
 
     void setCardHeight(int height) {
+        prepareGeometryChange();  // 几何改变前调用
         cardHeight = height;
         cardWidth = int(cardHeight * aspectRatio);
         updatePixmap();
-        prepareGeometryChange();
         update();
     }
 
-    qreal scaleFactor() const { return scaleFactor_; }
+    qreal scaleFactor() const {
+        qDebug() << "[Debug] scaleFactor getter called for" << card_id;
+        return scaleFactor_;
+    }
+
     void setScaleFactor(qreal factor) {
+        if (qFuzzyCompare(scaleFactor_, factor)) return;
+        prepareGeometryChange();  // 修改前调用
+        qDebug() << "[Debug] setScaleFactor called for" << card_id << "factor=" << factor;
         scaleFactor_ = factor;
         updatePixmap();
-        prepareGeometryChange();
         update();
     }
 
@@ -222,25 +238,13 @@ signals:
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override {
-        if (event->button() == Qt::LeftButton) emit cardClicked(card_id);
+        if (event->button() == Qt::LeftButton) {
+            emit cardClicked(card_id);
+        }
         QGraphicsObject::mousePressEvent(event);
     }
 
-    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override {
-        QPropertyAnimation *anim = new QPropertyAnimation(this, "scaleFactor");
-        anim->setDuration(150);
-        anim->setEndValue(1.2);
-        anim->start(QAbstractAnimation::DeleteWhenStopped);
-        QGraphicsObject::hoverEnterEvent(event);
-    }
-
-    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override {
-        QPropertyAnimation *anim = new QPropertyAnimation(this, "scaleFactor");
-        anim->setDuration(150);
-        anim->setEndValue(1.0);
-        anim->start(QAbstractAnimation::DeleteWhenStopped);
-        QGraphicsObject::hoverLeaveEvent(event);
-    }
+    // 已删除 hoverEnterEvent / hoverLeaveEvent 动画逻辑
 
 private:
     int card_id = -1;
@@ -254,12 +258,13 @@ private:
 
     void updatePixmap() {
         if (!originalPixmap.isNull()) {
-            int w = int(cardWidth * scaleFactor_);
-            int h = int(cardHeight * scaleFactor_);
+            int w = qMax(1, int(cardWidth * scaleFactor_));
+            int h = qMax(1, int(cardHeight * scaleFactor_));
             pixmap = originalPixmap.scaled(w, h, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
     }
 };
+
 
 
 class CardView : public QGraphicsView {

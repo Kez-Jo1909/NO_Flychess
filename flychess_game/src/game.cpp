@@ -186,7 +186,6 @@ namespace flychess_game {
             for (int i = 0; i < chess_piece_count; i++) {
                 auto chess_piece_info = player.GetChessPieceInfo(i);
                 if (chess_piece_info.position == 0) {
-                    std::cout<<"fuck"<<std::endl;
                     player.SendChessPieceBackHome(i);
                     player.GetKilledChessPiece();
                     players[player_id].KillChessPiece();

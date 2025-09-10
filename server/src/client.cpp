@@ -41,6 +41,8 @@ namespace flychess_client {
                         auto j = nlohmann::json::parse(msg->str);
                         std::string type = j.at("type");
 
+                        std::cout << "[CLIENT_DEBUG] 收到来自服务器的消息, type=" << type << std::endl;
+
                         if (type == "register_ret") {
                             std::string color = j.at("color");
                             this->user_color_ = static_cast<game_utils::Color>(std::stoi(color));

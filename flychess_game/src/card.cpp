@@ -19,5 +19,6 @@ namespace flychess_game {
         // TODO
         std::cout << "Card_ExtremeWeather function executed!" << std::endl;
         game.setAllPreBack(player_id);
+        std::cout<< "[Debug] Card_ExtremeWeather function end" << std::endl;
     }
 }

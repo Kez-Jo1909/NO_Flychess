@@ -356,7 +356,7 @@
         {
             if (socket->getReadyState() == ix::ReadyState::Open) {
                 socket->send(msg);
-                std::cout<< "消息已广播给客户端 [" << id << "]:" << msg << std::endl;
+                // std::cout<< "消息已广播给客户端 [" << id << "]:" << msg << std::endl;
             }
             else {
                 std::cerr << "Client [" << id << "] is not connected." << std::endl;

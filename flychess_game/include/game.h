@@ -80,6 +80,10 @@ class FlychessGame {
 public:
     FlychessGame() = default;
 
+    ~FlychessGame() {
+        std::cout << "[Destruct] FlychessGame " << this << std::endl;
+    }
+
     // 添加玩家
     void AddNewPlayer(game_utils::Color color, int chess_piece_count = 4);
     
@@ -132,7 +136,9 @@ public:
     }
 
     void setNextSix() {
+        std::cout << "[Debug] setNextSix called, this=" << this << std::endl;
         next_six = true;
+        std::cout << "[Debug] setNextSix finished, next_six=" << next_six << std::endl;
     }
 
     void setAllPreBack(int player_id);

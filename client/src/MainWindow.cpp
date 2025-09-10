@@ -971,9 +971,11 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
 
     // 绘制棋子
     // std::cout<< "size:" << chess_pieces_.size() <<std::endl;
-    for(int i = 0; i < chess_pieces_.size(); i++) {
-        int c_position = chess_pieces_[i].position;
-        auto grid_info = &flychess_map::getGameMap().searchGridInfo(c_position, static_cast<int>(chess_pieces_[i].color), chess_pieces_[i].id);
+    std::lock_guard<std::mutex> lock(pieces_mutex_);
+    qDebug() << "PaintEvent pieces size =" << chess_pieces_front_.size();
+    for(int i = 0; i < chess_pieces_front_.size(); i++) {
+        int c_position = chess_pieces_front_[i].position;
+        auto grid_info = &flychess_map::getGameMap().searchGridInfo(c_position, static_cast<int>(chess_pieces_front_[i].color), chess_pieces_front_[i].id);
         if (grid_info == nullptr) {
             std::cerr << "Error: Grid info not found for chess piece at position " << c_position << std::endl;
             continue;
@@ -983,7 +985,7 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
         int p_y = grid_info->position_y / 40 * grid_size + offsetY;
         int width = grid_info->width / 40 * grid_size;
         int type = grid_info->type;
-        std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_[i].color));
+        std::vector<int> color_vector = game_utils::colorintToRGB(static_cast<int> (chess_pieces_front_[i].color));
         std::pair<int,int> center_position;
         
         // std::cout << "grid_id" << grid_info->id << std::endl;
@@ -1023,8 +1025,10 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
 }
 
 void ChessBoardWidget::updatePieces(const QList<QVariantList> &pieces) {
+    std::lock_guard<std::mutex> lock(pieces_mutex_);
+
     // 清空之前的棋子信息
-    chess_pieces_.clear();
+    chess_pieces_back_.clear();
 
     // 遍历接收到的棋子信息
     for (const QVariantList &piece : pieces) {
@@ -1032,8 +1036,10 @@ void ChessBoardWidget::updatePieces(const QList<QVariantList> &pieces) {
         int color = piece[1].toInt();
         int position = piece[2].toInt();
         int player_id = piece[3].toInt();
-        chess_pieces_.emplace_back(id, static_cast<game_utils::Color>(color), position, player_id);
+        chess_pieces_back_.emplace_back(id, static_cast<game_utils::Color>(color), position, player_id);
     }
+
+    chess_pieces_front_.swap(chess_pieces_back_);
 
     // 触发重绘
     update();
@@ -1090,7 +1096,7 @@ void ChessBoardWidget::mousePressEvent(QMouseEvent *event) {
     // qDebug() << "实际坐标:" << actual_x << actual_y;
 
     // 查找这是哪个格子
-    for (auto chess_piece : chess_pieces_) {
+    for (auto chess_piece : chess_pieces_front_) {
         int c_position = chess_piece.position;
         auto grid_info = &flychess_map::getGameMap().searchGridInfo(c_position, static_cast<int>(chess_piece.color), chess_piece.id);
         auto type = grid_info->type;    
