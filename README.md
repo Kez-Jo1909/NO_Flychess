@@ -1,6 +1,6 @@
 # README
 
-![version](https://img.shields.io/badge/version-0.2.3-black)
+![version](https://img.shields.io/badge/version-0.3.0-black)
 
 ## 依赖项
 

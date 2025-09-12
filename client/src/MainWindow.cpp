@@ -453,7 +453,7 @@ void MainWindow::onSelectedChessPiece(int id, int color) {
 
 void MainWindow::showUpdateDialog() {
     QMessageBox::information(this, "更新公告",
-    "0.2.2版本更新内容：\n1. 新增聊天功能\n2. 加入游戏按键功能恢复\n");
+    "0.3.0版本更新内容：\n1. 新增卡牌\n");
 }
 
 void MainWindow::showAboutDialog() {

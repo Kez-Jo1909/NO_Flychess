@@ -148,7 +148,7 @@ private:
 
     bool if_fold = false; // 是否弃牌状态
 
-    std::string version = "0.2.3";
+    std::string version = "0.3.0";
 };
 
 }// namespace flychess_client
