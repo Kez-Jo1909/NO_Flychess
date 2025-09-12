@@ -66,6 +66,8 @@
                         // steps = flychess_game::rollDice();
                         int steps = game_->RollDice();
                         auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
+
+                        player_to_move_ = static_cast<int>(player.color);
                         
                         if (steps == 5) {
                             // 抽卡
@@ -109,11 +111,13 @@
                             sendDiceNum(steps, client_id);
                             // 将状态改为待选择棋子
                             game_->changePlayerState(player.color, flychess_game::PlayerState::SELECTING);
+                            game_state_ = flychess_game::PlayerState::SELECTING;
                         }
                     }
                     else if (type == "finish_text_waiting") {
                         auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
                         game_->changePlayerState(player.color, flychess_game::PlayerState::CARDING);
+                        game_state_ = flychess_game::PlayerState::CARDING;
                         this->CardState(client_id);
                     }
                     else if (type == "userInfo") {// 新加入玩家在这里
@@ -167,6 +171,20 @@
                         std::cout << "game_ ptr = " << game_ << std::endl;
                         flychess_game::CardFunctionRegistery::get_instance().applyFunction(card_to_use_id, *game_, static_cast<int>(player.color), target_player_color);
                         BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
+
+                        // 使用后如果是选择棋子阶段，检查有无可用棋子
+                        if (game_state_ == flychess_game::PlayerState::SELECTING && player_to_move_ != -1) {
+                            int steps = game_->GetDice();
+                            if (steps != 6 && game_->GetStartedChessCount(player_to_move_) == 0) {
+                                std::cout << "No avialable chess piece" << std::endl;
+
+                                nlohmann::json no_avialable_msg;
+                                no_avialable_msg["type"] = "no_avialable_piece";
+                                no_avialable_msg["dice_num"] = steps;
+                                no_avialable_msg["color"] = static_cast<int>(player.color);
+                                this->sendToClient(client_id, no_avialable_msg.dump());
+                            }
+                        }
                     }
                     else if(type == "update_player_count") {
                         int num = j.at("new_p_num");
@@ -193,6 +211,8 @@
                         int id = j.at("id");
                         int color = j.at("color");
 
+                        player_to_move_ = -1;
+
                         // 移动棋子
                         int steps_to_move = this->game_->GetDice();
                         int move_ret = this->game_->MoveChessPiece(color, id, steps_to_move);
@@ -209,6 +229,7 @@
                             // 该玩家结束游戏
                             // BroadCastSomeoneFinished(color);
                             this->game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::FINISHED);
+                            game_state_ = flychess_game::PlayerState::FINISHED;
                             // finished_player_count++;
                             finished_players.push_back(color);
                             // 在这里检查是不是所有都结束了
@@ -225,11 +246,13 @@
                             if (last_steps == 6) {
                                 // 如果掷出了6点，继续掷一次骰子
                                 game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::ROLLING);
+                                game_state_ = flychess_game::PlayerState::ROLLING;
                                 BroadCastToRollDice(color);
                                 last_steps = -1;
                                 return;
                             }
                             game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::CARDING);
+                            game_state_ = flychess_game::PlayerState::CARDING;
                             this->CardState(client_id);
                         }
                     }
@@ -254,6 +277,7 @@
                             next_color = (next_color + 1) % game_room_->getMaxPlayerCount();
                             if (game_->getPlayerState(next_color) != flychess_game::PlayerState::FINISHED) {
                                 game_->changePlayerState(static_cast<game_utils::Color>(next_color), flychess_game::PlayerState::ROLLING);
+                                game_state_ = flychess_game::PlayerState::ROLLING;
                                 BroadCastToRollDice(next_color);
                                 return;
                             }
