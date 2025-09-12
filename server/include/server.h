@@ -9,6 +9,7 @@
 #include <nlohmann/json.hpp>
 #include "game.h"
 #include "utils.h"
+#include "card.h"
 
 namespace flychess_server{
 
@@ -61,9 +62,15 @@ private:
     // int finished_player_count = 0;
     std::vector<int> finished_players;
 
-    int steps = -1;
     std::string host_;
     std::string url_to_show;
+
+    flychess_game::PlayerState game_state_ = flychess_game::PlayerState::UNDEFINED; // 全局的游戏状态
+
+    int player_to_move_ = -1; // 当前需要操作的玩家颜色
+
+    // TODO 卡牌数量上限检测
+    // std::vector<int> limited_card_id;
 };
 
 }

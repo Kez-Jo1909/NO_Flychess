@@ -80,6 +80,10 @@ class FlychessGame {
 public:
     FlychessGame() = default;
 
+    ~FlychessGame() {
+        std::cout << "[Destruct] FlychessGame " << this << std::endl;
+    }
+
     // 添加玩家
     void AddNewPlayer(game_utils::Color color, int chess_piece_count = 4);
     
@@ -120,9 +124,29 @@ public:
 
     int GetFinishedChessCount(int player_id);
     int FlyChessPiece(int player_id, int chess_id);
+
+    int RollDice();
+
+    int GetDice() const {
+        return steps;
+    }
+
+    void setDice(int num) {
+        steps = num;
+    }
+
+    void setNextSix() {
+        std::cout << "[Debug] setNextSix called, this=" << this << std::endl;
+        next_six = true;
+        std::cout << "[Debug] setNextSix finished, next_six=" << next_six << std::endl;
+    }
+
+    void setAllPreBack(int player_id);
 private:
     std::vector<Player> players; // 玩家列表
     int chess_count_per_player = 4;
+    int steps = -1; // 当前掷骰子的点数
+    bool next_six = false; // 是否下次掷骰子必为6
 };
 
 // 原本给js前端预留的接口

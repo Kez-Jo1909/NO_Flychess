@@ -15,7 +15,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 #endif
-
+    flychess_game::register_cards();
+    flychess_game::register_functions();
+    
     QApplication app(argc, argv);
 
     flychess_client::MainWindow window;

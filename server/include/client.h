@@ -46,6 +46,8 @@ public:
 
     void sendFinishTextWaiting();
     void sendChatMsg(std::string chat_msg);
+
+    void sendUseCard(int card_id, int target_id);
 signals:
     void connected();
     void disconnected();
@@ -66,11 +68,12 @@ signals:
     void toRollDice();
     void OtherToRollDice(int color);
     void toUseCard();
-    void NoAvailableChess(int color);
+    void NoAvailableChess(int color, int dice_num);
     void SomeoneFinished(int color);
     void AllPlayerFinished(QList<QVariantList> rank_list);
     void UrlReceived(QString url);
     void chatMessageRecieved(QString player_name, QString message, int player_color);
+    void GetNewCard(int card_id);
 private:
     ix::WebSocket ws_;
 

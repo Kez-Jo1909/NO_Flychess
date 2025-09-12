@@ -4,16 +4,22 @@
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QLabel>
+#include <QPropertyAnimation>
+#include <QAbstractAnimation>
 #include <QUrl>
 #include <QTimer>
 #include <QDesktopServices>
 #include <QGraphicsView>
 #include <QResizeEvent>
 #include <QVariant>
+#include <QGraphicsPixmapItem>
+#include <QGraphicsSceneMouseEvent>
 #include <QPainter>
+#include <QDebug>
 #include <QList>
 #include <QComboBox>
 #include "game.h"
+#include "card.h"
 #include "server.h"
 #include "client.h"
 #include "utils.h"
@@ -95,13 +101,16 @@ private slots:
     void onGameStartNotEnough();
     void onSelectedChessPiece(int id, int color);
     void onToUseCard();
-    void onNoAvailableChess(int color);
+    void onNoAvailableChess(int color, int dice_num);
     void onSomeoneFinished(int color);
     void onURLReceived(QString url);
 
     void onJoinGameButtonClicked();
     void ChatEditEnter();
     void onChatMessageRecieved(QString name, QString message, int color);
+
+    void onGetNewCard(int card_id);
+    void onCardClicked(int card_id);
 private:
     // void repositionStartMenu();
 
@@ -135,7 +144,11 @@ private:
 
     std::vector<flychess_game::ChessPieceInfo> chess_pieces_; // 棋子信息列表
 
-    std::string version = "0.2.3";
+    int cards_count_ = 0;
+
+    bool if_fold = false; // 是否弃牌状态
+
+    std::string version = "0.3.0";
 };
 
 }// namespace flychess_client
@@ -156,12 +169,257 @@ protected:
 private:
     std::pair<int,int> getGridCenter(int px, int py, int width, int height, int type);
 private:
-    std::vector<flychess_game::ChessPieceInfo> chess_pieces_; // 棋子信息列表
+    std::vector<flychess_game::ChessPieceInfo> chess_pieces_front_; // 绘制使用
+    std::vector<flychess_game::ChessPieceInfo> chess_pieces_back_;  // 更新使用
+    std::mutex pieces_mutex_;
+
     int boardSizePx;
     int offsetX;
     int offsetY;
     int radius;
     int grid_size;
+};
+
+class CardItem : public QGraphicsObject {
+    Q_OBJECT
+    Q_PROPERTY(qreal scaleFactor READ scaleFactor WRITE setScaleFactor)
+
+public:
+    CardItem(const QString &img_path, int card_id, QGraphicsItem *parent = nullptr)
+        : QGraphicsObject(parent),
+          card_id(card_id),
+          img_path(img_path)
+    {
+        originalPixmap = QPixmap(img_path);
+        aspectRatio = originalPixmap.isNull()
+                          ? (2.0 / 3.0)
+                          : double(originalPixmap.width()) / originalPixmap.height();
+
+        cardHeight = 180;
+        scaleFactor_ = 1.0;
+        updatePixmap();
+
+        setFlag(QGraphicsItem::ItemIsSelectable);
+        setAcceptHoverEvents(true);
+
+        // 创建动画并指定父对象，确保析构时自动销毁
+        hoverAnim = new QPropertyAnimation(this, "scaleFactor", this);
+        hoverAnim->setDuration(200);
+        hoverAnim->setEasingCurve(QEasingCurve::OutBack);
+    }
+
+    ~CardItem() override {
+        if (hoverAnim) {
+            hoverAnim->stop(); // 防止动画在对象析构后访问
+        }
+        qDebug() << "[Debug] CardItem destroyed:" << card_id;
+    }
+
+    QRectF boundingRect() const override {
+        return QRectF(0, 0, cardWidth * scaleFactor_, cardHeight * scaleFactor_);
+    }
+
+    void paint(QPainter *painter,
+               const QStyleOptionGraphicsItem*,
+               QWidget*) override
+    {
+        painter->setRenderHint(QPainter::SmoothPixmapTransform);
+        if (!pixmap.isNull()) {
+            painter->drawPixmap(0, 0, pixmap);
+        }
+    }
+
+    int getCardId() const { return card_id; }
+
+    void setCardHeight(int height) {
+        prepareGeometryChange();  // 几何改变前调用
+        cardHeight = height;
+        cardWidth = int(cardHeight * aspectRatio);
+        updatePixmap();
+        update();
+    }
+
+    qreal scaleFactor() const {
+        // qDebug() << "[Debug] scaleFactor getter called for" << card_id;
+        return scaleFactor_;
+    }
+
+    void setScaleFactor(qreal factor) {
+        if (qFuzzyCompare(scaleFactor_, factor)) return;
+        prepareGeometryChange();  // 修改前调用
+        // qDebug() << "[Debug] setScaleFactor called for" << card_id << "factor=" << factor;
+        scaleFactor_ = factor;
+        updatePixmap();
+        update();
+    }
+
+signals:
+    void cardClicked(int card_id);
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override {
+        if (event->button() == Qt::LeftButton) {
+            emit cardClicked(card_id);
+        }
+        QGraphicsObject::mousePressEvent(event);
+    }
+
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override {
+        Q_UNUSED(event);
+        if (hoverAnim) {
+            hoverAnim->stop();
+            hoverAnim->setStartValue(scaleFactor_);
+            hoverAnim->setEndValue(1.15);   // 悬停放大 15%
+            hoverAnim->start();
+        }
+    }
+
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override {
+        Q_UNUSED(event);
+        if (hoverAnim) {
+            hoverAnim->stop();
+            hoverAnim->setStartValue(scaleFactor_);
+            hoverAnim->setEndValue(1.0);    // 回到原始大小
+            hoverAnim->start();
+        }
+    }
+
+private:
+    int card_id = -1;
+    QString img_path;
+    QPixmap originalPixmap;
+    QPixmap pixmap;
+    int cardWidth = 120;
+    int cardHeight = 180;
+    double aspectRatio = 2.0 / 3.0;
+    qreal scaleFactor_ = 1.0;
+
+    QPropertyAnimation *hoverAnim = nullptr;
+
+    void updatePixmap() {
+        if (!originalPixmap.isNull()) {
+            int w = qMax(1, int(cardWidth * scaleFactor_));
+            int h = qMax(1, int(cardHeight * scaleFactor_));
+            pixmap = originalPixmap.scaled(w, h,
+                                           Qt::KeepAspectRatio,
+                                           Qt::SmoothTransformation);
+        }
+    }
+};
+
+
+
+class CardView : public QGraphicsView {
+    Q_OBJECT
+public:
+    explicit CardView(QWidget* parent = nullptr)
+        : QGraphicsView(parent)
+    {
+        scene = new QGraphicsScene(this);
+        setScene(scene);
+        setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+        setBackgroundBrush(Qt::white);
+
+        // 禁用滚动条
+        setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+        // 场景大小跟随视口
+        scene->setSceneRect(this->viewport()->rect());
+    }
+
+
+    void addCard(const QString& img_path, int card_id) {
+        CardItem* card = new CardItem(img_path, card_id);
+        scene->addItem(card);
+        cardItems.append(card);
+        connect(card, &CardItem::cardClicked, this, &CardView::cardClicked);
+        layoutCards();
+    }
+
+    void removeCard(int card_id) {
+        for (int i = 0; i < cardItems.size(); ++i) {
+            if (cardItems[i]->getCardId() == card_id) {
+                scene->removeItem(cardItems[i]);
+                delete cardItems[i];
+                cardItems.remove(i);
+                break;
+            }
+        }
+        layoutCards();
+    }
+
+    // 可一次性设置全部卡牌
+    void setCards(const QVector<QPair<QString, int>>& cards) {
+        // 清空
+        for (auto card : cardItems) {
+            scene->removeItem(card);
+            delete card;
+        }
+        cardItems.clear();
+        // 添加
+        for (const auto& pair : cards) {
+            addCard(pair.first, pair.second);
+        }
+        layoutCards();
+    }
+
+signals:
+    void cardClicked(int card_id);
+
+protected:
+    void resizeEvent(QResizeEvent* event) override {
+        QGraphicsView::resizeEvent(event);
+        scene->setSceneRect(rect());
+        layoutCards();
+    }
+
+private:
+    QGraphicsScene* scene;
+    QVector<CardItem*> cardItems;
+
+    void layoutCards() {
+        if (cardItems.isEmpty()) return;
+
+        int n = cardItems.size();
+        int spacing = 10;
+
+        int viewWidth = this->viewport()->width();
+        int viewHeight = this->viewport()->height();
+
+        // 默认高度（不超过视口高度）
+        int defaultHeight = viewHeight - 20; 
+        if (defaultHeight < 50) defaultHeight = 50; // 不要太小
+
+        // 先用默认高度算一次宽度
+        for (auto card : cardItems) {
+            card->setCardHeight(defaultHeight);
+        }
+        int cardWidth = int(cardItems[0]->boundingRect().width());
+
+        int totalWidth = n * cardWidth + (n - 1) * spacing;
+
+        // 如果太宽 -> 缩放
+        double scaleFactor = 1.0;
+        if (totalWidth > viewWidth) {
+            scaleFactor = double(viewWidth - (n - 1) * spacing) / (n * cardWidth);
+            int newHeight = int(defaultHeight * scaleFactor);
+            for (auto card : cardItems) {
+                card->setCardHeight(newHeight);
+            }
+            cardWidth = int(cardItems[0]->boundingRect().width());
+            totalWidth = n * cardWidth + (n - 1) * spacing;
+        }
+
+        // 居中放置
+        int x0 = (viewWidth - totalWidth) / 2;
+        int y0 = (viewHeight - cardItems[0]->boundingRect().height()) / 2;
+
+        for (int i = 0; i < n; ++i) {
+            cardItems[i]->setPos(x0 + i * (cardWidth + spacing), y0);
+        }
+    }
+
 };
 
 

@@ -827,15 +827,7 @@
            </spacer>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_11">
-            <item>
-             <widget class="QLabel" name="label">
-              <property name="text">
-               <string>卡牌区</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <widget class="CardView" name="cardView"/>
           </item>
          </layout>
         </item>
@@ -884,6 +876,11 @@
    <extends>QWidget</extends>
    <header>MainWindow.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>CardView</class>
+   <extends>QGraphicsView</extends>
+   <header>MainWindow.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -41,6 +41,8 @@ namespace flychess_client {
                         auto j = nlohmann::json::parse(msg->str);
                         std::string type = j.at("type");
 
+                        std::cout << "[CLIENT_DEBUG] 收到来自服务器的消息, type=" << type << std::endl;
+
                         if (type == "register_ret") {
                             std::string color = j.at("color");
                             this->user_color_ = static_cast<game_utils::Color>(std::stoi(color));
@@ -205,10 +207,18 @@ namespace flychess_client {
                         }
                         else if (type == "no_avialable_piece") {
                             int color = j.at("color");
+                            int dice_num = j.at("dice_num");
 
-                            QMetaObject::invokeMethod(this, [this, color]() {
-                                emit NoAvailableChess(color);
+                            QMetaObject::invokeMethod(this, [this, color, dice_num]() {
+                                emit NoAvailableChess(color, dice_num);
                             }, Qt::QueuedConnection);
+                        }
+                        else if (type == "get_card") {
+                            int id = j.at("card_id");
+
+                            QMetaObject::invokeMethod(this, [this, id]() {
+                                emit GetNewCard(id);
+                            }, Qt::QueuedConnection); 
                         }
                         else {
                             std::cout<< "未知消息类型,内容:";
@@ -230,6 +240,15 @@ namespace flychess_client {
 
     void FlychessClient::sendMessage(const std::string &msg) {
         ws_.send(msg);
+    }
+
+    void FlychessClient::sendUseCard(int card_id, int target_id) {
+        nlohmann::json msg;
+        msg["type"] = "use_card";
+        msg["card_id"] = card_id;
+        msg["target_id"] = target_id;
+
+        this->sendMessage(msg.dump());
     }
 
     void FlychessClient::sendFinishTextWaiting() {

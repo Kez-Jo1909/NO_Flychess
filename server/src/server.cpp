@@ -2,6 +2,7 @@
     #include <QMetaObject>
     #include <QJsonDocument>
     #include <QJsonObject>
+#include "card.h"
     #include "game.h"
 
     namespace flychess_server {
@@ -59,35 +60,66 @@
                 try {
                     auto j = nlohmann::json::parse(msg->str);
                     std::string type = j.at("type");
-
-                    // // 通过 Qt 信号通知
-                    // QMetaObject::invokeMethod(this, [this, client_id, j]() {
-                    //     QJsonObject obj = QJsonDocument::fromJson(
-                    //         QByteArray::fromStdString(j.dump())
-                    //     ).object();
-                    //     emit jsonReceived(QString::fromStdString(client_id), obj);
-                    // }, Qt::QueuedConnection);
+                    std::cout << "type=" << type << std::endl;
 
                     if (type == "rolldice") {
-                        std::cout<< "rolldice request from player " << j["playerId"] << std::endl;
-                        steps = flychess_game::rollDice();
+                        std::cout<< "rolldice request from player " << client_id << std::endl;
+                        // steps = flychess_game::rollDice();
+                        int steps = game_->RollDice();
                         auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
+
+                        player_to_move_ = static_cast<int>(player.color);
+                        
+                        if (steps == 5) {
+                        // if (1) {
+                            // 抽卡
+                            int available_cards_count = flychess_game::CardFactory::get_instance().registered_count();
+                            int card_id = -1;
+                            // while(1) {
+                            card_id = game_utils::get_random(0, available_cards_count - 1);
+
+                            //     // 检查是否能抽到该卡
+                            //     if (card_id < 0 || card_id >= available_cards_count) {
+                            //         std::cerr << "Error: Invalid card ID generated: " << card_id << std::endl;
+                            //         continue;
+                            //     }
+                            //     else if (card_counts[card_id] >= 4) {
+                            //         std::cout << "Card_Six limit reached, re-drawing..." << std::endl;
+                            //     }
+                            //     else {
+                            //         card_counts[card_id]++;
+                            //         if (card_counts[card_id] == 4) {
+                            //             limited_card_id.push_back(card_id);
+                            //         }
+                            //         break;
+                            //     }
+                            // }
+                            std::cout<< "抽到卡牌: " << card_id << std::endl;
+                            nlohmann::json card_msg;
+                            card_msg["type"] = "get_card";
+                            card_msg["card_id"] = card_id;
+                            this->sendToClient(client_id, card_msg.dump());
+                        }
+
                         if (steps != 6 && game_->GetStartedChessCount(static_cast<int>(player.color)) == 0) {
                             std::cout << "No avialable chess piece" << std::endl;
 
                             nlohmann::json no_avialable_msg;
                             no_avialable_msg["type"] = "no_avialable_piece";
+                            no_avialable_msg["dice_num"] = steps;
                             no_avialable_msg["color"] = static_cast<int>(player.color);
                             this->sendToClient(client_id, no_avialable_msg.dump());
                         } else {
                             sendDiceNum(steps, client_id);
                             // 将状态改为待选择棋子
                             game_->changePlayerState(player.color, flychess_game::PlayerState::SELECTING);
+                            game_state_ = flychess_game::PlayerState::SELECTING;
                         }
                     }
                     else if (type == "finish_text_waiting") {
                         auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
                         game_->changePlayerState(player.color, flychess_game::PlayerState::CARDING);
+                        game_state_ = flychess_game::PlayerState::CARDING;
                         this->CardState(client_id);
                     }
                     else if (type == "userInfo") {// 新加入玩家在这里
@@ -133,6 +165,29 @@
                         this->game_room_->setUnPrepared(std::stoi(client_id));
                         BroadCastPlayerList();
                     }
+                    else if (type == "use_card") {
+                        int card_to_use_id = j.at("card_id");
+                        int target_player_color = j.at("target_id");
+                        auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
+                        // 使用时间在客户端判断，这里直接使用
+                        std::cout << "game_ ptr = " << game_ << std::endl;
+                        flychess_game::CardFunctionRegistery::get_instance().applyFunction(card_to_use_id, *game_, static_cast<int>(player.color), target_player_color);
+                        BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
+
+                        // 使用后如果是选择棋子阶段，检查有无可用棋子
+                        if (game_state_ == flychess_game::PlayerState::SELECTING && player_to_move_ != -1) {
+                            int steps = game_->GetDice();
+                            if (steps != 6 && game_->GetStartedChessCount(player_to_move_) == 0) {
+                                std::cout << "No avialable chess piece" << std::endl;
+
+                                nlohmann::json no_avialable_msg;
+                                no_avialable_msg["type"] = "no_avialable_piece";
+                                no_avialable_msg["dice_num"] = steps;
+                                no_avialable_msg["color"] = static_cast<int>(player.color);
+                                this->sendToClient(client_id, no_avialable_msg.dump());
+                            }
+                        }
+                    }
                     else if(type == "update_player_count") {
                         int num = j.at("new_p_num");
                         bool ret = this->game_room_->setPlayerCount(num);
@@ -158,8 +213,15 @@
                         int id = j.at("id");
                         int color = j.at("color");
 
+                        player_to_move_ = -1;
+
                         // 移动棋子
-                        this->game_->MoveChessPiece(color, id, steps);
+                        int steps_to_move = this->game_->GetDice();
+                        int move_ret = this->game_->MoveChessPiece(color, id, steps_to_move);
+                        if (move_ret == 0) {
+                            sendDiceNum(steps_to_move, client_id);
+                            return;
+                        }
                         // 移动后检查是否结束
                         BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
                         int ret = this->game_->FlyChessPiece(color, id);
@@ -169,6 +231,7 @@
                             // 该玩家结束游戏
                             // BroadCastSomeoneFinished(color);
                             this->game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::FINISHED);
+                            game_state_ = flychess_game::PlayerState::FINISHED;
                             // finished_player_count++;
                             finished_players.push_back(color);
                             // 在这里检查是不是所有都结束了
@@ -181,16 +244,25 @@
                             }
                             BroadCastSomeoneFinished(color);
                         } else {
+                            int last_steps = this->game_->GetDice();
+                            if (last_steps == 6) {
+                                // 如果掷出了6点，继续掷一次骰子
+                                game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::ROLLING);
+                                game_state_ = flychess_game::PlayerState::ROLLING;
+                                BroadCastToRollDice(color);
+                                last_steps = -1;
+                                return;
+                            }
                             game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::CARDING);
+                            game_state_ = flychess_game::PlayerState::CARDING;
                             this->CardState(client_id);
                         }
-                        steps = -1;
                     }
                     else if (type == "finish_use_card") {
-                        // 将该玩家状态设置为WAITING
+                        // 将该玩家状态设置为OTHERS
                         int color = j.at("color");
                         if (this->game_->getPlayerState(color) != flychess_game::PlayerState::FINISHED) {
-                            game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::WAITING);   
+                            game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::OTHERS);   
                         }
 
                         if (finished_players.size() == game_room_->getPlayerCount()) {
@@ -207,6 +279,7 @@
                             next_color = (next_color + 1) % game_room_->getMaxPlayerCount();
                             if (game_->getPlayerState(next_color) != flychess_game::PlayerState::FINISHED) {
                                 game_->changePlayerState(static_cast<game_utils::Color>(next_color), flychess_game::PlayerState::ROLLING);
+                                game_state_ = flychess_game::PlayerState::ROLLING;
                                 BroadCastToRollDice(next_color);
                                 return;
                             }
@@ -309,7 +382,7 @@
         {
             if (socket->getReadyState() == ix::ReadyState::Open) {
                 socket->send(msg);
-                std::cout<< "消息已广播给客户端 [" << id << "]:" << msg << std::endl;
+                // std::cout<< "消息已广播给客户端 [" << id << "]:" << msg << std::endl;
             }
             else {
                 std::cerr << "Client [" << id << "] is not connected." << std::endl;
