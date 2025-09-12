@@ -60,6 +60,7 @@
                 try {
                     auto j = nlohmann::json::parse(msg->str);
                     std::string type = j.at("type");
+                    std::cout << "type=" << type << std::endl;
 
                     if (type == "rolldice") {
                         std::cout<< "rolldice request from player " << client_id << std::endl;
@@ -70,6 +71,7 @@
                         player_to_move_ = static_cast<int>(player.color);
                         
                         if (steps == 5) {
+                        // if (1) {
                             // 抽卡
                             int available_cards_count = flychess_game::CardFactory::get_instance().registered_count();
                             int card_id = -1;

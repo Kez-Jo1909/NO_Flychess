@@ -144,6 +144,10 @@ private:
 
     std::vector<flychess_game::ChessPieceInfo> chess_pieces_; // 棋子信息列表
 
+    int cards_count_ = 0;
+
+    bool if_fold = false; // 是否弃牌状态
+
     std::string version = "0.2.3";
 };
 

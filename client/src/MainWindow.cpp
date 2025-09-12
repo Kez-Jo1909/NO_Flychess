@@ -122,8 +122,9 @@ void MainWindow::onChatMessageRecieved(QString name, QString message, int player
 }
 
 void MainWindow::onGetNewCard(int card_id) {
+    cards_count_++;
     game_utils::CardInfo new_card_info = game_utils::getCardById("../config/card.json", card_id);
-
+    std::cout << "[DEBUG] 获得新卡牌: " << new_card_info.name << std::endl;
     QMessageBox::information(this, "获得新卡牌", QString::fromStdString("你获得了一张新卡牌: " + new_card_info.name + "\n" + new_card_info.description));
 
     // 添加卡牌
@@ -173,38 +174,67 @@ void MainWindow::onSomeoneFinished(int color) {
 
 void MainWindow::onCardClicked(int card_id) {
     game_utils::CardInfo card_info = game_utils::getCardById("../config/card.json", card_id);
-    
-    // 判断是否在可使用阶段
-    auto function_time = card_info.function_time;
 
-    if (function_time == game_utils::CardFunctionTime::BEFORE_ROLL && this->player_state_ != flychess_game::PlayerState::ROLLING) {
-        QMessageBox::warning(this, "错误", "该卡牌只能在玩家回合且掷骰子前使用!");
-    }
-    else if (function_time == game_utils::CardFunctionTime::BEFORE_MOVE && (this->player_state_ != flychess_game::PlayerState::ROLLING && this->player_state_ != flychess_game::PlayerState::SELECTING)) {
-        QMessageBox::warning(this, "错误", "该卡牌只能在移动棋子前(包含投骰子时)使用!");
-    }
-    else if (function_time == game_utils::CardFunctionTime::AFTER_MOVE && this->player_state_ != flychess_game::PlayerState::CARDING) {
-        QMessageBox::warning(this, "错误", "该卡牌只能在玩家回合移动棋子后使用!");
-    }
-    else if (function_time == game_utils::CardFunctionTime::YOUR_TURN && this->player_state_ == flychess_game::PlayerState::OTHERS) {
-        QMessageBox::warning(this, "错误", "该卡牌只能在玩家回合使用!");
-    }
-    else {
-        // 确认使用
+    if (if_fold) {
+        // 弃牌状态
         auto reply = QMessageBox::question(
             this,
-            "使用卡牌确认",
-            QString::fromStdString("确定要使用卡牌: " + card_info.name + "吗?"),
+            "弃牌确认",
+            QString::fromStdString("确定要弃置卡牌: " + card_info.name + "吗?"),
             QMessageBox::Yes | QMessageBox::No
         );
 
         if (reply == QMessageBox::Yes) {
-            int target_id = static_cast<int>(this->user_color_);
-            if (card_info.target_selection == 1) {
-                // TODO 选择目标玩家
-            }
-            this->client_->sendUseCard(card_id, target_id);
+            // 确认弃牌
             ui->cardView->removeCard(card_id);
+            cards_count_--;
+        }
+        else {
+            // 取消弃牌
+        }
+
+
+        if (cards_count_ <= 4) {
+            if_fold = true;
+            ui->RollDiceButton->setEnabled(true);
+        }
+    }
+    else { // 正常使用状态
+        // 判断是否在可使用阶段
+        auto function_time = card_info.function_time;
+
+        if (function_time == game_utils::CardFunctionTime::BEFORE_ROLL && this->player_state_ != flychess_game::PlayerState::ROLLING) {
+            QMessageBox::warning(this, "错误", "该卡牌只能在玩家回合且掷骰子前使用!");
+        }
+        else if (function_time == game_utils::CardFunctionTime::BEFORE_MOVE && (this->player_state_ != flychess_game::PlayerState::ROLLING && this->player_state_ != flychess_game::PlayerState::SELECTING)) {
+            QMessageBox::warning(this, "错误", "该卡牌只能在移动棋子前(包含投骰子时)使用!");
+        }
+        else if (function_time == game_utils::CardFunctionTime::AFTER_MOVE && this->player_state_ != flychess_game::PlayerState::CARDING) {
+            QMessageBox::warning(this, "错误", "该卡牌只能在玩家回合移动棋子后使用!");
+        }
+        else if (function_time == game_utils::CardFunctionTime::YOUR_TURN && this->player_state_ == flychess_game::PlayerState::OTHERS) {
+            QMessageBox::warning(this, "错误", "该卡牌只能在玩家回合使用!");
+        }
+        else {
+            // 确认使用
+            auto reply = QMessageBox::question(
+                this,
+                "使用卡牌确认",
+                QString::fromStdString("确定要使用卡牌: " + card_info.name + "吗?"),
+                QMessageBox::Yes | QMessageBox::No
+            );
+
+            if (reply == QMessageBox::Yes) {
+                int target_id = static_cast<int>(this->user_color_);
+                if (card_info.target_selection == 1) {
+                    // TODO 选择目标玩家
+                }
+                this->client_->sendUseCard(card_id, target_id);
+                ui->cardView->removeCard(card_id);
+            }
+            else {
+                // 取消使用
+            }
         }
     }
 }
@@ -212,11 +242,21 @@ void MainWindow::onCardClicked(int card_id) {
 void MainWindow::onToUseCard() {
     this->player_state_ = flychess_game::PlayerState::CARDING;
     
-    // TODO
-    // 由于没有牌，先在这里直接跳过
-    this->client_->sendFinishUseCard(static_cast<int>(user_color_));
-    // std::cout <<"fuckcard"<< std::endl;
-    this->player_state_ = flychess_game::PlayerState::OTHERS;
+    if (cards_count_ > 0) {
+        // QMessageBox::information(this, "提示", "可以使用卡牌了!");
+        ui->DiceTextLabel->setText("可以使用卡牌了!");
+        ui->RollDiceButton->setText("结束回合");
+        ui->RollDiceButton->setEnabled(true);
+    }
+    else {
+        // 没有牌，这里直接跳过
+        std::cout << "没有卡牌，自动跳过..." << std::endl;
+        ui->DiceTextLabel->setText("没有卡牌，自动跳过...");
+        this->player_state_ = flychess_game::PlayerState::OTHERS;
+        QTimer::singleShot(500, this, [this]() {
+            this->client_->sendFinishUseCard(static_cast<int>(user_color_));
+        });
+    }
 }
 
 void MainWindow::onNoAvailableChess(int color, int dice_num) {
@@ -290,9 +330,33 @@ void MainWindow::onPlayerCountUpdate(int num) {
 }
 
 void MainWindow::onRollDiceButton() {
-    this->client_->sendRollDiceRequest();
-    ui->RollDiceButton->setEnabled(false);
-    ui->DiceTextLabel->setText("正在掷骰子,请稍等...");
+    if (this->player_state_ == flychess_game::PlayerState::CARDING) {
+        // 先判断需不需要弃牌
+        std::cout << "cards_count_=" << cards_count_ << std::endl;
+        if (cards_count_ > 4) {
+            QMessageBox::information(this, "提示", "卡牌超过4张,请先弃牌!");
+            ui->DiceTextLabel->setText("请选择要放弃的卡牌...");
+            ui->RollDiceButton->setEnabled(false);
+            ui->RollDiceButton->setText("结束弃牌");
+            if_fold = true;
+            return;
+        }
+
+        ui->DiceTextLabel->setText("结束回合...");
+        
+        std::cout << "结束使用卡牌阶段..." << std::endl;
+        this->client_->sendFinishUseCard(static_cast<int>(user_color_));
+        this->player_state_ = flychess_game::PlayerState::OTHERS;
+    }
+    else if (this->player_state_ == flychess_game::PlayerState::ROLLING) {
+        this->client_->sendRollDiceRequest();
+        ui->RollDiceButton->setEnabled(false);
+        ui->DiceTextLabel->setText("正在掷骰子,请稍等...");
+    }
+    else {
+        std::cout << "当前非掷骰子状态" << std::endl;
+        return;
+    }
 }
 
 void MainWindow::onRollDiceResult(int result, QString player_name, int player_color) {
@@ -316,6 +380,7 @@ void MainWindow::onToRollDice() {
     player_state_ = flychess_game::PlayerState::ROLLING;
     // std::cout<< "轮到你掷骰子" << std::endl;
     ui->DiceTextLabel->setText("请掷骰子...");
+    ui->RollDiceButton->setText("掷骰子");
     ui->RollDiceButton->setEnabled(true);
 }
 
@@ -972,7 +1037,7 @@ void ChessBoardWidget::paintEvent(QPaintEvent *event) {
     // 绘制棋子
     // std::cout<< "size:" << chess_pieces_.size() <<std::endl;
     std::lock_guard<std::mutex> lock(pieces_mutex_);
-    qDebug() << "PaintEvent pieces size =" << chess_pieces_front_.size();
+    // qDebug() << "PaintEvent pieces size =" << chess_pieces_front_.size();
     for(int i = 0; i < chess_pieces_front_.size(); i++) {
         int c_position = chess_pieces_front_[i].position;
         auto grid_info = &flychess_map::getGameMap().searchGridInfo(c_position, static_cast<int>(chess_pieces_front_[i].color), chess_pieces_front_[i].id);
