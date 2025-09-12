@@ -229,6 +229,7 @@ void MainWindow::onCardClicked(int card_id) {
                 if (card_info.target_selection == 1) {
                     // TODO 选择目标玩家
                 }
+                cards_count_--;
                 this->client_->sendUseCard(card_id, target_id);
                 ui->cardView->removeCard(card_id);
             }
@@ -347,6 +348,8 @@ void MainWindow::onRollDiceButton() {
         std::cout << "结束使用卡牌阶段..." << std::endl;
         this->client_->sendFinishUseCard(static_cast<int>(user_color_));
         this->player_state_ = flychess_game::PlayerState::OTHERS;
+        ui->RollDiceButton->setEnabled(false);
+        ui->RollDiceButton->setText("掷骰子");
     }
     else if (this->player_state_ == flychess_game::PlayerState::ROLLING) {
         this->client_->sendRollDiceRequest();
