@@ -182,19 +182,32 @@ class CardItem : public QGraphicsObject {
 
 public:
     CardItem(const QString &img_path, int card_id, QGraphicsItem *parent = nullptr)
-        : QGraphicsObject(parent), card_id(card_id), img_path(img_path)
+        : QGraphicsObject(parent),
+          card_id(card_id),
+          img_path(img_path)
     {
         originalPixmap = QPixmap(img_path);
-        aspectRatio = originalPixmap.isNull() ? (2.0 / 3.0) 
-                                              : double(originalPixmap.width()) / originalPixmap.height();
+        aspectRatio = originalPixmap.isNull()
+                          ? (2.0 / 3.0)
+                          : double(originalPixmap.width()) / originalPixmap.height();
+
         cardHeight = 180;
         scaleFactor_ = 1.0;
         updatePixmap();
+
         setFlag(QGraphicsItem::ItemIsSelectable);
         setAcceptHoverEvents(true);
+
+        // 创建动画并指定父对象，确保析构时自动销毁
+        hoverAnim = new QPropertyAnimation(this, "scaleFactor", this);
+        hoverAnim->setDuration(200);
+        hoverAnim->setEasingCurve(QEasingCurve::OutBack);
     }
 
     ~CardItem() override {
+        if (hoverAnim) {
+            hoverAnim->stop(); // 防止动画在对象析构后访问
+        }
         qDebug() << "[Debug] CardItem destroyed:" << card_id;
     }
 
@@ -202,7 +215,10 @@ public:
         return QRectF(0, 0, cardWidth * scaleFactor_, cardHeight * scaleFactor_);
     }
 
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem*, QWidget*) override {
+    void paint(QPainter *painter,
+               const QStyleOptionGraphicsItem*,
+               QWidget*) override
+    {
         painter->setRenderHint(QPainter::SmoothPixmapTransform);
         if (!pixmap.isNull()) {
             painter->drawPixmap(0, 0, pixmap);
@@ -220,14 +236,14 @@ public:
     }
 
     qreal scaleFactor() const {
-        qDebug() << "[Debug] scaleFactor getter called for" << card_id;
+        // qDebug() << "[Debug] scaleFactor getter called for" << card_id;
         return scaleFactor_;
     }
 
     void setScaleFactor(qreal factor) {
         if (qFuzzyCompare(scaleFactor_, factor)) return;
         prepareGeometryChange();  // 修改前调用
-        qDebug() << "[Debug] setScaleFactor called for" << card_id << "factor=" << factor;
+        // qDebug() << "[Debug] setScaleFactor called for" << card_id << "factor=" << factor;
         scaleFactor_ = factor;
         updatePixmap();
         update();
@@ -244,7 +260,25 @@ protected:
         QGraphicsObject::mousePressEvent(event);
     }
 
-    // 已删除 hoverEnterEvent / hoverLeaveEvent 动画逻辑
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override {
+        Q_UNUSED(event);
+        if (hoverAnim) {
+            hoverAnim->stop();
+            hoverAnim->setStartValue(scaleFactor_);
+            hoverAnim->setEndValue(1.15);   // 悬停放大 15%
+            hoverAnim->start();
+        }
+    }
+
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override {
+        Q_UNUSED(event);
+        if (hoverAnim) {
+            hoverAnim->stop();
+            hoverAnim->setStartValue(scaleFactor_);
+            hoverAnim->setEndValue(1.0);    // 回到原始大小
+            hoverAnim->start();
+        }
+    }
 
 private:
     int card_id = -1;
@@ -256,11 +290,15 @@ private:
     double aspectRatio = 2.0 / 3.0;
     qreal scaleFactor_ = 1.0;
 
+    QPropertyAnimation *hoverAnim = nullptr;
+
     void updatePixmap() {
         if (!originalPixmap.isNull()) {
             int w = qMax(1, int(cardWidth * scaleFactor_));
             int h = qMax(1, int(cardHeight * scaleFactor_));
-            pixmap = originalPixmap.scaled(w, h, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            pixmap = originalPixmap.scaled(w, h,
+                                           Qt::KeepAspectRatio,
+                                           Qt::SmoothTransformation);
         }
     }
 };
