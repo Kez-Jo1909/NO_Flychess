@@ -2,6 +2,8 @@
 
 ![version](https://img.shields.io/badge/version-0.3.0-black)
 
+这是一个糅杂了卡牌的飞行棋游戏，来源于高三时期自制卡牌飞行棋。基于QT5开发客户端，使用ixWebsocket通信，实现局域网联机。目前仅添加两张卡牌，尚在等待后续更新。
+
 ## 依赖项
 
 - nlomann json
@@ -48,6 +50,10 @@ chmod ./build.sh
 - [x] bridge区域
 - [x] map重构
 - [ ] 右键点击卡牌弹出提示
+- [ ] 卡牌动画闪退
+- [ ] 联网更新
+- [ ] 局域网房间列表
+- [ ] ai玩家
 
 ## MapGrid备注
 
@@ -96,8 +102,14 @@ gh-pages -d frontend
 
 ```bash
 git submodule update --init --recursive
+cd build
 cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE="D:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_PREFIX_PATH="C:/Qt/5.15.19/msvc2019_64" -DCMAKE_INSTALL_PREFIX="%cd%/dist"
 cmake --build . --config Release
 cmake --install . --config Release
 & "C:\Qt\5.15.19\msvc2019_64\bin\windeployqt.exe" .\Flychess_QT_Client.exe
 ```
+
+> [!NOTE]
+>
+> 这里仅将qt相关动态库移入，运行还需要zlib1.dll
+
