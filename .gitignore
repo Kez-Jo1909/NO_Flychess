@@ -18,6 +18,11 @@ wasm/build/
 !frontend/game.js
 !frontend/game.wasm
 
+# Electron（不忽略 electron-client 源码）
+!electron-client/**/*.js
+!electron-client/**/*.html
+electron-client/node_modules/
+
 # 忽略临时文件
 *.log
 *.tmp

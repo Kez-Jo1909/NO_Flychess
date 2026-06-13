@@ -1,540 +1,631 @@
-    #include "../include/server.h"
-    #include <QMetaObject>
-    #include <QJsonDocument>
-    #include <QJsonObject>
+#include "../include/server.h"
 #include "card.h"
-    #include "game.h"
+#include "game.h"
+#include "command.h"
+#include "resolution_stack.h"
 
-    namespace flychess_server {
+namespace flychess_server {
 
-    FlychessServer::FlychessServer(int port, const std::string& host, QObject* parent)
-        : QObject(parent), port_(port), host_(host), server_(std::make_unique<ix::WebSocketServer>(port, host)) 
-    {
-        // 初始连接回调
-        server_->setOnConnectionCallback(
-            [this](std::weak_ptr<ix::WebSocket> weakWebSocket,
-                std::shared_ptr<ix::ConnectionState> connectionState)
-            {
-                std::cout << "New connection received." << std::endl;
-                if(connectionState) {
-                    std::string client_id = connectionState->getId();
-                    std::string ip = connectionState->getRemoteIp();
-                    std::cout << "Client ID: " << client_id << ", IP: " << ip << std::endl;
-                
-                    if (auto webSocket = weakWebSocket.lock()) {
-                        clients_[client_id] = webSocket;  // 保存映射
-                        setupMessageCallback(webSocket, client_id);
-                    }
+// ============================================================
+// 构造 / 启动 / 停止
+// ============================================================
 
-                    // 发射 Qt 信号
-                    QMetaObject::invokeMethod(this, [this, client_id, ip]() {
-                        emit clientConnected(QString::fromStdString(client_id),
-                                            QString::fromStdString(ip));
-                    }, Qt::QueuedConnection);
-                }
-            }
-        );
-        game_room_ = new flychess_game::FlychessGameRoom();
-        // game_room_ -> addPlayer(flychess_game::PlayerInfo(game_utils::Color::RED, "player", 0)); 
-    }
-
-    void FlychessServer::stop() {
-        if (server_) {
-            server_->stop();  
-        }
-    }
-
-    void FlychessServer::setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket, const std::string& client_id) {
-        webSocket->setOnMessageCallback(
-            [this, client_id](const ix::WebSocketMessagePtr& msg) {
-                handleMessage(msg, client_id);
-            }
-        );
-    }
-
-    void FlychessServer::handleMessage(const ix::WebSocketMessagePtr& msg, const std::string& client_id) {
-        if (msg->type == ix::WebSocketMessageType::Message) {
-            std::cout << "收到来自ID [" << client_id << "] 的消息: ";
-            const std::string& msg_text = msg->str;
-            if (!msg_text.empty() && (msg_text[0] == '{' || msg_text[0] == '[')) {
-                try {
-                    auto j = nlohmann::json::parse(msg->str);
-                    std::string type = j.at("type");
-                    std::cout << "type=" << type << std::endl;
-
-                    if (type == "rolldice") {
-                        std::cout<< "rolldice request from player " << client_id << std::endl;
-                        // steps = flychess_game::rollDice();
-                        int steps = game_->RollDice();
-                        auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
-
-                        player_to_move_ = static_cast<int>(player.color);
-                        
-                        if (steps == 5) {
-                        // if (1) {
-                            // 抽卡
-                            int available_cards_count = flychess_game::CardFactory::get_instance().registered_count();
-                            int card_id = -1;
-                            // while(1) {
-                            card_id = game_utils::get_random(0, available_cards_count - 1);
-
-                            //     // 检查是否能抽到该卡
-                            //     if (card_id < 0 || card_id >= available_cards_count) {
-                            //         std::cerr << "Error: Invalid card ID generated: " << card_id << std::endl;
-                            //         continue;
-                            //     }
-                            //     else if (card_counts[card_id] >= 4) {
-                            //         std::cout << "Card_Six limit reached, re-drawing..." << std::endl;
-                            //     }
-                            //     else {
-                            //         card_counts[card_id]++;
-                            //         if (card_counts[card_id] == 4) {
-                            //             limited_card_id.push_back(card_id);
-                            //         }
-                            //         break;
-                            //     }
-                            // }
-                            std::cout<< "抽到卡牌: " << card_id << std::endl;
-                            nlohmann::json card_msg;
-                            card_msg["type"] = "get_card";
-                            card_msg["card_id"] = card_id;
-                            this->sendToClient(client_id, card_msg.dump());
-                        }
-
-                        if (steps != 6 && game_->GetStartedChessCount(static_cast<int>(player.color)) == 0) {
-                            std::cout << "No avialable chess piece" << std::endl;
-
-                            nlohmann::json no_avialable_msg;
-                            no_avialable_msg["type"] = "no_avialable_piece";
-                            no_avialable_msg["dice_num"] = steps;
-                            no_avialable_msg["color"] = static_cast<int>(player.color);
-                            this->sendToClient(client_id, no_avialable_msg.dump());
-                        } else {
-                            sendDiceNum(steps, client_id);
-                            // 将状态改为待选择棋子
-                            game_->changePlayerState(player.color, flychess_game::PlayerState::SELECTING);
-                            game_state_ = flychess_game::PlayerState::SELECTING;
-                        }
-                    }
-                    else if (type == "finish_text_waiting") {
-                        auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
-                        game_->changePlayerState(player.color, flychess_game::PlayerState::CARDING);
-                        game_state_ = flychess_game::PlayerState::CARDING;
-                        this->CardState(client_id);
-                    }
-                    else if (type == "userInfo") {// 新加入玩家在这里
-                        std::string user_name = j.at("name");
-                        int color = game_room_->getPlayerCount();
-                        game_room_->addPlayer(flychess_game::PlayerInfo(static_cast<game_utils::Color>(color), "player", std::stoi(client_id)));
-
-                        nlohmann::json ret_msg;
-                        ret_msg["type"] = "add_player_broadcast";
-                        ret_msg["color"] = std::to_string(color);
-                        ret_msg["name"] = user_name;
-                        this->BroadCast(ret_msg.dump());
-
-                        nlohmann::json register_msg;
-                        register_msg["type"] = "register_ret";
-                        register_msg["color"] = std::to_string(color);
-                        this->sendToClient(client_id, register_msg.dump());
-                        // std::cout << "[Server] 广播 add_player_broadcast: " << std::endl;
-
-                        nlohmann::json url_msg;
-                        url_msg["type"] = "url";
-                        url_msg["url"] = this->url_to_show;
-                        this->sendToClient(client_id, url_msg.dump());
-
-                        this->BroadCastPlayerList();
-                        this->BroadCastRoomInfo();
-                    }
-                    else if(type == "get_prepared") {
-                        this->game_room_->setPrepared(std::stoi(client_id));
-                        BroadCastPlayerList();
-                    }
-                    else if (type == "chat_message") {
-                        std::string chat_str  = j.at("message");
-
-                        nlohmann::json msg;
-                        msg["type"] = "chat_message_broadcast";
-                        msg["chat_msg"] = chat_str;
-                        msg["name"] = game_room_->getPlayerByWebId(std::stoi(client_id)).player_name;
-                        msg["color"] = static_cast<int>(game_room_->getPlayerByWebId(std::stoi(client_id)).color);
-                        this->BroadCast(msg.dump());
-                    }
-                    else if(type == "get_unprepared") {
-                        this->game_room_->setUnPrepared(std::stoi(client_id));
-                        BroadCastPlayerList();
-                    }
-                    else if (type == "use_card") {
-                        int card_to_use_id = j.at("card_id");
-                        int target_player_color = j.at("target_id");
-                        auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
-                        // 使用时间在客户端判断，这里直接使用
-                        std::cout << "game_ ptr = " << game_ << std::endl;
-                        flychess_game::CardFunctionRegistery::get_instance().applyFunction(card_to_use_id, *game_, static_cast<int>(player.color), target_player_color);
-                        BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
-
-                        // 使用后如果是选择棋子阶段，检查有无可用棋子
-                        if (game_state_ == flychess_game::PlayerState::SELECTING && player_to_move_ != -1) {
-                            int steps = game_->GetDice();
-                            if (steps != 6 && game_->GetStartedChessCount(player_to_move_) == 0) {
-                                std::cout << "No avialable chess piece" << std::endl;
-
-                                nlohmann::json no_avialable_msg;
-                                no_avialable_msg["type"] = "no_avialable_piece";
-                                no_avialable_msg["dice_num"] = steps;
-                                no_avialable_msg["color"] = static_cast<int>(player.color);
-                                this->sendToClient(client_id, no_avialable_msg.dump());
-                            }
-                        }
-                    }
-                    else if(type == "update_player_count") {
-                        int num = j.at("new_p_num");
-                        bool ret = this->game_room_->setPlayerCount(num);
-
-                        if(ret) {
-                            this->BroadCastPlayerCount();
-                        }
-                        else {
-                            nlohmann::json failed_ret;
-                            failed_ret["type"] = "failed_pc_update";
-                            failed_ret["reason"] = game_room_->getPlayerCount();
-                            this->BroadCastPlayerCount();
-                            this->sendToClient(client_id, failed_ret.dump());
-                        }
-                    }
-                    else if(type == "update_chess_count") {
-                        int num = j.at("new_c_num");
-                        this->game_room_->setChessCount(num);
-
-                        this->BroadCastChessCount();
-                    }
-                    else if (type == "choose_chess_piece") {
-                        int id = j.at("id");
-                        int color = j.at("color");
-
-                        player_to_move_ = -1;
-
-                        // 移动棋子
-                        int steps_to_move = this->game_->GetDice();
-                        int move_ret = this->game_->MoveChessPiece(color, id, steps_to_move);
-                        if (move_ret == 0) {
-                            sendDiceNum(steps_to_move, client_id);
-                            return;
-                        }
-                        // 移动后检查是否结束
-                        BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
-                        int ret = this->game_->FlyChessPiece(color, id);
-                        BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
-                        int finished_piece_count = this->game_->GetFinishedChessCount(color);
-                        if (finished_piece_count == this->game_room_->getChessPerPlayer()) {
-                            // 该玩家结束游戏
-                            // BroadCastSomeoneFinished(color);
-                            this->game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::FINISHED);
-                            game_state_ = flychess_game::PlayerState::FINISHED;
-                            // finished_player_count++;
-                            finished_players.push_back(color);
-                            // 在这里检查是不是所有都结束了
-                            if (finished_players.size() == game_room_->getPlayerCount()) {
-                                this->BroadCastAllFinished();
-                                // TODO 将所有都设置为非准备
-                                // delete game_;
-                                // game_ = nullptr;
-                                return;
-                            }
-                            BroadCastSomeoneFinished(color);
-                        } else {
-                            int last_steps = this->game_->GetDice();
-                            if (last_steps == 6) {
-                                // 如果掷出了6点，继续掷一次骰子
-                                game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::ROLLING);
-                                game_state_ = flychess_game::PlayerState::ROLLING;
-                                BroadCastToRollDice(color);
-                                last_steps = -1;
-                                return;
-                            }
-                            game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::CARDING);
-                            game_state_ = flychess_game::PlayerState::CARDING;
-                            this->CardState(client_id);
-                        }
-                    }
-                    else if (type == "finish_use_card") {
-                        // 将该玩家状态设置为OTHERS
-                        int color = j.at("color");
-                        if (this->game_->getPlayerState(color) != flychess_game::PlayerState::FINISHED) {
-                            game_->changePlayerState(static_cast<game_utils::Color>(color), flychess_game::PlayerState::OTHERS);   
-                        }
-
-                        if (finished_players.size() == game_room_->getPlayerCount()) {
-                            // 在这里销毁
-                            delete game_;
-                            game_ = nullptr;
-                            return;
-                        }
-
-                        // 将下一个玩家状态设置为ROLLING
-                        int next_color = color;
-                        while(1) {
-                            // std::cout << "循环中..." << std::endl;
-                            next_color = (next_color + 1) % game_room_->getMaxPlayerCount();
-                            if (game_->getPlayerState(next_color) != flychess_game::PlayerState::FINISHED) {
-                                game_->changePlayerState(static_cast<game_utils::Color>(next_color), flychess_game::PlayerState::ROLLING);
-                                game_state_ = flychess_game::PlayerState::ROLLING;
-                                BroadCastToRollDice(next_color);
-                                return;
-                            }
-                        }
-                    }
-                    else {
-                        std::cout<< "未知消息类型,内容:";
-                        std::cout<< msg_text << std::endl;
-                    }
-                }
-                catch (const std::exception& e) {
-                    std::cerr << "[JSON Parse Error] " << e.what() << std::endl;
-                }
-            } else {
-                std::cout<<"non-json message: " << msg->str << std::endl;
-
-                // 发射普通文本消息信号
-                QMetaObject::invokeMethod(this, [this, client_id, msg_text]() {
-                    emit messageReceived(QString::fromStdString(client_id),
-                                        QString::fromStdString(msg_text));
-                }, Qt::QueuedConnection);
-            }
-        }
-        else if (msg->type == ix::WebSocketMessageType::Close) {
-            std::cout << "客户端 [" << client_id << "] 断开连接。" << std::endl;
-            clients_.erase(client_id);
-
-            // 广播退出房间
-            nlohmann::json leave_msg;
-            leave_msg["type"] = "leave_room";
-            const auto& player_to_leave_info = game_room_->getPlayerByWebId(std::stoi(client_id));
-            int color_value = static_cast<int>(player_to_leave_info.color);
-            leave_msg["color"] = std::to_string(color_value);
-            leave_msg["name"] = player_to_leave_info.player_name;
-            this->BroadCast(leave_msg.dump());
-
-            // 删除房间内玩家信息
-            game_room_->DeletePlayer(std::stoi(client_id));
-            this->BroadCastPlayerList();
-
-            QMetaObject::invokeMethod(this, [this, client_id]() {
-                emit clientDisconnected(QString::fromStdString(client_id));
-            }, Qt::QueuedConnection);
-        }
-    }
-
-    void FlychessServer::sendDiceNum(int dice_result, const std::string& client_id) {
-        nlohmann::json message_json;
-        message_json["type"] = "dice_result";
-        message_json["dice_result"] = dice_result;
-        message_json["player_color"] = game_room_->getPlayerByWebId(std::stoi(client_id)).color;
-        message_json["name"] = game_room_->getPlayerByWebId(std::stoi(client_id)).player_name;
-
-        if (server_) {
-            // this->sendToClient(client_id, message_str);
-            BroadCast(message_json.dump());
-        } else {
-            std::cerr<< "server异常" << std::endl;
-        }
-    }
-
-    void FlychessServer::sendToClient(const std::string& client_id, const std::string msg) {
-        auto it = clients_.find(client_id);
-
-        if (it != clients_.end() && it->second->getReadyState() == ix::ReadyState::Open) {
-            it->second->send(msg);
-            std::cout<<"消息已发送给客户端 [" << client_id << "]:" << msg << std::endl;
-        } else {
-            std::cerr << "Client [" << client_id << "] not found or not connected." << std::endl;
-        }
-    }
-
-    void FlychessServer::BroadCastPlayerCount() {
-        nlohmann::json update_pc_ret;
-        update_pc_ret["type"] = "update_pc_ret";
-        update_pc_ret["new_count"] = game_room_->getMaxPlayerCount();
-        this->BroadCast(update_pc_ret.dump());
-    }
-
-    void FlychessServer::BroadCastChessCount() {
-        nlohmann::json update_cc_ret;
-        update_cc_ret["type"] = "update_cc_ret";
-        update_cc_ret["new_count"] = game_room_->getChessPerPlayer();
-        this->BroadCast(update_cc_ret.dump());
-    }
-
-    void FlychessServer::BroadCastRoomInfo() {
-        this->BroadCastPlayerCount();
-        this->BroadCastChessCount();
-    }
-
-    void FlychessServer::CardState(const std::string client_id) {
-        nlohmann::json to_use_card_msg;
-        to_use_card_msg["type"] = "to_use_card";
-        this->sendToClient(client_id, to_use_card_msg.dump());
-    }
-
-    void FlychessServer::BroadCast(const std::string& msg) {
-        for (const auto& [id, socket] : clients_)
+FlychessServer::FlychessServer(int port, const std::string& host)
+    : port_(port), host_(host),
+      server_(std::make_unique<ix::WebSocketServer>(port, host))
+{
+    server_->setOnConnectionCallback(
+        [this](std::weak_ptr<ix::WebSocket> weakWebSocket,
+               std::shared_ptr<ix::ConnectionState> connectionState)
         {
-            if (socket->getReadyState() == ix::ReadyState::Open) {
-                socket->send(msg);
-                // std::cout<< "消息已广播给客户端 [" << id << "]:" << msg << std::endl;
+            std::cout << "New connection received." << std::endl;
+            if (connectionState) {
+                std::string client_id = connectionState->getId();
+                std::string ip = connectionState->getRemoteIp();
+                std::cout << "Client ID: " << client_id << ", IP: " << ip << std::endl;
+
+                if (auto webSocket = weakWebSocket.lock()) {
+                    clients_[client_id] = webSocket;
+                    setupMessageCallback(webSocket, client_id);
+                }
+
+                // 回调通知
+                if (callbacks_.on_client_connected) {
+                    callbacks_.on_client_connected(client_id, ip);
+                }
             }
-            else {
-                std::cerr << "Client [" << id << "] is not connected." << std::endl;
-            }
         }
+    );
+
+    game_room_ = new flychess_game::FlychessGameRoom();
+    initHandlers();
+
+    // 预加载卡牌配置（路径相对于工作目录 build/server/）
+    card_config_ = flychess_game::load_card_config("../../config/card.json");
+}
+
+void FlychessServer::stop() {
+    if (server_) {
+        server_->stop();
+    }
+}
+
+bool FlychessServer::start() {
+    auto res = server_->listen();
+    if (!res.first) {
+        std::cerr << "Listen failed: " << res.second << std::endl;
+#ifdef _WIN32
+        printf("setsockopt error: %d\n", WSAGetLastError());
+#else
+        perror("setsockopt error");
+#endif
+        return false;
     }
 
-    void FlychessServer::BroadCastPlayerList() {
-        nlohmann::json player_list_json;
-        player_list_json["type"] = "update_player_list";
-        int current_player_num = game_room_->getPlayerCount();
-        for(int i = 0;  i < current_player_num; i++) {
-            const auto& player = game_room_->getPlayer(i);
-            player_list_json["players"].push_back({
-                {"name", player.player_name},
-                {"color", static_cast<int>(player.color)},
-                {"if_prepared", player.if_prepared}
-            });
+    server_->start();
+    std::cout << "WebSocket server started on port " << port_ << std::endl;
+    return true;
+}
+
+// ============================================================
+// 消息分发
+// ============================================================
+
+void FlychessServer::setupMessageCallback(std::shared_ptr<ix::WebSocket> webSocket,
+                                           const std::string& client_id) {
+    webSocket->setOnMessageCallback(
+        [this, client_id](const ix::WebSocketMessagePtr& msg) {
+            handleMessage(msg, client_id);
         }
-        this->BroadCast(player_list_json.dump());
+    );
+}
+
+void FlychessServer::handleMessage(const ix::WebSocketMessagePtr& msg,
+                                    const std::string& client_id) {
+    // 断开连接
+    if (msg->type == ix::WebSocketMessageType::Close) {
+        std::cout << "客户端 [" << client_id << "] 断开连接。" << std::endl;
+        clients_.erase(client_id);
+
+        nlohmann::json leave_msg;
+        leave_msg["type"] = "leave_room";
+        const auto& player_to_leave_info = game_room_->getPlayerByWebId(std::stoi(client_id));
+        int color_value = static_cast<int>(player_to_leave_info.color);
+        leave_msg["color"] = std::to_string(color_value);
+        leave_msg["name"] = player_to_leave_info.player_name;
+        this->BroadCast(leave_msg.dump());
+
+        game_room_->DeletePlayer(std::stoi(client_id));
+        this->BroadCastPlayerList();
+
+        if (callbacks_.on_client_disconnected) {
+            callbacks_.on_client_disconnected(client_id);
+        }
+        return;
     }
 
-    void FlychessServer::BroadCastAllFinished() {
-        nlohmann::json msg;
-        msg["type"] = "all_finished";
-        for(const auto i : finished_players) {
-            msg["rank"].push_back({
-                {"color", i}
-            });
+    // 非文本消息跳过
+    if (msg->type != ix::WebSocketMessageType::Message) return;
+
+    std::cout << "收到来自ID [" << client_id << "] 的消息: ";
+    const std::string& msg_text = msg->str;
+
+    // 非 JSON 消息
+    if (msg_text.empty() || (msg_text[0] != '{' && msg_text[0] != '[')) {
+        std::cout << "non-json message: " << msg_text << std::endl;
+        if (callbacks_.on_message_received) {
+            callbacks_.on_message_received(client_id, msg_text);
         }
-        this->BroadCast(msg.dump());
+        return;
     }
 
-    bool FlychessServer::start() {
-        auto res = server_->listen();
-        if (!res.first)
-        {
-            std::cerr << "Listen failed: " << res.second << std::endl;
-            #ifdef _WIN32
-                printf("setsockopt error: %d\n", WSAGetLastError());
-            #else
-                perror("setsockopt error");
-            #endif
+    // JSON 分发
+    try {
+        auto j = nlohmann::json::parse(msg_text);
+        std::string type = j.at("type");
+        std::cout << "type=" << type << std::endl;
 
-            return false;
+        auto it = handlers_.find(type);
+        if (it != handlers_.end()) {
+            it->second(j, client_id);
+        } else {
+            std::cout << "未知消息类型, 内容: " << msg_text << std::endl;
         }
+    } catch (const std::exception& e) {
+        std::cerr << "[JSON Parse Error] " << e.what() << std::endl;
+    }
+}
 
-        server_->start();
-        std::cout << "WebSocket server started on port " << port_ << std::endl;
-        
+// ============================================================
+// 消息处理器注册
+// ============================================================
+
+void FlychessServer::initHandlers() {
+    handlers_["rolldice"]             = [this](auto& m, auto& c) { handleRollDice(m, c); };
+    handlers_["finish_text_waiting"]  = [this](auto& m, auto& c) { handleFinishTextWaiting(m, c); };
+    handlers_["userInfo"]             = [this](auto& m, auto& c) { handleUserInfo(m, c); };
+    handlers_["get_prepared"]         = [this](auto& m, auto& c) { handleGetPrepared(m, c); };
+    handlers_["get_unprepared"]       = [this](auto& m, auto& c) { handleGetUnprepared(m, c); };
+    handlers_["chat_message"]         = [this](auto& m, auto& c) { handleChatMessage(m, c); };
+    handlers_["use_card"]             = [this](auto& m, auto& c) { handleUseCard(m, c); };
+    handlers_["update_player_count"]  = [this](auto& m, auto& c) { handleUpdatePlayerCount(m, c); };
+    handlers_["update_chess_count"]   = [this](auto& m, auto& c) { handleUpdateChessCount(m, c); };
+    handlers_["choose_chess_piece"]   = [this](auto& m, auto& c) { handleChooseChessPiece(m, c); };
+    handlers_["finish_use_card"]      = [this](auto& m, auto& c) { handleFinishUseCard(m, c); };
+    handlers_["game_start"]          = [this](auto& m, auto& c) { GameStart(); };
+}
+
+// ============================================================
+// 卡牌时机校验
+// ============================================================
+
+bool FlychessServer::validateCardTiming(int function_time,
+                                         flychess_game::PlayerState current_state) {
+    using ft = game_utils::CardFunctionTime;
+    using ps = flychess_game::PlayerState;
+
+    switch (static_cast<game_utils::CardFunctionTime>(function_time)) {
+    case ft::ANYTIME:
         return true;
+    case ft::BEFORE_ROLL:
+        return current_state == ps::ROLLING || current_state == ps::CARDING;
+    case ft::BEFORE_MOVE:
+        return current_state == ps::SELECTING;
+    case ft::AFTER_MOVE:
+        return current_state == ps::CARDING;
+    case ft::YOUR_TURN:
+        return current_state == ps::ROLLING
+            || current_state == ps::SELECTING
+            || current_state == ps::CARDING;
+    default:
+        return false;
+    }
+}
+
+// ============================================================
+// 消息处理器实现
+// ============================================================
+
+void FlychessServer::handleRollDice(const nlohmann::json& /*msg*/,
+                                     const std::string& client_id) {
+    std::cout << "rolldice request from player " << client_id << std::endl;
+
+    int steps = game_->RollDice();
+    auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
+    player_to_move_ = static_cast<int>(player.color);
+
+    if (steps == 5) {
+        int available_cards_count = static_cast<int>(card_config_.size());
+        int card_id = game_utils::get_random(0, available_cards_count - 1);
+        std::cout << "抽到卡牌: " << card_id << std::endl;
+
+        nlohmann::json card_msg;
+        card_msg["type"] = "get_card";
+        card_msg["card_id"] = card_id;
+        this->sendToClient(client_id, card_msg.dump());
     }
 
-    // 直接在MainWindow里调用
-    void FlychessServer::GameStart() {
-        // 先判断是否全部准备
-        bool all_prepared = game_room_->ifAllPrepared();
-        if  (!all_prepared) {
-            // BROADCAST
-            nlohmann::json not_ready_msg;
-            not_ready_msg["type"] = "not_ready";
-            this->BroadCast(not_ready_msg.dump());
+    if (steps != 6 && game_->GetStartedChessCount(static_cast<int>(player.color)) == 0) {
+        std::cout << "No avialable chess piece" << std::endl;
+        nlohmann::json no_avialable_msg;
+        no_avialable_msg["type"] = "no_avialable_piece";
+        no_avialable_msg["dice_num"] = steps;
+        no_avialable_msg["color"] = static_cast<int>(player.color);
+        this->sendToClient(client_id, no_avialable_msg.dump());
+    } else {
+        sendDiceNum(steps, client_id);
+        game_->changePlayerState(player.color, flychess_game::PlayerState::SELECTING);
+        game_state_ = flychess_game::PlayerState::SELECTING;
+    }
+}
+
+void FlychessServer::handleFinishTextWaiting(const nlohmann::json& /*msg*/,
+                                              const std::string& client_id) {
+    auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
+    game_->changePlayerState(player.color, flychess_game::PlayerState::CARDING);
+    game_state_ = flychess_game::PlayerState::CARDING;
+    this->CardState(client_id);
+}
+
+void FlychessServer::handleUserInfo(const nlohmann::json& msg,
+                                     const std::string& client_id) {
+    std::string user_name = msg.at("name");
+    int color = game_room_->getPlayerCount();
+    game_room_->addPlayer(flychess_game::PlayerInfo(
+        static_cast<game_utils::Color>(color), "player", std::stoi(client_id)));
+
+    nlohmann::json ret_msg;
+    ret_msg["type"] = "add_player_broadcast";
+    ret_msg["color"] = std::to_string(color);
+    ret_msg["name"] = user_name;
+    this->BroadCast(ret_msg.dump());
+
+    nlohmann::json register_msg;
+    register_msg["type"] = "register_ret";
+    register_msg["color"] = std::to_string(color);
+    this->sendToClient(client_id, register_msg.dump());
+
+    nlohmann::json url_msg;
+    url_msg["type"] = "url";
+    url_msg["url"] = this->url_to_show;
+    this->sendToClient(client_id, url_msg.dump());
+
+    this->BroadCastPlayerList();
+    this->BroadCastRoomInfo();
+}
+
+void FlychessServer::handleGetPrepared(const nlohmann::json& /*msg*/,
+                                        const std::string& client_id) {
+    this->game_room_->setPrepared(std::stoi(client_id));
+    BroadCastPlayerList();
+}
+
+void FlychessServer::handleGetUnprepared(const nlohmann::json& /*msg*/,
+                                          const std::string& client_id) {
+    this->game_room_->setUnPrepared(std::stoi(client_id));
+    BroadCastPlayerList();
+}
+
+void FlychessServer::handleChatMessage(const nlohmann::json& msg,
+                                        const std::string& client_id) {
+    std::string chat_str = msg.at("message");
+
+    nlohmann::json broadcast;
+    broadcast["type"] = "chat_message_broadcast";
+    broadcast["chat_msg"] = chat_str;
+    broadcast["name"] = game_room_->getPlayerByWebId(std::stoi(client_id)).player_name;
+    broadcast["color"] = static_cast<int>(
+        game_room_->getPlayerByWebId(std::stoi(client_id)).color);
+    this->BroadCast(broadcast.dump());
+}
+
+void FlychessServer::handleUseCard(const nlohmann::json& msg,
+                                    const std::string& client_id) {
+    int card_to_use_id = msg.at("card_id");
+    int target_player_color = msg.value("target_id", -1);
+    int target_piece_id = msg.value("piece_id", -1);
+
+    auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
+    int caster_color = static_cast<int>(player.color);
+
+    // 1. 查找卡牌配置
+    nlohmann::json card_json = flychess_game::find_card_by_id(card_config_, card_to_use_id);
+    if (card_json.is_null()) {
+        std::cerr << "[UseCard] 卡牌不存在: id=" << card_to_use_id << std::endl;
+        return;
+    }
+
+    // 2. 时机校验
+    int function_time = card_json.value("function_time", 0);
+    if (!validateCardTiming(function_time, game_state_)) {
+        std::cerr << "[UseCard] 卡牌使用时机不正确: " << card_json["name"]
+                  << " function_time=" << function_time
+                  << " game_state=" << static_cast<int>(game_state_) << std::endl;
+        nlohmann::json reject_msg;
+        reject_msg["type"] = "card_rejected";
+        reject_msg["reason"] = "时机不正确";
+        sendToClient(client_id, reject_msg.dump());
+        return;
+    }
+
+    // 3. 目标校验
+    int target_selection = card_json.value("target_selection", 0);
+    if (target_selection >= 1 && target_player_color < 0) {
+        std::cerr << "[UseCard] 卡牌需要目标但未提供" << std::endl;
+        return;
+    }
+
+    // 4. DSL → CardEffect → ResolutionStack
+    std::cout << "[UseCard] " << card_json["name"]
+              << " caster=" << caster_color
+              << " target=" << target_player_color
+              << " piece=" << target_piece_id << std::endl;
+
+    auto effect = flychess_game::parse_card_effect(
+        card_json, caster_color, target_player_color, target_piece_id);
+
+    resolution_stack_.pushEffect(effect);
+    resolution_stack_.resolveAll(*game_);
+
+    // 5. 广播结果
+    BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
+
+    // 6. 检查可用棋子
+    if (game_state_ == flychess_game::PlayerState::SELECTING && player_to_move_ != -1) {
+        int steps = game_->GetDice();
+        if (steps != 6 && game_->GetStartedChessCount(player_to_move_) == 0) {
+            nlohmann::json no_avialable_msg;
+            no_avialable_msg["type"] = "no_avialable_piece";
+            no_avialable_msg["dice_num"] = steps;
+            no_avialable_msg["color"] = caster_color;
+            this->sendToClient(client_id, no_avialable_msg.dump());
         }
-        else {
-            const int player_count = game_room_->getPlayerCount();
-            if(player_count != game_room_->getMaxPlayerCount()) {
-                nlohmann::json not_enough_msg;
-                not_enough_msg["type"] = "not_enough_players";
-                this->BroadCast(not_enough_msg.dump());
-                return;
-            }
-            
-            // 创建游戏实例
-            game_ = new flychess_game::FlychessGame();
-            const int cp_count = game_room_->getChessPerPlayer();
-            game_->setChessCount(cp_count);
-            // 开始添加玩家
-            for(int i = 0; i<player_count; i++) {
-                const auto& player_info = game_room_->getPlayer(i);
-                game_->AddNewPlayer(player_info.color, cp_count);
-            }
+    }
+}
 
-            // 检查玩家数量
-            if (game_->GetPlayerCount() != player_count) {
-                // TODO 发出信号
-                nlohmann::json player_count_error_msg;
-                player_count_error_msg["type"] = "player_count_error";
-                this->BroadCast(player_count_error_msg.dump());
-                // std::cerr << "玩家数量不匹配，预期: " << player_count << ", 实际: " << game_->GetPlayerCount() << std::endl;
-                return;
-            } else {
-                // std::cout << "玩家数量检查完成" << std::endl;
-                // 发送棋子初始状态
-                BroadCastPieceInfo(player_count, cp_count);
-            }
+void FlychessServer::handleUpdatePlayerCount(const nlohmann::json& msg,
+                                              const std::string& client_id) {
+    int num = msg.at("new_p_num");
+    bool ret = this->game_room_->setPlayerCount(num);
 
-            // 发出开始游戏
-            nlohmann::json start_game_msg;
-            start_game_msg["type"] = "game_start";
-            this->BroadCast(start_game_msg.dump());
+    if (ret) {
+        this->BroadCastPlayerCount();
+    } else {
+        nlohmann::json failed_ret;
+        failed_ret["type"] = "failed_pc_update";
+        failed_ret["reason"] = game_room_->getPlayerCount();
+        this->BroadCastPlayerCount();
+        this->sendToClient(client_id, failed_ret.dump());
+    }
+}
 
-            this->finished_players.clear();
-            game_->InitGame();
+void FlychessServer::handleUpdateChessCount(const nlohmann::json& msg,
+                                             const std::string& /*client_id*/) {
+    int num = msg.at("new_c_num");
+    this->game_room_->setChessCount(num);
+    this->BroadCastChessCount();
+}
 
-            int color_to_roll = game_->GetPlayerToRollDice();
-            if (color_to_roll != -1 && color_to_roll <= 3) {
-                // 发送给需要掷骰子的玩家
-                BroadCastToRollDice(color_to_roll);
-            } else {
-                std::cerr << "颜色值无效。" << std::endl;
-            }
+void FlychessServer::handleChooseChessPiece(const nlohmann::json& msg,
+                                             const std::string& client_id) {
+    int id = msg.at("id");
+    int color = msg.at("color");
+
+    player_to_move_ = -1;
+
+    int steps_to_move = this->game_->GetDice();
+    int move_ret = this->game_->MoveChessPiece(color, id, steps_to_move);
+    if (move_ret == 0) {
+        sendDiceNum(steps_to_move, client_id);
+        return;
+    }
+
+    BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
+    int ret = this->game_->FlyChessPiece(color, id);
+    BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
+
+    int finished_piece_count = this->game_->GetFinishedChessCount(color);
+    if (finished_piece_count == this->game_room_->getChessPerPlayer()) {
+        this->game_->changePlayerState(static_cast<game_utils::Color>(color),
+                                        flychess_game::PlayerState::FINISHED);
+        game_state_ = flychess_game::PlayerState::FINISHED;
+        finished_players.push_back(color);
+
+        if (finished_players.size() == game_room_->getPlayerCount()) {
+            this->BroadCastAllFinished();
+            return;
+        }
+        BroadCastSomeoneFinished(color);
+    } else {
+        int last_steps = this->game_->GetDice();
+        if (last_steps == 6) {
+            game_->changePlayerState(static_cast<game_utils::Color>(color),
+                                      flychess_game::PlayerState::ROLLING);
+            game_state_ = flychess_game::PlayerState::ROLLING;
+            BroadCastToRollDice(color);
+            return;
+        }
+        game_->changePlayerState(static_cast<game_utils::Color>(color),
+                                  flychess_game::PlayerState::CARDING);
+        game_state_ = flychess_game::PlayerState::CARDING;
+        this->CardState(client_id);
+    }
+}
+
+void FlychessServer::handleFinishUseCard(const nlohmann::json& msg,
+                                          const std::string& /*client_id*/) {
+    int color = msg.at("color");
+    if (this->game_->getPlayerState(color) != flychess_game::PlayerState::FINISHED) {
+        game_->changePlayerState(static_cast<game_utils::Color>(color),
+                                  flychess_game::PlayerState::OTHERS);
+    }
+
+    if (finished_players.size() == game_room_->getPlayerCount()) {
+        delete game_;
+        game_ = nullptr;
+        return;
+    }
+
+    int next_color = color;
+    while (true) {
+        next_color = (next_color + 1) % game_room_->getMaxPlayerCount();
+        if (game_->getPlayerState(next_color) != flychess_game::PlayerState::FINISHED) {
+            game_->changePlayerState(static_cast<game_utils::Color>(next_color),
+                                      flychess_game::PlayerState::ROLLING);
+            game_state_ = flychess_game::PlayerState::ROLLING;
+            BroadCastToRollDice(next_color);
+            return;
         }
     }
+}
 
-    void FlychessServer::BroadCastToRollDice(int color_to_roll) {
-        for (int i = 0; i < game_room_->getPlayerCount(); i++) {
-            auto p_info = game_room_->getPlayer(i);
-            if (static_cast<int>(p_info.color) == color_to_roll) {
-                nlohmann::json roll_dice_msg;
-                roll_dice_msg["type"] = "to_roll_dice";
-                this->sendToClient(std::to_string(p_info.websocket_id), roll_dice_msg.dump());
+// ============================================================
+// 通信辅助
+// ============================================================
 
-                nlohmann::json roll_dice_broadcast_msg;
-                roll_dice_broadcast_msg["type"] = "to_roll_dice_broadcast";
-                roll_dice_broadcast_msg["color"] = color_to_roll;
-                this->BroadCast(roll_dice_broadcast_msg.dump());
-            }
+void FlychessServer::sendDiceNum(int dice_result, const std::string& client_id) {
+    nlohmann::json message_json;
+    message_json["type"] = "dice_result";
+    message_json["dice_result"] = dice_result;
+    message_json["player_color"] = game_room_->getPlayerByWebId(std::stoi(client_id)).color;
+    message_json["name"] = game_room_->getPlayerByWebId(std::stoi(client_id)).player_name;
+
+    if (server_) {
+        BroadCast(message_json.dump());
+    } else {
+        std::cerr << "server异常" << std::endl;
+    }
+}
+
+void FlychessServer::sendToClient(const std::string& client_id, const std::string msg) {
+    auto it = clients_.find(client_id);
+    if (it != clients_.end() && it->second->getReadyState() == ix::ReadyState::Open) {
+        it->second->send(msg);
+        std::cout << "消息已发送给客户端 [" << client_id << "]:" << msg << std::endl;
+    } else {
+        std::cerr << "Client [" << client_id << "] not found or not connected." << std::endl;
+    }
+}
+
+void FlychessServer::BroadCast(const std::string& msg) {
+    for (const auto& [id, socket] : clients_) {
+        if (socket->getReadyState() == ix::ReadyState::Open) {
+            socket->send(msg);
+        } else {
+            std::cerr << "Client [" << id << "] is not connected." << std::endl;
         }
     }
-    
-    void FlychessServer::BroadCastSomeoneFinished(int color_finished) {
-        nlohmann::json msg;
-        msg["type"] = "someone_finished";
-        msg["color"] = color_finished;
-        this->BroadCast(msg.dump());
-    }
+}
 
-    void FlychessServer::BroadCastPieceInfo(int player_count, int cp_count) {
-        nlohmann::json piece_info_msg;
-        piece_info_msg["type"] = "all_piece_info";
-        for(int i = 0; i < player_count; i++) {
-            for(int j = 0; j < cp_count; j++) {
-                auto chess_piece = game_->GetPlayerChess(i, j);
-                piece_info_msg["pieces"].push_back({
-                    {"id", chess_piece.id},
-                    {"color", static_cast<int>(chess_piece.color)},
-                    {"position", chess_piece.position},
-                    {"player_id", i}
-                });
-            }
+// ============================================================
+// 广播辅助
+// ============================================================
+
+void FlychessServer::BroadCastPlayerCount() {
+    nlohmann::json update_pc_ret;
+    update_pc_ret["type"] = "update_pc_ret";
+    update_pc_ret["new_count"] = game_room_->getMaxPlayerCount();
+    this->BroadCast(update_pc_ret.dump());
+}
+
+void FlychessServer::BroadCastChessCount() {
+    nlohmann::json update_cc_ret;
+    update_cc_ret["type"] = "update_cc_ret";
+    update_cc_ret["new_count"] = game_room_->getChessPerPlayer();
+    this->BroadCast(update_cc_ret.dump());
+}
+
+void FlychessServer::BroadCastRoomInfo() {
+    this->BroadCastPlayerCount();
+    this->BroadCastChessCount();
+}
+
+void FlychessServer::CardState(const std::string client_id) {
+    nlohmann::json to_use_card_msg;
+    to_use_card_msg["type"] = "to_use_card";
+    this->sendToClient(client_id, to_use_card_msg.dump());
+}
+
+void FlychessServer::BroadCastPlayerList() {
+    nlohmann::json player_list_json;
+    player_list_json["type"] = "update_player_list";
+    int current_player_num = game_room_->getPlayerCount();
+    for (int i = 0; i < current_player_num; i++) {
+        const auto& player = game_room_->getPlayer(i);
+        player_list_json["players"].push_back({
+            {"name", player.player_name},
+            {"color", static_cast<int>(player.color)},
+            {"if_prepared", player.if_prepared}
+        });
+    }
+    this->BroadCast(player_list_json.dump());
+}
+
+void FlychessServer::BroadCastAllFinished() {
+    nlohmann::json msg;
+    msg["type"] = "all_finished";
+    for (const auto i : finished_players) {
+        msg["rank"].push_back({{"color", i}});
+    }
+    this->BroadCast(msg.dump());
+}
+
+void FlychessServer::BroadCastToRollDice(int color_to_roll) {
+    for (int i = 0; i < game_room_->getPlayerCount(); i++) {
+        auto p_info = game_room_->getPlayer(i);
+        if (static_cast<int>(p_info.color) == color_to_roll) {
+            nlohmann::json roll_dice_msg;
+            roll_dice_msg["type"] = "to_roll_dice";
+            this->sendToClient(std::to_string(p_info.websocket_id), roll_dice_msg.dump());
+
+            nlohmann::json roll_dice_broadcast_msg;
+            roll_dice_broadcast_msg["type"] = "to_roll_dice_broadcast";
+            roll_dice_broadcast_msg["color"] = color_to_roll;
+            this->BroadCast(roll_dice_broadcast_msg.dump());
         }
-        BroadCast(piece_info_msg.dump());
+    }
+}
+
+void FlychessServer::BroadCastSomeoneFinished(int color_finished) {
+    nlohmann::json msg;
+    msg["type"] = "someone_finished";
+    msg["color"] = color_finished;
+    this->BroadCast(msg.dump());
+}
+
+void FlychessServer::BroadCastPieceInfo(int player_count, int cp_count) {
+    nlohmann::json piece_info_msg;
+    piece_info_msg["type"] = "all_piece_info";
+    for (int i = 0; i < player_count; i++) {
+        for (int j = 0; j < cp_count; j++) {
+            auto chess_piece = game_->GetPlayerChess(i, j);
+            piece_info_msg["pieces"].push_back({
+                {"id", chess_piece.id},
+                {"color", static_cast<int>(chess_piece.color)},
+                {"position", chess_piece.position},
+                {"player_id", i}
+            });
+        }
+    }
+    BroadCast(piece_info_msg.dump());
+}
+
+// ============================================================
+// 游戏流程
+// ============================================================
+
+void FlychessServer::GameStart() {
+    bool all_prepared = game_room_->ifAllPrepared();
+    if (!all_prepared) {
+        nlohmann::json not_ready_msg;
+        not_ready_msg["type"] = "not_ready";
+        this->BroadCast(not_ready_msg.dump());
+        return;
     }
 
-}// flychess_server
+    const int player_count = game_room_->getPlayerCount();
+    if (player_count != game_room_->getMaxPlayerCount()) {
+        nlohmann::json not_enough_msg;
+        not_enough_msg["type"] = "not_enough_players";
+        this->BroadCast(not_enough_msg.dump());
+        return;
+    }
+
+    // 重新加载卡牌配置（改 card.json 后下次开局即生效）
+    card_config_ = flychess_game::load_card_config("../../config/card.json");
+
+    game_ = new flychess_game::FlychessGame();
+    const int cp_count = game_room_->getChessPerPlayer();
+    game_->setChessCount(cp_count);
+
+    for (int i = 0; i < player_count; i++) {
+        const auto& player_info = game_room_->getPlayer(i);
+        game_->AddNewPlayer(player_info.color, cp_count);
+    }
+
+    if (game_->GetPlayerCount() != player_count) {
+        nlohmann::json player_count_error_msg;
+        player_count_error_msg["type"] = "player_count_error";
+        this->BroadCast(player_count_error_msg.dump());
+        return;
+    }
+
+    BroadCastPieceInfo(player_count, cp_count);
+
+    nlohmann::json start_game_msg;
+    start_game_msg["type"] = "game_start";
+    this->BroadCast(start_game_msg.dump());
+
+    this->finished_players.clear();
+    resolution_stack_.clear();
+    game_->InitGame();
+
+    int color_to_roll = game_->GetPlayerToRollDice();
+    if (color_to_roll != -1 && color_to_roll <= 3) {
+        BroadCastToRollDice(color_to_roll);
+    } else {
+        std::cerr << "颜色值无效。" << std::endl;
+    }
+}
+
+}  // namespace flychess_server

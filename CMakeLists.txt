@@ -9,46 +9,31 @@ if(MSVC)
     add_compile_options(/utf-8)
 endif()
 
-# 设置 Qt 路径
-set(CMAKE_PREFIX_PATH "C:/Qt/5.15.19/msvc2019_64")
+# Qt 已卸载，客户端迁移至 Electron
+# set(CMAKE_PREFIX_PATH "C:/Qt/5.15.19/msvc2019_64")
 
-# 全局设置 GUI 程序（不弹控制台）
-if(WIN32)
-    # 所有可执行程序默认使用 Windows 子系统
-    set(CMAKE_WIN32_EXECUTABLE TRUE)
-endif()
+# 全局设置（Qt 客户端已不在此构建系统内）
+# if(WIN32)
+#     set(CMAKE_WIN32_EXECUTABLE TRUE)
+# endif()
 
 # 2. 子目录（库和可执行文件）
 add_subdirectory(flychess_game)
 add_subdirectory(third_party/ixwebsocket)
 add_subdirectory(server)
-add_subdirectory(client)
+# add_subdirectory(client)  # Qt 已卸载，Electron 客户端替代
 
 # 3. 安装打包设置
 include(GNUInstallDirs)
 
-install(TARGETS Flychess_QT_Client
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}) 
-
-# 安装依赖的 DLL（手动列或用 Qt 工具自动处理）
-if(WIN32)
-    # 假设 Qt 的 DLL 都在 bin 目录下
-    file(GLOB QT_DLLS "${CMAKE_PREFIX_PATH}/bin/Qt5*.dll")
-    install(FILES ${QT_DLLS} DESTINATION ${CMAKE_INSTALL_BINDIR})
-
-    # 拷贝 Qt 插件（例如 imageformats、platforms）
-    install(DIRECTORY "${CMAKE_PREFIX_PATH}/plugins/platforms"
-            DESTINATION ${CMAKE_INSTALL_BINDIR}/..)
-
-    install(DIRECTORY "${CMAKE_PREFIX_PATH}/plugins/imageformats"
-            DESTINATION ${CMAKE_INSTALL_BINDIR}/..)
-endif()
+# Qt 客户端已替换为 Electron，不再需要 Qt DLL 打包
+# install(TARGETS Flychess_QT_Client
+#         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # 安装 config 目录（完整打包）
 set(CONFIG_DIR ${CMAKE_SOURCE_DIR}/config)
 
 if(EXISTS ${CONFIG_DIR})
-    # 复制整个 config 目录到 bin 同级
     install(DIRECTORY ${CONFIG_DIR}
             DESTINATION ${CMAKE_INSTALL_BINDIR}/..)
 else()
