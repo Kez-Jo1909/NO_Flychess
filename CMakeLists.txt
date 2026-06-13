@@ -12,29 +12,21 @@ endif()
 # 设置 Qt 路径
 set(CMAKE_PREFIX_PATH "C:/Qt/5.15.19/msvc2019_64")
 
-# =========================
-# 1. 全局设置 GUI 程序（不弹控制台）
-# =========================
+# 全局设置 GUI 程序（不弹控制台）
 if(WIN32)
     # 所有可执行程序默认使用 Windows 子系统
     set(CMAKE_WIN32_EXECUTABLE TRUE)
 endif()
 
-# =========================
 # 2. 子目录（库和可执行文件）
-# =========================
 add_subdirectory(flychess_game)
 add_subdirectory(third_party/ixwebsocket)
 add_subdirectory(server)
 add_subdirectory(client)
 
-# =========================
 # 3. 安装打包设置
-# =========================
 include(GNUInstallDirs)
 
-# 假设客户端目标名是 Flychess_QT_Client
-# 如果实际可执行文件名不同，请替换
 install(TARGETS Flychess_QT_Client
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}) 
 
@@ -52,9 +44,7 @@ if(WIN32)
             DESTINATION ${CMAKE_INSTALL_BINDIR}/..)
 endif()
 
-# =========================
-# 4. 安装 config 目录（完整打包）
-# =========================
+# 安装 config 目录（完整打包）
 set(CONFIG_DIR ${CMAKE_SOURCE_DIR}/config)
 
 if(EXISTS ${CONFIG_DIR})
