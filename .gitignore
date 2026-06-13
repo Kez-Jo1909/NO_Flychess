@@ -22,6 +22,8 @@ wasm/build/
 !electron-client/**/*.js
 !electron-client/**/*.html
 electron-client/node_modules/
+electron-client/server-bin/
+electron-client/dist/
 
 # 忽略临时文件
 *.log

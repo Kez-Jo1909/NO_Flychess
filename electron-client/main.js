@@ -56,7 +56,13 @@ ipcMain.handle('start-server', async () => {
   }
 
   // 查找服务端可执行文件
-  const serverExe = path.join(__dirname, '..', 'build', 'server', 'FlychessServer.exe');
+  // dev 模式：项目 build/server/ 目录
+  // 打包后：app.asar.unpacked 同级 resources/server-bin/
+  let serverExe = path.join(__dirname, '..', 'build', 'server', 'FlychessServer.exe');
+  if (!fs.existsSync(serverExe)) {
+    // 打包模式：extraResources 会把文件复制到 resources/server-bin/
+    serverExe = path.join(process.resourcesPath, 'server-bin', 'FlychessServer.exe');
+  }
   if (!fs.existsSync(serverExe)) {
     return { success: false, error: `找不到服务端: ${serverExe}` };
   }

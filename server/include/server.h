@@ -93,6 +93,7 @@ private:
     void BroadCastAllFinished();
 
     bool validateCardTiming(int function_time, flychess_game::PlayerState current_state);
+    void advanceToNextPlayer(int current_color);
 
     // ============================================================
     // 游戏状态
@@ -113,6 +114,7 @@ private:
     // ============================================================
     flychess_game::ResolutionStack resolution_stack_;
     nlohmann::json card_config_;
+    bool game_started_ = false;  // 防重复开始
 
     // TODO 卡牌数量上限检测
 };

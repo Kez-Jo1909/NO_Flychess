@@ -3,6 +3,8 @@
 #include "game.h"
 #include "command.h"
 #include "resolution_stack.h"
+#include <thread>
+#include <chrono>
 
 namespace flychess_server {
 
@@ -152,7 +154,10 @@ void FlychessServer::initHandlers() {
     handlers_["update_chess_count"]   = [this](auto& m, auto& c) { handleUpdateChessCount(m, c); };
     handlers_["choose_chess_piece"]   = [this](auto& m, auto& c) { handleChooseChessPiece(m, c); };
     handlers_["finish_use_card"]      = [this](auto& m, auto& c) { handleFinishUseCard(m, c); };
-    handlers_["game_start"]          = [this](auto& m, auto& c) { GameStart(); };
+    handlers_["game_start"]          = [this](auto& m, auto& c) {
+        if (game_started_) { std::cout << "游戏已在进行中，忽略重复开始请求" << std::endl; return; }
+        GameStart();
+    };
 }
 
 // ============================================================
@@ -205,6 +210,9 @@ void FlychessServer::handleRollDice(const nlohmann::json& /*msg*/,
         this->sendToClient(client_id, card_msg.dump());
     }
 
+    // 始终广播骰子结果
+    sendDiceNum(steps, client_id);
+
     if (steps != 6 && game_->GetStartedChessCount(static_cast<int>(player.color)) == 0) {
         std::cout << "No avialable chess piece" << std::endl;
         nlohmann::json no_avialable_msg;
@@ -212,8 +220,10 @@ void FlychessServer::handleRollDice(const nlohmann::json& /*msg*/,
         no_avialable_msg["dice_num"] = steps;
         no_avialable_msg["color"] = static_cast<int>(player.color);
         this->sendToClient(client_id, no_avialable_msg.dump());
+
+        // 延迟推进回合（客户端在收到 no_avialable_piece 后可自行等待）
+        advanceToNextPlayer(static_cast<int>(player.color));
     } else {
-        sendDiceNum(steps, client_id);
         game_->changePlayerState(player.color, flychess_game::PlayerState::SELECTING);
         game_state_ = flychess_game::PlayerState::SELECTING;
     }
@@ -423,10 +433,43 @@ void FlychessServer::handleFinishUseCard(const nlohmann::json& msg,
     if (finished_players.size() == game_room_->getPlayerCount()) {
         delete game_;
         game_ = nullptr;
+        game_started_ = false;
         return;
     }
 
     int next_color = color;
+    while (true) {
+        next_color = (next_color + 1) % game_room_->getMaxPlayerCount();
+        if (game_->getPlayerState(next_color) != flychess_game::PlayerState::FINISHED) {
+            game_->changePlayerState(static_cast<game_utils::Color>(next_color),
+                                      flychess_game::PlayerState::ROLLING);
+            game_state_ = flychess_game::PlayerState::ROLLING;
+            BroadCastToRollDice(next_color);
+            return;
+        }
+    }
+}
+
+// ============================================================
+// 回合推进（提取公共逻辑）
+// ============================================================
+
+void FlychessServer::advanceToNextPlayer(int current_color) {
+    // 当前玩家设为 OTHERS
+    if (game_->getPlayerState(current_color) != flychess_game::PlayerState::FINISHED) {
+        game_->changePlayerState(static_cast<game_utils::Color>(current_color),
+                                  flychess_game::PlayerState::OTHERS);
+    }
+
+    if (finished_players.size() == game_room_->getPlayerCount()) {
+        delete game_;
+        game_ = nullptr;
+        game_started_ = false;
+        return;
+    }
+
+    // 找下一个未完成的玩家
+    int next_color = current_color;
     while (true) {
         next_color = (next_color + 1) % game_room_->getMaxPlayerCount();
         if (game_->getPlayerState(next_color) != flychess_game::PlayerState::FINISHED) {
@@ -618,6 +661,7 @@ void FlychessServer::GameStart() {
 
     this->finished_players.clear();
     resolution_stack_.clear();
+    game_started_ = true;
     game_->InitGame();
 
     int color_to_roll = game_->GetPlayerToRollDice();

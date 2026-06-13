@@ -5,12 +5,39 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "electron . --dev"
+    "dev": "electron . --dev",
+    "build": "electron-builder --win portable",
+    "build:dir": "electron-builder --win dir"
+  },
+  "build": {
+    "appId": "com.kezjo.no-flychess",
+    "productName": "NO_Flychess",
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "server-bin",
+        "to": "server-bin"
+      }
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "assets/**/*",
+      "server-bin/**/*"
+    ],
+    "win": {
+      "target": ["portable"],
+      "icon": null
+    }
   },
   "keywords": [],
   "author": "Kez Jo",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^42.4.0"
+    "electron": "^42.4.0",
+    "electron-builder": "^26.0.12"
   }
 }

@@ -69,7 +69,7 @@ const GamePage = {
         WS.send({ type: 'rolldice' });
         DiceUI.disableRoll('掷骰中...');
       });
-      DiceUI.setValue(0);
+      // 不清零骰子——保留上次掷出的数字供查看
       document.getElementById('btn-finish-card').disabled = true;
       ChatUI.addSystem('game-chat', '轮到你了，请掷骰子');
     });
@@ -110,6 +110,8 @@ const GamePage = {
     });
 
     WS.on('all_piece_info', (msg) => {
+      console.log('[Game] all_piece_info 收到, pieces=', msg.pieces ? msg.pieces.length : 0,
+                  'sample=', JSON.stringify((msg.pieces || []).slice(0, 2)));
       Board.setPieces(msg.pieces);
     });
 
