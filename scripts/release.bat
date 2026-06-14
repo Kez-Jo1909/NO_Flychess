@@ -1,79 +1,86 @@
 @echo off
-chcp 65001 >nul
+setlocal
 
 :: ============================================================
-:: NO_Flychess Release 打包
-:: 双击运行，或: release.bat 0.5.0
+:: NO_Flychess Release Builder
+:: Usage: release.bat [version]
 :: ============================================================
 set ROOT=%~dp0..
 set VERSION=%~1
 if "%VERSION%"=="" set VERSION=0.0.0
 
 echo ========================================
-echo  NO_Flychess Release 打包  v%VERSION%
+echo  NO_Flychess Release Builder v%VERSION%
 echo ========================================
 
-:: ---- 1. 编译 C++ 服务端 ----
+:: ---- 1. Build C++ server ----
 echo.
-echo [1/4] 编译 FlychessServer...
+echo [1/4] Building FlychessServer...
 cd /d "%ROOT%\build"
 if errorlevel 1 (
-    echo [错误] build 目录不存在，请先运行 cmake
+    echo [ERROR] build dir not found, run cmake first
     pause
     exit /b 1
 )
-cmake --build . --config Release || goto :err
+cmake --build . --config Release
+if errorlevel 1 goto :fail
 echo [1/4] OK
 
-:: ---- 2. 复制服务端 ----
+:: ---- 2. Copy server to package dir ----
 echo.
-echo [2/4] 复制到 server-bin...
-if exist "%ROOT%\electron-client\server-bin" rd /s /q "%ROOT%\electron-client\server-bin"
-mkdir "%ROOT%\electron-client\server-bin\config"
+echo [2/4] Copying to server-bin...
+set DST=%ROOT%\electron-client\server-bin
+if exist "%DST%" rd /s /q "%DST%"
+mkdir "%DST%\config"
 
 set EXE=%ROOT%\build\server\FlychessServer.exe
 if not exist "%EXE%" set EXE=%ROOT%\build\server\Release\FlychessServer.exe
 if not exist "%EXE%" (
-    echo [错误] 找不到 FlychessServer.exe
+    echo [ERROR] FlychessServer.exe not found
     pause
     exit /b 1
 )
-copy /y "%EXE%" "%ROOT%\electron-client\server-bin\" >nul
+copy /y "%EXE%" "%DST%\" >nul
 
 set CFG=%ROOT%\build\server\config
 if not exist "%CFG%" set CFG=%ROOT%\config
-xcopy /e /y /q "%CFG%\*" "%ROOT%\electron-client\server-bin\config\" >nul
+xcopy /e /y /q "%CFG%\*" "%DST%\config\" >nul
 echo [2/4] OK
 
-:: ---- 3. 版本号 ----
+:: ---- 3. Update version ----
 echo.
-echo [3/4] 更新版本号...
+echo [3/4] Updating version...
 cd /d "%ROOT%\electron-client"
-echo const p=require('./package.json');p.version='%VERSION%';require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n'); > _ver.js
+(
+echo const p=require('./package.json'^);
+echo p.version='%VERSION%'^;
+echo require('fs'^).writeFileSync('package.json',JSON.stringify(p,null,2^)+'\n'^)^;
+) > _ver.js
 node _ver.js
 del _ver.js
 echo [3/4] OK
 
-:: ---- 4. 打包 Electron ----
+:: ---- 4. Package Electron ----
 echo.
-echo [4/4] 打包 Electron...
+echo [4/4] Packaging Electron...
 cd /d "%ROOT%\electron-client"
 if not exist "node_modules" call npm install
-call npm run build || goto :err
+call npm run build
+if errorlevel 1 goto :fail
 
+:: ---- Done ----
 echo.
 echo ========================================
-echo  OK!
-echo  输出: %ROOT%\electron-client\dist\
+echo  DONE! Output: %ROOT%\electron-client\dist\
 echo ========================================
 dir "%ROOT%\electron-client\dist\*.exe" 2>nul
 pause
 exit /b 0
 
-:err
+:fail
 echo.
 echo ========================================
-echo  打包失败!
+echo  BUILD FAILED!
 echo ========================================
 pause
 exit /b 1
