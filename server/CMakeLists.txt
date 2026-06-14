@@ -37,3 +37,11 @@ target_link_libraries(FlychessServer
         flychess
         nlohmann_json::nlohmann_json
 )
+
+# 构建后将 config 目录复制到服务端输出目录（$<TARGET_FILE_DIR:FlychessServer>/config/）
+add_custom_command(TARGET FlychessServer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/config"
+        "$<TARGET_FILE_DIR:FlychessServer>/config"
+    COMMENT "Copying config/ to FlychessServer output directory"
+)

@@ -68,8 +68,12 @@ ipcMain.handle('start-server', async () => {
   }
 
   try {
+    // 工作目录设为 exe 所在目录，确保 config/ 能被找到
+    const serverCwd = path.dirname(serverExe);
+    console.log('[Main] 服务端路径:', serverExe);
+    console.log('[Main] 服务端工作目录:', serverCwd);
     serverProcess = spawn(serverExe, [], {
-      cwd: path.join(__dirname, '..', 'build', 'server'),
+      cwd: serverCwd,
       stdio: 'pipe'
     });
 

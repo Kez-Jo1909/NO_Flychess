@@ -42,8 +42,11 @@ FlychessServer::FlychessServer(int port, const std::string& host)
     game_room_ = new flychess_game::FlychessGameRoom();
     initHandlers();
 
-    // 预加载卡牌配置（路径相对于工作目录 build/server/）
-    card_config_ = flychess_game::load_card_config("../../config/card.json");
+    // 预加载卡牌配置——优先从工作目录，其次从 exe 所在目录
+    card_config_ = flychess_game::load_card_config("config/card.json");
+    if (card_config_.empty()) {
+        card_config_ = flychess_game::load_card_config("../../config/card.json");
+    }
 }
 
 void FlychessServer::stop() {
@@ -704,7 +707,10 @@ void FlychessServer::GameStart() {
     }
 
     // 重新加载卡牌配置（改 card.json 后下次开局即生效）
-    card_config_ = flychess_game::load_card_config("../../config/card.json");
+    card_config_ = flychess_game::load_card_config("config/card.json");
+    if (card_config_.empty()) {
+        card_config_ = flychess_game::load_card_config("../../config/card.json");
+    }
 
     game_ = new flychess_game::FlychessGame();
     const int cp_count = game_room_->getChessPerPlayer();
