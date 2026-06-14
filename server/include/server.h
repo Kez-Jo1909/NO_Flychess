@@ -76,6 +76,7 @@ private:
     void handleUpdateChessCount(const nlohmann::json& msg, const std::string& client_id);
     void handleChooseChessPiece(const nlohmann::json& msg, const std::string& client_id);
     void handleFinishUseCard(const nlohmann::json& msg, const std::string& client_id);
+    void handleBackToLobby(const nlohmann::json& msg, const std::string& client_id);
 
     // ============================================================
     // 游戏逻辑辅助

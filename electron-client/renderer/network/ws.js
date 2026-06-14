@@ -53,6 +53,7 @@ const WS = {
   },
 
   send(obj) {
+    console.log('[WS] send:', obj.type, JSON.stringify(obj).substring(0, 120));
     if (this._ws && this._ws.readyState === WebSocket.OPEN) {
       this._ws.send(JSON.stringify(obj));
     } else {

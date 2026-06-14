@@ -158,6 +158,7 @@ void FlychessServer::initHandlers() {
         if (game_started_) { std::cout << "游戏已在进行中，忽略重复开始请求" << std::endl; return; }
         GameStart();
     };
+    handlers_["back_to_lobby"]       = [this](auto& m, auto& c) { handleBackToLobby(m, c); };
 }
 
 // ============================================================
@@ -340,10 +341,35 @@ void FlychessServer::handleUseCard(const nlohmann::json& msg,
     // 5. 广播结果
     BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
 
-    // 6. 检查可用棋子
-    if (game_state_ == flychess_game::PlayerState::SELECTING && player_to_move_ != -1) {
+    // 6. 若玩家使用卡牌设置了骰子（如卡牌 6），自动推进到 SELECTING 阶段
+    //    ROLLING（掷骰前用）或 CARDING（移动后用）均可触发
+    if (game_state_ == flychess_game::PlayerState::ROLLING
+        || game_state_ == flychess_game::PlayerState::CARDING) {
+        int dice_val = game_->GetDice();
+        if (dice_val >= 1 && dice_val <= 6) {
+            // 骰子已被卡牌设置，广播骰子结果并进入选棋子阶段
+            sendDiceNum(dice_val, client_id);
+
+            if (dice_val != 6 && game_->GetStartedChessCount(caster_color) == 0) {
+                // 没有可用的棋子
+                nlohmann::json no_avialable_msg;
+                no_avialable_msg["type"] = "no_avialable_piece";
+                no_avialable_msg["dice_num"] = dice_val;
+                no_avialable_msg["color"] = caster_color;
+                this->sendToClient(client_id, no_avialable_msg.dump());
+                advanceToNextPlayer(caster_color);
+            } else {
+                game_->changePlayerState(static_cast<game_utils::Color>(caster_color),
+                                          flychess_game::PlayerState::SELECTING);
+                game_state_ = flychess_game::PlayerState::SELECTING;
+            }
+        }
+    }
+
+    // 7. 检查可用棋子（SELECTING 状态下）
+    if (game_state_ == flychess_game::PlayerState::SELECTING) {
         int steps = game_->GetDice();
-        if (steps != 6 && game_->GetStartedChessCount(player_to_move_) == 0) {
+        if (steps != 6 && game_->GetStartedChessCount(caster_color) == 0) {
             nlohmann::json no_avialable_msg;
             no_avialable_msg["type"] = "no_avialable_piece";
             no_avialable_msg["dice_num"] = steps;
@@ -403,6 +429,11 @@ void FlychessServer::handleChooseChessPiece(const nlohmann::json& msg,
 
         if (finished_players.size() == game_room_->getPlayerCount()) {
             this->BroadCastAllFinished();
+            // 清理游戏状态，允许玩家返回大厅
+            delete game_;
+            game_ = nullptr;
+            game_started_ = false;
+            finished_players.clear();
             return;
         }
         BroadCastSomeoneFinished(color);
@@ -434,6 +465,7 @@ void FlychessServer::handleFinishUseCard(const nlohmann::json& msg,
         delete game_;
         game_ = nullptr;
         game_started_ = false;
+        finished_players.clear();
         return;
     }
 
@@ -448,6 +480,21 @@ void FlychessServer::handleFinishUseCard(const nlohmann::json& msg,
             return;
         }
     }
+}
+
+void FlychessServer::handleBackToLobby(const nlohmann::json& /*msg*/,
+                                        const std::string& /*client_id*/) {
+    // 玩家从结算界面返回大厅
+    if (game_) {
+        delete game_;
+        game_ = nullptr;
+    }
+    game_started_ = false;
+    finished_players.clear();
+    resolution_stack_.clear();
+    game_state_ = flychess_game::PlayerState::UNDEFINED;
+    player_to_move_ = -1;
+    std::cout << "[BackToLobby] 游戏已清理，等待新游戏" << std::endl;
 }
 
 // ============================================================
@@ -465,10 +512,9 @@ void FlychessServer::advanceToNextPlayer(int current_color) {
         delete game_;
         game_ = nullptr;
         game_started_ = false;
+        finished_players.clear();
         return;
     }
-
-    // 找下一个未完成的玩家
     int next_color = current_color;
     while (true) {
         next_color = (next_color + 1) % game_room_->getMaxPlayerCount();
@@ -546,6 +592,7 @@ void FlychessServer::BroadCastRoomInfo() {
 void FlychessServer::CardState(const std::string client_id) {
     nlohmann::json to_use_card_msg;
     to_use_card_msg["type"] = "to_use_card";
+    to_use_card_msg["phase"] = "after_move";  // CARDING 阶段 = 移动后
     this->sendToClient(client_id, to_use_card_msg.dump());
 }
 
@@ -568,7 +615,11 @@ void FlychessServer::BroadCastAllFinished() {
     nlohmann::json msg;
     msg["type"] = "all_finished";
     for (const auto i : finished_players) {
-        msg["rank"].push_back({{"color", i}});
+        auto p_info = game_room_->getPlayer(i);
+        msg["rank"].push_back({
+            {"color", i},
+            {"name", p_info.player_name}
+        });
     }
     this->BroadCast(msg.dump());
 }
@@ -580,6 +631,12 @@ void FlychessServer::BroadCastToRollDice(int color_to_roll) {
             nlohmann::json roll_dice_msg;
             roll_dice_msg["type"] = "to_roll_dice";
             this->sendToClient(std::to_string(p_info.websocket_id), roll_dice_msg.dump());
+
+            // 同时发送出牌阶段，允许 BEFORE_ROLL 卡牌在掷骰前使用
+            nlohmann::json card_msg;
+            card_msg["type"] = "to_use_card";
+            card_msg["phase"] = "before_roll";  // 标记为掷骰前阶段
+            this->sendToClient(std::to_string(p_info.websocket_id), card_msg.dump());
 
             nlohmann::json roll_dice_broadcast_msg;
             roll_dice_broadcast_msg["type"] = "to_roll_dice_broadcast";

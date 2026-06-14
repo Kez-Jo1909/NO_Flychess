@@ -8,12 +8,8 @@ namespace flychess_game {
 // SetDiceCommand
 // ============================================================
 void SetDiceCommand::execute(FlychessGame& game) {
-    if (value_ == 6) {
-        // 6 是特殊情况：用 setNextSix 保证即使 RollDice 内部有随机逻辑也出 6
-        game.setNextSix();
-    } else {
-        game.setDice(value_);
-    }
+    // 直接设置骰子点数（不再对 6 做特殊处理）
+    game.setDice(value_);
 }
 
 // ============================================================
