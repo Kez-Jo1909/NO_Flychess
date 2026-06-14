@@ -240,6 +240,16 @@ void FlychessServer::handleFinishTextWaiting(const nlohmann::json& /*msg*/,
 
 void FlychessServer::handleUserInfo(const nlohmann::json& msg,
                                      const std::string& client_id) {
+    // 房间满员检查
+    if (game_room_->getPlayerCount() >= game_room_->getMaxPlayerCount()) {
+        std::cout << "[UserInfo] 房间已满，拒绝客户端 [" << client_id << "]" << std::endl;
+        nlohmann::json reject_msg;
+        reject_msg["type"] = "room_full";
+        reject_msg["reason"] = "房间已满，无法加入";
+        this->sendToClient(client_id, reject_msg.dump());
+        return;
+    }
+
     std::string user_name = msg.at("name");
     int color = game_room_->getPlayerCount();
     game_room_->addPlayer(flychess_game::PlayerInfo(

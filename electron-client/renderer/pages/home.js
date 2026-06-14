@@ -19,6 +19,15 @@ const HomePage = {
         setTimeout(() => App.navigate('lobby'), 50);
       });
 
+      WS.on('room_full', (msg) => {
+        alert(msg.reason || '房间已满，无法加入');
+        btnConnect.disabled = false;
+        btnConnect.textContent = '连接服务器';
+        btnHost.disabled = false;
+        btnHost.textContent = '创建房间（本机 host）';
+        WS.disconnect();
+      });
+
       WS.on('url', (msg) => {
         document.getElementById('lobby-url').textContent = msg.url;
       });

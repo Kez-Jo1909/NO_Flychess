@@ -106,18 +106,20 @@ const GamePage = {
         this.myTurn = true;
         DiceUI.disableRoll('选择棋子');
 
-        // 自动移动：当只有一个已起飞的棋子且点数不为 6 时，自动选择它
-        if (msg.dice_result !== 6) {
-          const startedPieces = (Board.pieces || []).filter(
-            p => p.player_id === this.myColor && p.position >= 0
-          );
-          if (startedPieces.length === 1) {
-            const autoPiece = startedPieces[0];
-            console.log('[Auto] 仅一个可移动棋子 id=', autoPiece.id,
-                        'pos=', autoPiece.position, '自动选择');
+        // 自动移动：剩余唯一可动棋子时自动选择
+        const myUnfinished = (Board.pieces || []).filter(
+          p => p.player_id === this.myColor && p.position !== -2
+        );
+        if (myUnfinished.length === 1) {
+          const piece = myUnfinished[0];
+          // 在家(-1)需要6才能起飞，在棋盘(>=0)任何点数都能走
+          const canMove = piece.position >= 0 || msg.dice_result === 6;
+          if (canMove) {
+            console.log('[Auto] 唯一剩余棋子 id=', piece.id,
+                        'pos=', piece.position, 'dice=', msg.dice_result, '自动选择');
             setTimeout(() => {
               if (this.myTurn && this.diceRolled) {
-                this._onPieceClick(this.myColor, autoPiece.id);
+                this._onPieceClick(this.myColor, piece.id);
               }
             }, 400);
           }
