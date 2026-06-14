@@ -51,11 +51,10 @@ echo [2/4] OK
 echo.
 echo [3/4] Updating version...
 cd /d "%ROOT%\electron-client"
-(
-echo const p=require('./package.json'^);
-echo p.version='%VERSION%'^;
-echo require('fs'^).writeFileSync('package.json',JSON.stringify(p,null,2^)+'\n'^)^;
-) > _ver.js
+echo var p=require('./package.json'); > _ver.js
+echo p.version='%VERSION%'; >> _ver.js
+echo var fs=require('fs'); >> _ver.js
+echo fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n'); >> _ver.js
 node _ver.js
 del _ver.js
 echo [3/4] OK
