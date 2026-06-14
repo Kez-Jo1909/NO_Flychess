@@ -63,7 +63,11 @@ echo [3/4] OK
 echo.
 echo [4/4] Packaging Electron...
 cd /d "%ROOT%\electron-client"
-if not exist "node_modules" call npm install
+if not exist "node_modules\.bin\electron-builder.cmd" (
+    echo   Installing dependencies...
+    call npm install
+    if errorlevel 1 goto :fail
+)
 call npm run build
 if errorlevel 1 goto :fail
 
