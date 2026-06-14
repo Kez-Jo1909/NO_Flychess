@@ -437,6 +437,8 @@ void FlychessServer::handleChooseChessPiece(const nlohmann::json& msg,
             return;
         }
         BroadCastSomeoneFinished(color);
+        // 推进到下一个未完成的玩家
+        advanceToNextPlayer(color);
     } else {
         int last_steps = this->game_->GetDice();
         if (last_steps == 6) {

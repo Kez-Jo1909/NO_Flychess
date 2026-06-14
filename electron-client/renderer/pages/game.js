@@ -105,6 +105,23 @@ const GamePage = {
         // 我的骰子结果（含卡牌 6 触发）——确保可以选棋子
         this.myTurn = true;
         DiceUI.disableRoll('选择棋子');
+
+        // 自动移动：当只有一个已起飞的棋子且点数不为 6 时，自动选择它
+        if (msg.dice_result !== 6) {
+          const startedPieces = (Board.pieces || []).filter(
+            p => p.player_id === this.myColor && p.position >= 0
+          );
+          if (startedPieces.length === 1) {
+            const autoPiece = startedPieces[0];
+            console.log('[Auto] 仅一个可移动棋子 id=', autoPiece.id,
+                        'pos=', autoPiece.position, '自动选择');
+            setTimeout(() => {
+              if (this.myTurn && this.diceRolled) {
+                this._onPieceClick(this.myColor, autoPiece.id);
+              }
+            }, 400);
+          }
+        }
       }
     });
 
