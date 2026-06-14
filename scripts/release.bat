@@ -1,85 +1,79 @@
 @echo off
 chcp 65001 >nul
-setlocal enabledelayedexpansion
 
 :: ============================================================
-:: NO_Flychess Release 打包（双击运行）
-:: 用法: release.bat [版本号]
+:: NO_Flychess Release 打包
+:: 双击运行，或: release.bat 0.5.0
 :: ============================================================
 set ROOT=%~dp0..
-set BUILD_DIR=%ROOT%\build
-set EXE=%BUILD_DIR%\server\FlychessServer.exe
-set CONFIG_SRC=%BUILD_DIR%\server\config
-set SERVER_BIN=%ROOT%\electron-client\server-bin
-set ELECTRON=%ROOT%\electron-client
-
-if "%~1"=="" (set VERSION=0.0.0) else (set VERSION=%~1)
+set VERSION=%~1
+if "%VERSION%"=="" set VERSION=0.0.0
 
 echo ========================================
 echo  NO_Flychess Release 打包  v%VERSION%
 echo ========================================
 
-:: ---- 1. 编译 ----
+:: ---- 1. 编译 C++ 服务端 ----
 echo.
-echo [1/4] 编译 FlychessServer (Release)...
-cd /d "%BUILD_DIR%"
-cmake --build . --config Release
-if errorlevel 1 goto :err
+echo [1/4] 编译 FlychessServer...
+cd /d "%ROOT%\build"
+if errorlevel 1 (
+    echo [错误] build 目录不存在，请先运行 cmake
+    pause
+    exit /b 1
+)
+cmake --build . --config Release || goto :err
 echo [1/4] OK
 
-:: ---- 2. 复制 ----
+:: ---- 2. 复制服务端 ----
 echo.
 echo [2/4] 复制到 server-bin...
-if exist "%SERVER_BIN%" rd /s /q "%SERVER_BIN%"
-mkdir "%SERVER_BIN%\config"
+if exist "%ROOT%\electron-client\server-bin" rd /s /q "%ROOT%\electron-client\server-bin"
+mkdir "%ROOT%\electron-client\server-bin\config"
 
+set EXE=%ROOT%\build\server\FlychessServer.exe
+if not exist "%EXE%" set EXE=%ROOT%\build\server\Release\FlychessServer.exe
 if not exist "%EXE%" (
-    echo [错误] 找不到 %EXE%
-    goto :err
+    echo [错误] 找不到 FlychessServer.exe
+    pause
+    exit /b 1
 )
-copy /y "%EXE%" "%SERVER_BIN%\" >nul
-if exist "%CONFIG_SRC%" (
-    xcopy /e /y /q "%CONFIG_SRC%\*" "%SERVER_BIN%\config\" >nul
-) else if exist "%ROOT%\config" (
-    xcopy /e /y /q "%ROOT%\config\*" "%SERVER_BIN%\config\" >nul
-)
+copy /y "%EXE%" "%ROOT%\electron-client\server-bin\" >nul
+
+set CFG=%ROOT%\build\server\config
+if not exist "%CFG%" set CFG=%ROOT%\config
+xcopy /e /y /q "%CFG%\*" "%ROOT%\electron-client\server-bin\config\" >nul
 echo [2/4] OK
 
 :: ---- 3. 版本号 ----
 echo.
-echo [3/4] 版本号: %VERSION%
-cd /d "%ELECTRON%"
-node -e "const p=require('./package.json');p.version='%VERSION%';require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');"
+echo [3/4] 更新版本号...
+cd /d "%ROOT%\electron-client"
+echo const p=require('./package.json');p.version='%VERSION%';require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n'); > _ver.js
+node _ver.js
+del _ver.js
+echo [3/4] OK
 
 :: ---- 4. 打包 Electron ----
 echo.
 echo [4/4] 打包 Electron...
-if not exist "%ELECTRON%\node_modules" (
-    echo  安装依赖...
-    cd /d "%ELECTRON%"
-    call npm install
-    if errorlevel 1 goto :err
-)
-cd /d "%ELECTRON%"
-call npm run build
-if errorlevel 1 goto :err
+cd /d "%ROOT%\electron-client"
+if not exist "node_modules" call npm install
+call npm run build || goto :err
 
-:: ---- OK ----
 echo.
 echo ========================================
-echo  OK!  输出: %ELECTRON%\dist\
+echo  OK!
+echo  输出: %ROOT%\electron-client\dist\
 echo ========================================
-dir "%ELECTRON%\dist\*.exe" 2>nul || dir "%ELECTRON%\dist\"
-goto :end
+dir "%ROOT%\electron-client\dist\*.exe" 2>nul
+pause
+exit /b 0
 
 :err
 echo.
 echo ========================================
-echo  打包失败! 按任意键退出...
+echo  打包失败!
 echo ========================================
 pause
 exit /b 1
-
-:end
-endlocal
-pause
