@@ -1,229 +1,160 @@
 # NO_Flychess
 
-![version](https://img.shields.io/badge/version-0.3.0-black)
+![version](https://img.shields.io/badge/version-0.4.0-black)
 
 糅杂了卡牌系统的局域网飞行棋游戏。高三时期自制卡牌飞行棋桌游的电子化实现。
 
-基于 Qt5 客户端，ixwebsocket 通信，支持局域网联机。游戏引擎独立为静态库，可编译到 WASM 供网页端使用（网页端已搁置）。
+Electron 客户端 + C++ 游戏引擎 + WebSocket 通信，支持局域网联机。
 
 ## 架构
 
 ```
-Flychess_QT_Client.exe
-├── flychess        (静态库) — 游戏核心引擎
-├── flychess_server (静态库) — WebSocket 服务端
-├── ixwebsocket     (静态库) — WebSocket 通信
-├── nlohmann_json   (header-only) — JSON 解析
-└── Qt5             (动态库) — GUI 框架
+Electron 客户端 (JS/HTML)
+├── renderer/          # 前端 UI — 棋盘、卡牌、骰子、聊天
+├── main.js            # Electron 主进程 — IPC、启动/停止服务端
+└── server-bin/        # 内嵌的 C++ 服务端 + 配置文件
+
+C++ 服务端 (server/)
+├── flychess           # 游戏核心引擎（静态库）
+├── flychess_server    # WebSocket 服务端 — 房间管理、消息分发、卡牌结算
+├── ixwebsocket        # WebSocket 通信库
+└── nlohmann_json      # JSON 解析
 ```
 
-游戏引擎、服务端、ixwebsocket 全部静态链接进 exe。Qt5 动态链接，发布时需要带 Qt5 DLL 和插件目录。
-
 ```
-client/   ──UI──▶  flychess_game/  ◀──server──▶  ixwebsocket  ──网络──▶  其他玩家
-(界面)             (数据+规则)       (房间管理)    (通信)
+Electron UI ──WS──▶ Server ──规则引擎──▶ flychess_game
+    (渲染)         (房间/消息)         (数据+逻辑)
 ```
-
-客户端只管 UI 和渲染，所有游戏逻辑在 `flychess_game` 里，服务端负责房间管理、消息转发和状态同步。
 
 ## 项目结构
 
 ```
 NO_Flychess/
-├── flychess_game/       # 游戏核心引擎（静态库）
-│   ├── include/         # game.h, map.h, player.h, card.h, utils.h
-│   └── src/             # game.cpp, map.cpp, player.cpp, card.cpp, utils.cpp
-├── server/              # WebSocket 服务端（静态库）
-│   ├── include/         # server.h, client.h
-│   └── src/             # server.cpp, client.cpp, main.cpp
-├── client/              # Qt5 桌面客户端
-│   ├── include/         # MainWindow.h
-│   └── src/             # MainWindow.cpp, MainWindow.ui, main.cpp
-├── config/              # 游戏配置文件
-│   ├── card.json        # 卡牌数据
-│   ├── game_map.json    # 地图数据
-│   └── version.json     # 版本信息
-├── assets/              # 图片资源
-│   └── cards/           # 卡牌图片
-├── frontend/            # 网页前端（已搁置）
-├── wasm/                # Emscripten/WASM 编译入口
-├── third_party/         # 第三方依赖（git submodule）
-│   └── ixwebsocket/
-└── build.sh             # Linux 编译脚本
+├── electron-client/       # Electron 桌面客户端
+│   ├── main.js            # 主进程（IPC + 本地服务端启停）
+│   ├── preload.js         # 安全的 IPC 桥接
+│   ├── renderer/          # 渲染进程
+│   │   ├── index.html     # 单页应用
+│   │   ├── app.js         # 路由 & 全局状态
+│   │   ├── pages/         # home.js, lobby.js, game.js
+│   │   ├── components/    # board.js, card.js, dice.js, chat.js
+│   │   └── network/       # ws.js (WebSocket 客户端)
+│   ├── server-bin/        # 打包时复制服务端 exe（gitignore）
+│   └── assets/            # 卡牌图片等资源
+├── flychess_game/         # C++ 游戏核心引擎（静态库）
+│   ├── include/           # game.h, player.h, map.h, card.h, command.h, utils.h
+│   └── src/               # game.cpp, player.cpp, map.cpp, card.cpp, command.cpp
+├── server/                # C++ WebSocket 服务端
+│   ├── include/           # server.h
+│   └── src/               # server.cpp, main.cpp
+├── config/                # 游戏配置
+│   ├── card.json          # 卡牌数据（DSL 驱动）
+│   ├── game_map.json      # 棋盘地图
+│   └── version.json       # 版本信息
+├── scripts/               # 构建 & 发布脚本
+│   └── release.bat        # 一键 Release 打包
+├── frontend/              # WASM 网页版（已搁置）
+└── third_party/           # ixwebsocket (git submodule)
 ```
 
 ## 依赖
 
-| 依赖 | 用途 | 备注 |
-|------|------|------|
-| Qt 5.15+ | GUI 框架 | Core, Widgets, Network 模块 |
-| nlohmann_json | JSON 解析 | header-only，vcpkg 安装 |
-| ixwebsocket | WebSocket | git submodule，静态链接 |
-| CMake 3.14+ | 构建系统 | |
-| MSVC 2019+ / GCC | 编译器 | C++17 |
+| 依赖 | 用途 |
+|------|------|
+| Node.js 18+ / npm | Electron 运行 & 打包 |
+| CMake 3.14+ | C++ 构建系统 |
+| MSVC 2019+ (Windows) | C++ 编译器 |
+| nlohmann_json | JSON 解析 (vcpkg) |
+| ixwebsocket | WebSocket (git submodule) |
 
-Emscripten 用于编译 WASM 目标（可选，网页端已搁置）。
-
-## 编译
-
-### Windows (MSVC)
+## 编译 & 运行（开发）
 
 ```bash
 # 1. 拉取子模块
 git submodule update --init --recursive
 
-# 2. 配置（vcpkg 提供 nlohmann_json）
+# 2. C++ 服务端
 cd build
-cmake .. -G "Visual Studio 17 2022" -A x64 \
-    -DCMAKE_TOOLCHAIN_FILE="D:/vcpkg/scripts/buildsystems/vcpkg.cmake" \
-    -DVCPKG_TARGET_TRIPLET=x64-windows \
-    -DCMAKE_PREFIX_PATH="C:/Qt/5.15.19/msvc2019_64" \
-    -DCMAKE_INSTALL_PREFIX="%cd%/dist"
-
-# 3. 编译 & 安装
+cmake .. -DCMAKE_TOOLCHAIN_FILE="D:/vcpkg/scripts/buildsystems/vcpkg.cmake"
 cmake --build . --config Release
-cmake --install . --config Release
+# CMake 自动把 config/ 复制到 build/server/config/
 
-# 4. 自动拉取 Qt 动态库
-& "C:\Qt\5.15.19\msvc2019_64\bin\windeployqt.exe" .\Flychess_QT_Client.exe
+# 3. Electron 客户端
+cd electron-client
+npm install
+npm start          # npx electron . ，开发模式
+npm run dev        # 开发模式 + 打开 DevTools
 ```
 
-> [!NOTE]
-> windeployqt 只拉 Qt 相关 DLL。如果缺少 `zlib1.dll`（ixwebsocket 的 TLS 依赖），需要手动拷贝（已附带在文件夹中）。
+## 一键发布
 
-### Linux
-
-```bash
-# 安装系统依赖
-sudo apt install nlohmann-json3-dev qt5-default
-
-# 编译
-chmod +x build.sh
-./build.sh
+```bat
+scripts\release.bat 0.5.0
 ```
 
-`build.sh` 内容：
+自动完成：编译 C++ 服务端 → 复制到打包目录 → 更新版本号 → 打包 Electron NSIS 安装器。
 
-```bash
-set -e
-mkdir -p build
-cd build
-cmake ..
-make -j16
-cd ..
-echo "✅ 编译全部完成"
-```
-
-### WASM（已搁置）
-
-```bash
-./wasm_build.sh
-```
-
-产物拷贝到 `frontend/` 目录，用任意 HTTP 服务器托管即可。
-
-## 运行
-
-### 服务端
-
-```bash
-cd build/server
-./server
-```
-
-服务端负责房间管理、消息转发。客户端连接后可以创建/加入房间。
-
-### 客户端
-
-```bash
-cd build/client
-./Flychess_QT_Client
-```
-
-或在 Windows 上直接双击 exe。
-
-### 网页端（已搁置）
-
-用任意 HTTP 服务器托管 `frontend/` 目录，浏览器打开 `index.html`。
+产物在 `electron-client/dist/`。
 
 ## 玩法
 
-四人飞行棋 + 卡牌系统。每回合抽一张卡，出牌产生效果，然后掷骰子走棋子。
+N 人飞行棋 + 卡牌系统。掷骰子走棋子，掷出 5 获得一张卡牌，掷出 6 可以再掷一次。
 
-### 当前卡牌
+### 卡牌系统
 
-| ID | 名称 | 效果 |
-|----|------|------|
-| 0 | 6 | 使自己投出一个 6 |
-| 1 | 极端天气 | 所有处于待飞区的飞机返回重生点 |
+卡牌全部由 `config/card.json` 驱动，使用 DSL 指令集描述效果。扩展新卡牌只需添加 JSON 条目。
 
-卡牌在 `config/card.json` 中配置，扩展新卡牌只需添加 JSON 条目 + 实现对应的 `card_function`。
+| ID | 名称 | 时机 | 效果 |
+|----|------|------|------|
+| 0 | 6 | 掷骰前 | 使自己本回合骰子变为 6 |
+| 1 | 极端天气 | 任意 | 所有处于待飞区的飞机返回重生点 |
+
+### 卡牌 DSL 指令
+
+| 指令 | 说明 |
+|------|------|
+| `set_dice` | 设置骰子点数 |
+| `send_to_start` | 将指定棋子送回重生点 |
+| `send_all_pre_to_start` | 将所有待飞区棋子送回重生点 |
+| `move_piece` | 移动棋子 |
+| `fly_piece` | 飞行棋子 |
+| `custom` | 自定义 C++ 指令 |
+
+### 卡牌时机
+
+| 时机 | 说明 |
+|------|------|
+| `ANYTIME` (0) | 任意时刻 |
+| `BEFORE_ROLL` (2) | 掷骰子前（ROLLING 阶段） |
+| `BEFORE_MOVE` (3) | 移动棋子前（SELECTING 阶段） |
+| `AFTER_MOVE` (4) | 移动棋子后（CARDING 阶段） |
 
 ### 规则要点
 
-- 掷出 6 可以再掷一次
-- 踩到别人棋子踢回起点
-- 棋子必须精确到达终点（终点前区域有独立格子）
+- 掷出 6：可以起飞一个棋子 / 移动后多一个回合
+- 踩到别人的棋子：踢回起点
+- 棋子必须精确到达终点
+- 手牌上限 5 张，超限需弃牌
+- 只有一个可动棋子时自动移动
 
 ## 配置
 
-所有游戏参数通过 `config/` 下的 JSON 文件配置，不硬编码。
+- `config/card.json` — 卡牌列表（id, name, description, function_time, effects[]）
+- `config/game_map.json` — 地图格子类型、位置
+- `config/version.json` — 版本号
 
-- `game_map.json` — 地图格子类型、位置、颜色
-- `card.json` — 卡牌列表（id, name, description, function_time, image_path, target_selection）
-- `version.json` — 版本号和更新说明
+## 卡牌扩展示例
 
-## MapGrid 备注
-
-| 类型 | vector 引导 | ID | COLOR |
-|------|-------------|----|-------|
-| HOME | 0-15 | -1 | 4 种 |
-| NORMAL | 16-71（终点前 52-71） | 1-57 中 | 4 种 |
-| TURN & BRIDGE | 72-87 | 1-52 中 | 4 种 |
-| GOAL | 88-91 | 58 | 4 种 |
-| START | 92-95 | 0 | UNDEFINED |
-| NORMAL（已完成放这里） | 96 | -2 | UNDEFINED |
-
-> [!WARNING]
-> 终点前区域，vector 内是先 4 个 53，4 个 54...
-
-## Color 定义
-
-| Color | Utils 内 | JS 内 | RGB |
-|-------|----------|-------|-----|
-| UNDEFINED | -1 | 0 | 200, 200, 200 |
-| RED | 0 | 1 | 255, 0, 0 |
-| BLUE | 1 | 2 | 0, 0, 255 |
-| GREEN | 2 | 3 | 0, 255, 0 |
-| YELLOW | 3 | 4 | 255, 255, 0 |
-
-## TODO
-
-- [x] JS 图形绘制封装
-- [x] preGoal 区域移动（前后两类）
-- [x] bridge 区域
-- [x] map 重构
-- [x] 卡牌系统（抽卡、出牌、动画、弃牌）
-- [ ] 右键点击卡牌弹出提示
-- [ ] 卡牌动画偶发闪退
-- [ ] 联网自动更新
-- [ ] 局域网房间列表（目前需手动输入 IP）
-- [ ] AI 玩家
-- [ ] 更多卡牌
-
-## Github Pages
-
-```bash
-npm install -g gh-pages
-gh-pages -d frontend
-```
-
-自动创建 `gh-pages` 分支并推送 frontend 内容。
-
-## 交叉编译 (MinGW)
-
-项目提供了 `toolchain-mingw64.cmake`，在 Linux 上交叉编译 Windows 目标：
-
-```bash
-cmake .. -DCMAKE_TOOLCHAIN_FILE=../toolchain-mingw64.cmake
+```json
+{
+    "id": 2,
+    "name": "突进",
+    "description": "选择一个棋子向前移动 3 步",
+    "function_time": 3,
+    "image_path": "../assets/cards/rush.jpg",
+    "target_selection": 1,
+    "effects": [
+        {"op": "move_piece", "player": "$caster", "piece_id": "$selected_piece", "steps": 3}
+    ]
+}
 ```
