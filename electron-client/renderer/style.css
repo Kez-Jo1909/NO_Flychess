@@ -205,6 +205,12 @@ input:focus, select:focus { border-color: var(--accent); }
 .modal.visible { opacity: 1; pointer-events: auto; }
 .modal h2 { margin-bottom: 16px; font-size: 22px; }
 #ranking-text { font-size: 16px; line-height: 2.2; margin-bottom: 20px; }
+.rank-line { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 0; }
+.rank-0 .rank-medal { color: #ffd700; font-weight: 700; font-size: 20px; }
+.rank-1 .rank-medal { color: #c0c0c0; font-weight: 700; font-size: 18px; }
+.rank-2 .rank-medal { color: #cd7f32; font-weight: 700; font-size: 17px; }
+.rank-3 .rank-medal { color: var(--text-secondary); font-weight: 600; font-size: 15px; }
+.rank-name { color: var(--text-primary); }
 
 /* ---- 颜色 ---- */
 .dot-red { background: #ff4d4d; }

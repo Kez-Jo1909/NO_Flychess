@@ -15,7 +15,9 @@ const App = {
     // 弹窗关闭（从结算界面返回大厅）
     document.getElementById('btn-close-modal').addEventListener('click', () => {
       document.getElementById('modal-overlay').classList.remove('visible');
+      document.getElementById('modal-overlay').classList.add('hidden');
       document.getElementById('result-modal').classList.remove('visible');
+      document.getElementById('result-modal').classList.add('hidden');
       // 通知服务器返回大厅，清理游戏状态
       if (WS.isConnected()) {
         WS.send({ type: 'back_to_lobby' });

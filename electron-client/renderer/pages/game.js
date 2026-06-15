@@ -8,6 +8,7 @@ const GamePage = {
   cardPhase: false,       // 出牌阶段（ROLLING 或 CARDING 时均可出牌）
   cardPhaseType: null,    // 'before_roll' | 'after_move' | null
   cardData: null,         // 缓存的卡牌 JSON 配置
+  _settlementTimer: null, // 结算倒计时句柄（避免重复触发）
 
   async init() {
     this.myColor = App.userColor;
@@ -39,20 +40,23 @@ const GamePage = {
 
     // 初始化骰子
     DiceUI.init('dice-display', 'btn-roll-dice');
-    // 掷骰按钮回调由 DiceUI.enableRoll() 接管，不在这里重复绑定
 
-    // 结束出牌按钮
-    const finishCardBtn = document.getElementById('btn-finish-card');
-    finishCardBtn.addEventListener('click', () => {
+    // 结束出牌按钮（clone + replace 避免重复绑定）
+    const oldFinishBtn = document.getElementById('btn-finish-card');
+    const newFinishBtn = oldFinishBtn.cloneNode(true);
+    oldFinishBtn.parentNode.replaceChild(newFinishBtn, oldFinishBtn);
+    newFinishBtn.addEventListener('click', () => {
       WS.send({ type: 'finish_use_card', color: this.myColor });
-      finishCardBtn.disabled = true;
+      newFinishBtn.disabled = true;
       this.cardPhase = false;
       this.cardPhaseType = null;
-      // 不清理手牌——卡牌保留到下回合
     });
 
-    // 游戏聊天
-    document.getElementById('btn-game-chat-send').addEventListener('click', () => {
+    // 游戏聊天（同样避免重复绑定）
+    const oldChatBtn = document.getElementById('btn-game-chat-send');
+    const newChatBtn = oldChatBtn.cloneNode(true);
+    oldChatBtn.parentNode.replaceChild(newChatBtn, oldChatBtn);
+    newChatBtn.addEventListener('click', () => {
       const input = document.getElementById('game-chat-input');
       const msg = input.value.trim();
       if (msg) {
@@ -61,8 +65,11 @@ const GamePage = {
       }
     });
 
-    // ---- 服务端消息监听 ----
-    this._bindMessages();
+    // ---- 服务端消息监听（仅首次注册，避免重复 handler）----
+    if (!this._messagesBound) {
+      this._messagesBound = true;
+      this._bindMessages();
+    }
   },
 
   _bindMessages() {
@@ -75,7 +82,6 @@ const GamePage = {
         WS.send({ type: 'rolldice' });
         DiceUI.disableRoll('掷骰中...');
       });
-      // 不清零骰子——保留上次掷出的数字供查看
       document.getElementById('btn-finish-card').disabled = true;
       this.cardPhase = false;
       this.cardPhaseType = null;
@@ -92,17 +98,14 @@ const GamePage = {
     WS.on('dice_result', (msg) => {
       DiceUI.setValue(msg.dice_result);
       this.diceRolled = true;
-      // 掷完骰子，before_roll 卡牌阶段结束
       this.cardPhase = false;
       this.cardPhaseType = null;
       document.getElementById('btn-finish-card').disabled = true;
 
       if (msg.player_color !== this.myColor) {
-        // 别人的骰子结果
         ChatUI.addSystem('game-chat',
           `${msg.name} 掷出了 ${msg.dice_result}`);
       } else {
-        // 我的骰子结果（含卡牌 6 触发）——确保可以选棋子
         this.myTurn = true;
         DiceUI.disableRoll('选择棋子');
 
@@ -112,7 +115,6 @@ const GamePage = {
         );
         if (myUnfinished.length === 1) {
           const piece = myUnfinished[0];
-          // 在家(-1)需要6才能起飞，在棋盘(>=0)任何点数都能走
           const canMove = piece.position >= 0 || msg.dice_result === 6;
           if (canMove) {
             console.log('[Auto] 唯一剩余棋子 id=', piece.id,
@@ -136,7 +138,6 @@ const GamePage = {
           if (added) {
             ChatUI.addSystem('game-chat', `获得卡牌: ${info.name}`);
           }
-          // 如果手牌已满，addCard 内部会触发弃牌流程并显示提示
         }
       }
     });
@@ -145,7 +146,6 @@ const GamePage = {
       console.log('[State] to_use_card phase=', msg.phase,
                   'cards=', CardUI.cards.length,
                   'myTurn=', this.myTurn, 'diceRolled=', this.diceRolled);
-      // 如果手牌为空且是 after_move 阶段，自动跳过出牌（直接发消息，不依赖按钮状态）
       if (msg.phase !== 'before_roll' && CardUI.cards.length === 0) {
         console.log('[State] 无手牌，自动跳过出牌阶段');
         WS.send({ type: 'finish_use_card', color: this.myColor });
@@ -154,7 +154,7 @@ const GamePage = {
         return;
       }
       this.cardPhase = true;
-      this.cardPhaseType = msg.phase || 'after_move';  // 'before_roll' 或 'after_move'
+      this.cardPhaseType = msg.phase || 'after_move';
       document.getElementById('btn-finish-card').disabled = false;
 
       if (this.cardPhaseType === 'before_roll') {
@@ -184,16 +184,80 @@ const GamePage = {
         `${names[msg.color] || msg.color} 方已完成游戏！`);
     });
 
+    // ============================================================
+    // all_finished — 结算弹窗 + 自动返回房间
+    // ============================================================
     WS.on('all_finished', (msg) => {
+      console.log('[Settlement] all_finished 触发, rank=', JSON.stringify(msg.rank));
+
+      // 防御：清除上一次结算的定时器（如果存在）
+      if (this._settlementTimer) {
+        clearInterval(this._settlementTimer);
+        this._settlementTimer = null;
+      }
+
       const names = ['红', '蓝', '绿', '黄'];
-      const ranking = msg.rank.map((r, i) => {
+      const medals = ['【冠军】', '【亚军】', '【季军】', '【第 4 名】'];
+
+      const rankingHtml = msg.rank.map((r, i) => {
         const name = r.name || (names[r.color] || r.color + '方');
-        return `第 ${i + 1} 名：${name}`;
-      });
-      document.getElementById('ranking-text').innerHTML =
-        ranking.join('<br>');
+        const medal = medals[i] || `【第 ${i + 1} 名】`;
+        return `<div class="rank-line rank-${i}">
+          <span class="rank-medal">${medal}</span>
+          <span class="rank-name">${name}</span>
+        </div>`;
+      }).join('');
+
+      const rankingTextEl = document.getElementById('ranking-text');
+      rankingTextEl.innerHTML = rankingHtml;
+
+      // 追加倒计时元素
+      const oldCountdown = document.getElementById('countdown-timer');
+      if (oldCountdown) oldCountdown.remove();
+
+      const countdownEl = document.createElement('div');
+      countdownEl.id = 'countdown-timer';
+      countdownEl.style.cssText =
+        'margin-top:16px;font-size:14px;color:var(--text-secondary);';
+      rankingTextEl.appendChild(countdownEl);
+
+      // 同步按钮与倒计时
+      const closeBtn = document.getElementById('btn-close-modal');
+      let countdown = 5;
+      const updateUI = () => {
+        countdownEl.textContent = `${countdown} 秒后自动返回房间...`;
+        closeBtn.textContent = `回到房间（${countdown} 秒后自动返回）`;
+      };
+      updateUI();
+
+      // 显示结算弹窗（必须移除 hidden，否则 display:none!important 优先级高于 visible）
+      document.getElementById('modal-overlay').classList.remove('hidden');
       document.getElementById('modal-overlay').classList.add('visible');
+      document.getElementById('result-modal').classList.remove('hidden');
       document.getElementById('result-modal').classList.add('visible');
+      console.log('[Settlement] 弹窗已显示');
+
+      // 倒计时自动返回
+      this._settlementTimer = setInterval(() => {
+        countdown--;
+        if (countdown <= 0) {
+          console.log('[Settlement] 倒计时结束，自动返回房间');
+          clearInterval(this._settlementTimer);
+          this._settlementTimer = null;
+          closeBtn.click();
+        } else {
+          updateUI();
+        }
+      }, 1000);
+
+      // 手动点击"回到房间"时清除定时器
+      closeBtn.addEventListener('click', () => {
+        if (this._settlementTimer) {
+          console.log('[Settlement] 手动返回，清除定时器');
+          clearInterval(this._settlementTimer);
+          this._settlementTimer = null;
+        }
+      }, { once: true });
     });
 
     WS.on('chat_message_broadcast', (msg) => {
@@ -206,17 +270,13 @@ const GamePage = {
     if (!this.myTurn) return;
 
     if (this.cardPhase) {
-      // after_move 出牌阶段：点击棋子 = 对目标棋子使用卡牌
-      // before_roll 出牌阶段：点击棋子不触发卡牌目标选择（还没掷骰子）
       if (this.cardPhaseType === 'after_move') {
         this._useCardOnPiece(playerId, pieceId);
         return;
       }
-      // before_roll：棋子点击穿透到下方的选棋子移动逻辑
     }
 
     if (this.diceRolled && playerId === this.myColor) {
-      // 选棋子移动阶段：只能选自己的棋子
       WS.send({
         type: 'choose_chess_piece',
         id: pieceId,
@@ -226,7 +286,6 @@ const GamePage = {
       this.myTurn = false;
       this.cardPhase = false;
       this.cardPhaseType = null;
-      // btn-finish-card 由 to_use_card 处理器管理，不在这里禁用
       DiceUI.disableRoll('已选择');
     }
   },
@@ -248,8 +307,6 @@ const GamePage = {
 
     CardUI.removeCard(CardUI.selectedIdx);
 
-    // 只在 after_move 阶段：手牌用完后自动结束出牌
-    // before_roll 阶段不自动结束（还需要掷骰子/选棋子）
     if (CardUI.cards.length === 0 && GamePage.cardPhaseType === 'after_move') {
       document.getElementById('btn-finish-card').click();
     }
@@ -267,14 +324,12 @@ window._gamePageUseCard = function(card) {
     return;
   }
 
-  // 需要目标的卡牌不能直接使用
   const needTarget = card.target_selection && card.target_selection > 0;
   if (needTarget) {
     ChatUI.addSystem('game-chat', `【${card.name}】需要选择目标，请点击棋盘上的棋子`);
     return;
   }
 
-  // 立刻禁用掷骰按钮，防止在服务器返回之前手快误掷
   if (GamePage.cardPhaseType === 'before_roll') {
     DiceUI.disableRoll('卡牌生效中...');
   }
@@ -289,8 +344,6 @@ window._gamePageUseCard = function(card) {
 
   CardUI.removeCard(CardUI.selectedIdx);
 
-  // 只在 after_move 阶段：手牌用完后自动结束出牌
-  // before_roll 阶段不自动结束（还需要掷骰子/选棋子）
   if (CardUI.cards.length === 0 && GamePage.cardPhaseType === 'after_move') {
     console.log('[UseCard] 手牌用尽，自动结束出牌');
     document.getElementById('btn-finish-card').click();
