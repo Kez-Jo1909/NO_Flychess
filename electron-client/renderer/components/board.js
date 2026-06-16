@@ -83,12 +83,27 @@ const Board = {
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas.getContext('2d');
     const result = await window.electronAPI.loadConfig('game_map.json');
-    if (result.success) this.grids = result.data.grids || [];
+    if (result.success) {
+      this.grids = result.data.grids || [];
+    } else {
+      this.grids = [];
+      console.error('[Board] 棋盘配置加载失败:', result.error);
+      ChatUI?.addSystem?.('game-chat', `棋盘配置加载失败：${result.error}`);
+    }
+
+    if (this.grids.length === 0) {
+      console.error('[Board] 棋盘配置为空，无法绘制棋盘');
+      ChatUI?.addSystem?.('game-chat', '棋盘配置为空，无法绘制棋盘');
+    }
+
     this.draw();
-    this.canvas.addEventListener('click', (e) => {
-      const rect = this.canvas.getBoundingClientRect();
-      this._hitTest(e.clientX - rect.left, e.clientY - rect.top);
-    });
+    if (!this._clickBound) {
+      this._clickBound = true;
+      this.canvas.addEventListener('click', (e) => {
+        const rect = this.canvas.getBoundingClientRect();
+        this._hitTest(e.clientX - rect.left, e.clientY - rect.top);
+      });
+    }
   },
 
   setPieces(pieceList) { this.pieces = pieceList; this.draw(); },

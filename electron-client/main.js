@@ -36,8 +36,32 @@ function createWindow() {
 // ============================================================
 // IPC: 读取配置文件
 // ============================================================
+function getConfigCandidates(filename) {
+  const candidates = [];
+
+  // dev 模式：项目根目录 config/
+  candidates.push(path.join(__dirname, '..', 'config', filename));
+
+  // 打包模式：release.bat 会把 config 放到 resources/server-bin/config/
+  if (process.resourcesPath) {
+    candidates.push(path.join(process.resourcesPath, 'server-bin', 'config', filename));
+    candidates.push(path.join(process.resourcesPath, 'config', filename));
+  }
+
+  // 兼容直接运行 win-unpacked/resources/app.asar 的情况
+  candidates.push(path.join(__dirname, 'server-bin', 'config', filename));
+
+  return candidates;
+}
+
 ipcMain.handle('load-config', async (event, filename) => {
-  const configPath = path.join(__dirname, '..', 'config', filename);
+  const configPath = getConfigCandidates(filename).find(p => fs.existsSync(p));
+  if (!configPath) {
+    const tried = getConfigCandidates(filename).join('; ');
+    console.error(`[Main] 配置文件不存在: ${filename}; tried=${tried}`);
+    return { success: false, error: `配置文件不存在: ${filename}` };
+  }
+
   try {
     const data = fs.readFileSync(configPath, 'utf-8');
     return { success: true, data: JSON.parse(data) };

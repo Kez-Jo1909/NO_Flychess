@@ -15,6 +15,11 @@
     "directories": {
       "output": "dist"
     },
+    "asar": true,
+    "asarUnpack": [
+      "server-bin/**"
+    ],
+    "compression": "store",
     "extraResources": [
       {
         "from": "server-bin",
