@@ -5,6 +5,7 @@
 #include "resolution_stack.h"
 #include <thread>
 #include <chrono>
+#include <algorithm>
 
 namespace flychess_server {
 
@@ -156,6 +157,7 @@ void FlychessServer::initHandlers() {
     handlers_["update_player_count"]  = [this](auto& m, auto& c) { handleUpdatePlayerCount(m, c); };
     handlers_["update_chess_count"]   = [this](auto& m, auto& c) { handleUpdateChessCount(m, c); };
     handlers_["choose_chess_piece"]   = [this](auto& m, auto& c) { handleChooseChessPiece(m, c); };
+    handlers_["discard_card"]         = [this](auto& m, auto& c) { handleDiscardCard(m, c); };
     handlers_["finish_use_card"]      = [this](auto& m, auto& c) { handleFinishUseCard(m, c); };
     handlers_["game_start"]          = [this](auto& m, auto& c) {
         if (game_started_) { std::cout << "游戏已在进行中，忽略重复开始请求" << std::endl; return; }
@@ -177,15 +179,15 @@ bool FlychessServer::validateCardTiming(int function_time,
     case ft::ANYTIME:
         return true;
     case ft::BEFORE_ROLL:
-        return current_state == ps::ROLLING || current_state == ps::CARDING;
+        return currentTurnCanUseBeforeRollCard();
     case ft::BEFORE_MOVE:
-        return current_state == ps::SELECTING;
+        return current_state == ps::ROLLING || current_state == ps::SELECTING;
     case ft::AFTER_MOVE:
-        return current_state == ps::CARDING;
+        return currentTurnCanUseAfterMoveCard();
     case ft::YOUR_TURN:
         return current_state == ps::ROLLING
             || current_state == ps::SELECTING
-            || current_state == ps::CARDING;
+            || currentTurnCanUseAfterMoveCard();
     default:
         return false;
     }
@@ -199,46 +201,53 @@ void FlychessServer::handleRollDice(const nlohmann::json& /*msg*/,
                                      const std::string& client_id) {
     std::cout << "rolldice request from player " << client_id << std::endl;
 
+    const int web_id = std::stoi(client_id);
+    auto player = game_room_->getPlayerByWebId(web_id);
+    int color = static_cast<int>(player.color);
+
+    if (!isCurrentPlayersTurn(web_id) || !currentTurnCanRoll()) {
+        std::cout << "[RollDice] 忽略非法掷骰请求, color=" << color
+                  << " player_to_move_=" << player_to_move_
+                  << " game_state_=" << static_cast<int>(game_state_)
+                  << std::endl;
+        return;
+    }
+
     int steps = game_->RollDice();
-    auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
-    player_to_move_ = static_cast<int>(player.color);
+    player_to_move_ = color;
+
+    sendDiceNum(steps, client_id);
 
     if (steps == 5) {
         int available_cards_count = static_cast<int>(card_config_.size());
         int card_id = game_utils::get_random(0, available_cards_count - 1);
         std::cout << "抽到卡牌: " << card_id << std::endl;
-
-        nlohmann::json card_msg;
-        card_msg["type"] = "get_card";
-        card_msg["card_id"] = card_id;
-        this->sendToClient(client_id, card_msg.dump());
+        player_hands_[color].push_back(card_id);
+        sendHandState(color);
     }
 
-    // 始终广播骰子结果
-    sendDiceNum(steps, client_id);
-
-    if (steps != 6 && game_->GetStartedChessCount(static_cast<int>(player.color)) == 0) {
-        std::cout << "No avialable chess piece" << std::endl;
-        nlohmann::json no_avialable_msg;
-        no_avialable_msg["type"] = "no_avialable_piece";
-        no_avialable_msg["dice_num"] = steps;
-        no_avialable_msg["color"] = static_cast<int>(player.color);
-        this->sendToClient(client_id, no_avialable_msg.dump());
-
-        // 延迟推进回合（客户端在收到 no_avialable_piece 后可自行等待）
-        advanceToNextPlayer(static_cast<int>(player.color));
-    } else {
-        game_->changePlayerState(player.color, flychess_game::PlayerState::SELECTING);
-        game_state_ = flychess_game::PlayerState::SELECTING;
+    if (steps != 6 && game_->GetStartedChessCount(color) == 0) {
+        nlohmann::json no_piece_msg;
+        no_piece_msg["type"] = "no_avialable_piece";
+        no_piece_msg["color"] = color;
+        no_piece_msg["dice_num"] = steps;
+        this->sendToClient(client_id, no_piece_msg.dump());
+        return;
     }
+
+    enterSelectingPhase(color, client_id, steps);
 }
 
 void FlychessServer::handleFinishTextWaiting(const nlohmann::json& /*msg*/,
                                               const std::string& client_id) {
     auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
-    game_->changePlayerState(player.color, flychess_game::PlayerState::CARDING);
-    game_state_ = flychess_game::PlayerState::CARDING;
-    this->CardState(client_id);
+    int color = static_cast<int>(player.color);
+
+    if (!isCurrentPlayersTurn(std::stoi(client_id))) {
+        return;
+    }
+
+    enterAfterMoveCardOrNextTurn(color, client_id);
 }
 
 void FlychessServer::handleUserInfo(const nlohmann::json& msg,
@@ -305,21 +314,44 @@ void FlychessServer::handleChatMessage(const nlohmann::json& msg,
 
 void FlychessServer::handleUseCard(const nlohmann::json& msg,
                                     const std::string& client_id) {
+    const int web_id = std::stoi(client_id);
+    auto player = game_room_->getPlayerByWebId(web_id);
+    int caster_color = static_cast<int>(player.color);
+
+    if (!isCurrentPlayersTurn(web_id)) {
+        std::cout << "[UseCard] 忽略非当前玩家请求, color=" << caster_color
+                  << " player_to_move_=" << player_to_move_ << std::endl;
+        return;
+    }
+    if (needsDiscardChoice(caster_color)) {
+        nlohmann::json reject_msg;
+        reject_msg["type"] = "card_rejected";
+        reject_msg["reason"] = "请先弃牌到 5 张";
+        sendToClient(client_id, reject_msg.dump());
+        sendDiscardPrompt(caster_color);
+        return;
+    }
+
     int card_to_use_id = msg.at("card_id");
+    auto& hand = player_hands_[caster_color];
+    auto hand_it = std::find(hand.begin(), hand.end(), card_to_use_id);
+    if (hand_it == hand.end()) {
+        nlohmann::json reject_msg;
+        reject_msg["type"] = "card_rejected";
+        reject_msg["reason"] = "手牌中没有这张卡";
+        reject_msg["card_id"] = card_to_use_id;
+        sendToClient(client_id, reject_msg.dump());
+        return;
+    }
     int target_player_color = msg.value("target_id", -1);
     int target_piece_id = msg.value("piece_id", -1);
 
-    auto player = game_room_->getPlayerByWebId(std::stoi(client_id));
-    int caster_color = static_cast<int>(player.color);
-
-    // 1. 查找卡牌配置
     nlohmann::json card_json = flychess_game::find_card_by_id(card_config_, card_to_use_id);
     if (card_json.is_null()) {
         std::cerr << "[UseCard] 卡牌不存在: id=" << card_to_use_id << std::endl;
         return;
     }
 
-    // 2. 时机校验
     int function_time = card_json.value("function_time", 0);
     if (!validateCardTiming(function_time, game_state_)) {
         std::cerr << "[UseCard] 卡牌使用时机不正确: " << card_json["name"]
@@ -328,18 +360,34 @@ void FlychessServer::handleUseCard(const nlohmann::json& msg,
         nlohmann::json reject_msg;
         reject_msg["type"] = "card_rejected";
         reject_msg["reason"] = "时机不正确";
+        reject_msg["card_id"] = card_to_use_id;
         sendToClient(client_id, reject_msg.dump());
         return;
     }
 
-    // 3. 目标校验
+    const auto state_before_use = game_state_;
     int target_selection = card_json.value("target_selection", 0);
     if (target_selection >= 1 && target_player_color < 0) {
         std::cerr << "[UseCard] 卡牌需要目标但未提供" << std::endl;
+        nlohmann::json reject_msg;
+        reject_msg["type"] = "card_rejected";
+        reject_msg["reason"] = "缺少目标";
+        reject_msg["card_id"] = card_to_use_id;
+        sendToClient(client_id, reject_msg.dump());
+        return;
+    }
+    if (!isCardTargetValid(card_json, caster_color, target_player_color, target_piece_id)) {
+        std::cerr << "[UseCard] 目标不合法" << std::endl;
+        nlohmann::json reject_msg;
+        reject_msg["type"] = "card_rejected";
+        reject_msg["reason"] = "目标不合法";
+        reject_msg["card_id"] = card_to_use_id;
+        sendToClient(client_id, reject_msg.dump());
         return;
     }
 
-    // 4. DSL → CardEffect → ResolutionStack
+    const bool sets_dice = cardSetsDice(card_json);
+
     std::cout << "[UseCard] " << card_json["name"]
               << " caster=" << caster_color
               << " target=" << target_player_color
@@ -350,45 +398,51 @@ void FlychessServer::handleUseCard(const nlohmann::json& msg,
 
     resolution_stack_.pushEffect(effect);
     resolution_stack_.resolveAll(*game_);
-
-    // 5. 广播结果
     BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
 
-    // 6. 若玩家使用卡牌设置了骰子（如卡牌 6），自动推进到 SELECTING 阶段
-    //    ROLLING（掷骰前用）或 CARDING（移动后用）均可触发
-    if (game_state_ == flychess_game::PlayerState::ROLLING
-        || game_state_ == flychess_game::PlayerState::CARDING) {
-        int dice_val = game_->GetDice();
-        if (dice_val >= 1 && dice_val <= 6) {
-            // 骰子已被卡牌设置，广播骰子结果并进入选棋子阶段
-            sendDiceNum(dice_val, client_id);
-
-            if (dice_val != 6 && game_->GetStartedChessCount(caster_color) == 0) {
-                // 没有可用的棋子
-                nlohmann::json no_avialable_msg;
-                no_avialable_msg["type"] = "no_avialable_piece";
-                no_avialable_msg["dice_num"] = dice_val;
-                no_avialable_msg["color"] = caster_color;
-                this->sendToClient(client_id, no_avialable_msg.dump());
-                advanceToNextPlayer(caster_color);
-            } else {
-                game_->changePlayerState(static_cast<game_utils::Color>(caster_color),
-                                          flychess_game::PlayerState::SELECTING);
-                game_state_ = flychess_game::PlayerState::SELECTING;
-            }
-        }
+    hand.erase(hand_it);
+    sendHandState(caster_color);
+    if (needsDiscardChoice(caster_color)) {
+        sendDiscardPrompt(caster_color);
     }
 
-    // 7. 检查可用棋子（SELECTING 状态下）
-    if (game_state_ == flychess_game::PlayerState::SELECTING) {
-        int steps = game_->GetDice();
-        if (steps != 6 && game_->GetStartedChessCount(caster_color) == 0) {
-            nlohmann::json no_avialable_msg;
-            no_avialable_msg["type"] = "no_avialable_piece";
-            no_avialable_msg["dice_num"] = steps;
-            no_avialable_msg["color"] = caster_color;
-            this->sendToClient(client_id, no_avialable_msg.dump());
+    nlohmann::json used_msg;
+    used_msg["type"] = "card_used";
+    used_msg["card_id"] = card_to_use_id;
+    used_msg["player_color"] = caster_color;
+    this->sendToClient(client_id, used_msg.dump());
+
+    if (!sets_dice) {
+        return;
+    }
+
+    if (needsDiscardChoice(caster_color)) {
+        return;
+    }
+
+    int dice_val = game_->GetDice();
+    if (dice_val < 1 || dice_val > 6) {
+        return;
+    }
+
+    if (state_before_use == flychess_game::PlayerState::CARDING) {
+        if (dice_val == 6) {
+            pendingExtraRoll_ = true;
+            pendingExtraRollColor_ = caster_color;
+            return;
         }
+
+        if (game_->GetStartedChessCount(caster_color) == 0) {
+            return;
+        }
+
+        clearPendingDice();
+        return;
+    }
+
+    if (state_before_use == flychess_game::PlayerState::ROLLING) {
+        sendDiceNum(dice_val, client_id);
+        resolveTurnContinuation(caster_color, client_id, state_before_use);
     }
 }
 
@@ -417,60 +471,79 @@ void FlychessServer::handleUpdateChessCount(const nlohmann::json& msg,
 
 void FlychessServer::handleChooseChessPiece(const nlohmann::json& msg,
                                              const std::string& client_id) {
-    int id = msg.at("id");
-    int color = msg.at("color");
+    const int web_id = std::stoi(client_id);
+    auto player = game_room_->getPlayerByWebId(web_id);
+    int color = static_cast<int>(player.color);
 
-    player_to_move_ = -1;
-
-    int steps_to_move = this->game_->GetDice();
-    int move_ret = this->game_->MoveChessPiece(color, id, steps_to_move);
-    if (move_ret == 0) {
-        sendDiceNum(steps_to_move, client_id);
+    if (!isCurrentPlayersTurn(web_id) || game_state_ != flychess_game::PlayerState::SELECTING) {
+        std::cout << "[ChoosePiece] 忽略非法选子请求, color=" << color
+                  << " player_to_move_=" << player_to_move_
+                  << " game_state_=" << static_cast<int>(game_state_)
+                  << std::endl;
         return;
     }
 
-    BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
-    int ret = this->game_->FlyChessPiece(color, id);
-    BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
+    int id = msg.at("id");
+    handleChooseChessPieceInternal(color, id, client_id);
+}
 
-    int finished_piece_count = this->game_->GetFinishedChessCount(color);
-    if (finished_piece_count == this->game_room_->getChessPerPlayer()) {
-        this->game_->changePlayerState(static_cast<game_utils::Color>(color),
-                                        flychess_game::PlayerState::FINISHED);
-        game_state_ = flychess_game::PlayerState::FINISHED;
-        finished_players.push_back(color);
+void FlychessServer::handleDiscardCard(const nlohmann::json& msg,
+                                       const std::string& client_id) {
+    const int web_id = std::stoi(client_id);
+    auto player = game_room_->getPlayerByWebId(web_id);
+    int color = static_cast<int>(player.color);
 
-        if (finished_players.size() == game_room_->getPlayerCount()) {
-            this->BroadCastAllFinished();
-            // 清理游戏状态，允许玩家返回大厅
-            delete game_;
-            game_ = nullptr;
-            game_started_ = false;
-            finished_players.clear();
-            return;
-        }
-        BroadCastSomeoneFinished(color);
-        // 推进到下一个未完成的玩家
-        advanceToNextPlayer(color);
-    } else {
-        int last_steps = this->game_->GetDice();
-        if (last_steps == 6) {
-            game_->changePlayerState(static_cast<game_utils::Color>(color),
-                                      flychess_game::PlayerState::ROLLING);
-            game_state_ = flychess_game::PlayerState::ROLLING;
-            BroadCastToRollDice(color);
-            return;
-        }
-        game_->changePlayerState(static_cast<game_utils::Color>(color),
-                                  flychess_game::PlayerState::CARDING);
-        game_state_ = flychess_game::PlayerState::CARDING;
-        this->CardState(client_id);
+    if (!isCurrentPlayersTurn(web_id) || !needsDiscardChoice(color)) {
+        nlohmann::json reject_msg;
+        reject_msg["type"] = "discard_rejected";
+        reject_msg["reason"] = "当前不需要弃牌";
+        sendToClient(client_id, reject_msg.dump());
+        return;
     }
+
+    int card_id = msg.at("card_id");
+    if (!discardCardFromHand(color, card_id)) {
+        nlohmann::json reject_msg;
+        reject_msg["type"] = "discard_rejected";
+        reject_msg["reason"] = "无法弃掉这张卡";
+        reject_msg["card_id"] = card_id;
+        sendToClient(client_id, reject_msg.dump());
+        return;
+    }
+
+    sendHandState(color);
+    if (needsDiscardChoice(color)) {
+        sendDiscardPrompt(color);
+        return;
+    }
+
+    enterPendingDiscardOrNextTurn(color, client_id);
 }
 
 void FlychessServer::handleFinishUseCard(const nlohmann::json& msg,
-                                          const std::string& /*client_id*/) {
+                                          const std::string& client_id) {
+    const int web_id = std::stoi(client_id);
     int color = msg.at("color");
+
+    if (!isCurrentPlayersTurn(web_id) || !currentTurnCanUseAfterMoveCard()) {
+        std::cout << "[FinishUseCard] 忽略非法结束出牌请求, color=" << color
+                  << " player_to_move_=" << player_to_move_
+                  << " game_state_=" << static_cast<int>(game_state_)
+                  << std::endl;
+        return;
+    }
+    if (needsDiscardChoice(color)) {
+        sendDiscardPrompt(color);
+        return;
+    }
+
+    if (pendingExtraRoll_ && pendingExtraRollColor_ == color) {
+        pendingExtraRoll_ = false;
+        pendingExtraRollColor_ = -1;
+        enterRollingPhase(color);
+        return;
+    }
+
     if (this->game_->getPlayerState(color) != flychess_game::PlayerState::FINISHED) {
         game_->changePlayerState(static_cast<game_utils::Color>(color),
                                   flychess_game::PlayerState::OTHERS);
@@ -484,17 +557,7 @@ void FlychessServer::handleFinishUseCard(const nlohmann::json& msg,
         return;
     }
 
-    int next_color = color;
-    while (true) {
-        next_color = (next_color + 1) % game_room_->getMaxPlayerCount();
-        if (game_->getPlayerState(next_color) != flychess_game::PlayerState::FINISHED) {
-            game_->changePlayerState(static_cast<game_utils::Color>(next_color),
-                                      flychess_game::PlayerState::ROLLING);
-            game_state_ = flychess_game::PlayerState::ROLLING;
-            BroadCastToRollDice(next_color);
-            return;
-        }
-    }
+    advanceToNextPlayer(color);
 }
 
 void FlychessServer::handleBackToLobby(const nlohmann::json& /*msg*/,
@@ -506,6 +569,7 @@ void FlychessServer::handleBackToLobby(const nlohmann::json& /*msg*/,
     }
     game_started_ = false;
     finished_players.clear();
+    player_hands_.clear();
     resolution_stack_.clear();
     game_state_ = flychess_game::PlayerState::UNDEFINED;
     player_to_move_ = -1;
@@ -517,7 +581,6 @@ void FlychessServer::handleBackToLobby(const nlohmann::json& /*msg*/,
 // ============================================================
 
 void FlychessServer::advanceToNextPlayer(int current_color) {
-    // 当前玩家设为 OTHERS
     if (game_->getPlayerState(current_color) != flychess_game::PlayerState::FINISHED) {
         game_->changePlayerState(static_cast<game_utils::Color>(current_color),
                                   flychess_game::PlayerState::OTHERS);
@@ -534,10 +597,7 @@ void FlychessServer::advanceToNextPlayer(int current_color) {
     while (true) {
         next_color = (next_color + 1) % game_room_->getMaxPlayerCount();
         if (game_->getPlayerState(next_color) != flychess_game::PlayerState::FINISHED) {
-            game_->changePlayerState(static_cast<game_utils::Color>(next_color),
-                                      flychess_game::PlayerState::ROLLING);
-            game_state_ = flychess_game::PlayerState::ROLLING;
-            BroadCastToRollDice(next_color);
+            enterRollingPhase(next_color);
             return;
         }
     }
@@ -559,6 +619,38 @@ void FlychessServer::sendDiceNum(int dice_result, const std::string& client_id) 
     } else {
         std::cerr << "server异常" << std::endl;
     }
+}
+
+void FlychessServer::sendHandState(int color) {
+    if (color < 0 || color >= game_room_->getPlayerCount()) {
+        return;
+    }
+    const auto& player_info = game_room_->getPlayer(color);
+    const auto hand_it = player_hands_.find(color);
+    const auto& hand = hand_it == player_hands_.end() ? std::vector<int>{} : hand_it->second;
+
+    nlohmann::json hand_msg;
+    hand_msg["type"] = "hand_state";
+    hand_msg["cards"] = nlohmann::json::array();
+    for (int card_id : hand) {
+        auto card_json = flychess_game::find_card_by_id(card_config_, card_id);
+        if (!card_json.is_null()) {
+            hand_msg["cards"].push_back(card_json);
+        }
+    }
+    sendToClient(std::to_string(player_info.websocket_id), hand_msg.dump());
+}
+
+void FlychessServer::sendDiscardPrompt(int color) {
+    if (color < 0 || color >= game_room_->getPlayerCount()) {
+        return;
+    }
+    const auto& player_info = game_room_->getPlayer(color);
+    nlohmann::json prompt_msg;
+    prompt_msg["type"] = "discard_required";
+    prompt_msg["max_hand_size"] = 5;
+    prompt_msg["current_count"] = player_hands_[color].size();
+    sendToClient(std::to_string(player_info.websocket_id), prompt_msg.dump());
 }
 
 void FlychessServer::sendToClient(const std::string& client_id, const std::string msg) {
@@ -607,8 +699,327 @@ void FlychessServer::BroadCastRoomInfo() {
 void FlychessServer::CardState(const std::string client_id) {
     nlohmann::json to_use_card_msg;
     to_use_card_msg["type"] = "to_use_card";
-    to_use_card_msg["phase"] = "after_move";  // CARDING 阶段 = 移动后
+    to_use_card_msg["phase"] = currentTurnCanUseBeforeRollCard() ? "before_roll" : "after_move";
     this->sendToClient(client_id, to_use_card_msg.dump());
+}
+
+void FlychessServer::sendChoosePieceState(const std::string& client_id, int color, int dice, bool auto_selected) {
+    nlohmann::json choose_msg;
+    choose_msg["type"] = "to_choose_piece";
+    choose_msg["color"] = color;
+    choose_msg["dice"] = dice;
+    choose_msg["auto_selected"] = auto_selected;
+    this->sendToClient(client_id, choose_msg.dump());
+}
+
+void FlychessServer::enterRollingPhase(int color) {
+    game_->changePlayerState(static_cast<game_utils::Color>(color),
+                              flychess_game::PlayerState::ROLLING);
+    game_state_ = flychess_game::PlayerState::ROLLING;
+    BroadCastToRollDice(color);
+}
+
+void FlychessServer::enterSelectingPhase(int color, const std::string& client_id, int dice) {
+    game_->changePlayerState(static_cast<game_utils::Color>(color),
+                              flychess_game::PlayerState::SELECTING);
+    game_state_ = flychess_game::PlayerState::SELECTING;
+
+    if (tryAutoChoosePiece(color, client_id, dice)) {
+        return;
+    }
+
+    sendChoosePieceState(client_id, color, dice, false);
+}
+
+void FlychessServer::enterAfterMoveCardOrNextTurn(int color, const std::string& client_id) {
+    int steps = game_->GetDice();
+    if (!shouldEnterCardPhaseAfterMove(color, steps)) {
+        enterPendingDiscardOrNextTurn(color, client_id);
+        return;
+    }
+
+    if (!hasAnyUsableCardForPhase(color, "after_move")) {
+        enterPendingDiscardOrNextTurn(color, client_id);
+        return;
+    }
+
+    game_->changePlayerState(static_cast<game_utils::Color>(color),
+                              flychess_game::PlayerState::CARDING);
+    game_state_ = flychess_game::PlayerState::CARDING;
+    CardState(client_id);
+}
+
+void FlychessServer::enterPendingDiscardOrNextTurn(int color, const std::string& client_id) {
+    if (needsDiscardChoice(color)) {
+        game_->changePlayerState(static_cast<game_utils::Color>(color),
+                                  flychess_game::PlayerState::CARDING);
+        game_state_ = flychess_game::PlayerState::CARDING;
+        sendDiscardPrompt(color);
+        return;
+    }
+
+    if (pendingExtraRoll_ && pendingExtraRollColor_ == color) {
+        pendingExtraRoll_ = false;
+        pendingExtraRollColor_ = -1;
+        enterRollingPhase(color);
+        return;
+    }
+
+    if (this->game_->getPlayerState(color) != flychess_game::PlayerState::FINISHED) {
+        game_->changePlayerState(static_cast<game_utils::Color>(color),
+                                  flychess_game::PlayerState::OTHERS);
+    }
+
+    advanceToNextPlayer(color);
+}
+
+void FlychessServer::resolveTurnContinuation(int color, const std::string& client_id,
+                                             flychess_game::PlayerState state_before_action) {
+    const int dice = game_->GetDice();
+
+    if (state_before_action == flychess_game::PlayerState::ROLLING) {
+        if (shouldSkipSelecting(color, dice)) {
+            enterAfterMoveCardOrNextTurn(color, client_id);
+            return;
+        }
+        enterSelectingPhase(color, client_id, dice);
+        return;
+    }
+
+    if (state_before_action == flychess_game::PlayerState::SELECTING) {
+        if (dice == 6) {
+            enterRollingPhase(color);
+            return;
+        }
+        enterAfterMoveCardOrNextTurn(color, client_id);
+    }
+}
+
+bool FlychessServer::shouldEnterCardPhaseAfterMove(int color, int steps) const {
+    if (steps == 6) {
+        return false;
+    }
+    return game_->GetStartedChessCount(color) >= 0;
+}
+
+bool FlychessServer::hasAnyUsableCardForPhase(int color, const std::string& phase) const {
+    auto saved_state = game_state_;
+    auto saved_turn = player_to_move_;
+
+    const_cast<FlychessServer*>(this)->player_to_move_ = color;
+    const_cast<FlychessServer*>(this)->game_state_ =
+        (phase == "before_roll") ? flychess_game::PlayerState::ROLLING : flychess_game::PlayerState::CARDING;
+
+    const auto hand_it = player_hands_.find(color);
+    if (hand_it == player_hands_.end() || hand_it->second.empty()) {
+        const_cast<FlychessServer*>(this)->game_state_ = saved_state;
+        const_cast<FlychessServer*>(this)->player_to_move_ = saved_turn;
+        return false;
+    }
+
+    for (int card_id : hand_it->second) {
+        const auto card_json = flychess_game::find_card_by_id(card_config_, card_id);
+        if (card_json.is_null()) {
+            continue;
+        }
+
+        int function_time = card_json.value("function_time", 0);
+        if (!const_cast<FlychessServer*>(this)->validateCardTiming(function_time, game_state_)) {
+            continue;
+        }
+
+        int target_selection = card_json.value("target_selection", 0);
+        if (target_selection <= 0) {
+            const_cast<FlychessServer*>(this)->game_state_ = saved_state;
+            const_cast<FlychessServer*>(this)->player_to_move_ = saved_turn;
+            return true;
+        }
+
+        const int chess_count = game_room_->getChessPerPlayer();
+        const int player_count = game_room_->getPlayerCount();
+        for (int target_color = 0; target_color < player_count; ++target_color) {
+            for (int piece_id = 0; piece_id < chess_count; ++piece_id) {
+                if (isCardTargetValid(card_json, color, target_color, piece_id)) {
+                    const_cast<FlychessServer*>(this)->game_state_ = saved_state;
+                    const_cast<FlychessServer*>(this)->player_to_move_ = saved_turn;
+                    return true;
+                }
+            }
+        }
+    }
+
+    const_cast<FlychessServer*>(this)->game_state_ = saved_state;
+    const_cast<FlychessServer*>(this)->player_to_move_ = saved_turn;
+    return false;
+}
+
+bool FlychessServer::isCardTargetValid(const nlohmann::json& card_json, int caster_color,
+                                       int target_player_color, int target_piece_id) const {
+    const int target_selection = card_json.value("target_selection", 0);
+    if (target_selection <= 0) {
+        return target_player_color < 0 && target_piece_id < 0;
+    }
+
+    if (target_player_color < 0 || target_player_color >= game_room_->getPlayerCount()) {
+        return false;
+    }
+    if (target_piece_id < 0 || target_piece_id >= game_room_->getChessPerPlayer()) {
+        return false;
+    }
+
+    const auto& piece = game_->GetPlayerChess(target_player_color, target_piece_id);
+    if (piece.position < 0) {
+        return false;
+    }
+
+    if (target_selection == 1) {
+        return target_player_color == caster_color;
+    }
+    if (target_selection == 2) {
+        return target_player_color != caster_color;
+    }
+    return true;
+}
+
+std::vector<int> FlychessServer::getSelectablePieces(int color, int dice) const {
+    std::vector<int> selectable;
+    const int chess_count = game_room_->getChessPerPlayer();
+    for (int id = 0; id < chess_count; ++id) {
+        const auto& piece = game_->GetPlayerChess(color, id);
+        if (piece.position == -2) {
+            continue;
+        }
+        if (piece.position >= 0 || dice == 6) {
+            selectable.push_back(id);
+        }
+    }
+    return selectable;
+}
+
+bool FlychessServer::shouldSkipSelecting(int color, int dice) const {
+    return dice != 6 && game_->GetStartedChessCount(color) == 0;
+}
+
+bool FlychessServer::tryAutoChoosePiece(int color, const std::string& client_id, int dice) {
+    const auto selectable = getSelectablePieces(color, dice);
+    if (selectable.empty()) {
+        return false;
+    }
+
+    if (dice != 6) {
+        if (game_->GetStartedChessCount(color) == 1 && selectable.size() == 1) {
+            return handleChooseChessPieceInternal(color, selectable.front(), client_id);
+        }
+        return false;
+    }
+
+    const int unfinished = game_room_->getChessPerPlayer() - game_->GetFinishedChessCount(color);
+    if (unfinished == 1 && selectable.size() == 1) {
+        return handleChooseChessPieceInternal(color, selectable.front(), client_id);
+    }
+
+    return false;
+}
+
+bool FlychessServer::handleChooseChessPieceInternal(int color, int id, const std::string& client_id) {
+    player_to_move_ = color;
+
+    int steps_to_move = this->game_->GetDice();
+    int move_ret = this->game_->MoveChessPiece(color, id, steps_to_move);
+    if (move_ret == 0) {
+        sendChoosePieceState(client_id, color, steps_to_move, false);
+        return false;
+    }
+
+    BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
+    this->game_->FlyChessPiece(color, id);
+    BroadCastPieceInfo(game_room_->getPlayerCount(), game_room_->getChessPerPlayer());
+
+    int finished_piece_count = this->game_->GetFinishedChessCount(color);
+    if (finished_piece_count == this->game_room_->getChessPerPlayer()) {
+        this->game_->changePlayerState(static_cast<game_utils::Color>(color),
+                                        flychess_game::PlayerState::FINISHED);
+        game_state_ = flychess_game::PlayerState::FINISHED;
+        if (std::find(finished_players.begin(), finished_players.end(), color) == finished_players.end()) {
+            finished_players.push_back(color);
+        }
+
+        if (finished_players.size() == game_room_->getPlayerCount()) {
+            this->BroadCastAllFinished();
+            delete game_;
+            game_ = nullptr;
+            game_started_ = false;
+            finished_players.clear();
+            return true;
+        }
+        BroadCastSomeoneFinished(color);
+        advanceToNextPlayer(color);
+        return true;
+    }
+
+    resolveTurnContinuation(color, client_id, flychess_game::PlayerState::SELECTING);
+    return true;
+}
+
+bool FlychessServer::cardSetsDice(const nlohmann::json& card_json) const {
+    const auto effects_it = card_json.find("effects");
+    if (effects_it == card_json.end() || !effects_it->is_array()) {
+        return false;
+    }
+    for (const auto& effect : *effects_it) {
+        if (effect.is_object() && effect.value("op", "") == "set_dice") {
+            return true;
+        }
+    }
+    return false;
+}
+
+void FlychessServer::clearPendingDice() {
+    if (game_) {
+        game_->setDice(-1);
+    }
+}
+
+bool FlychessServer::isCurrentPlayersTurn(int client_id) const {
+    if (player_to_move_ < 0) {
+        return false;
+    }
+    try {
+        return static_cast<int>(game_room_->getPlayerByWebId(client_id).color) == player_to_move_;
+    } catch (...) {
+        return false;
+    }
+}
+
+bool FlychessServer::currentTurnCanRoll() const {
+    return game_state_ == flychess_game::PlayerState::ROLLING && !pendingExtraRoll_;
+}
+
+bool FlychessServer::currentTurnCanUseBeforeRollCard() const {
+    return game_state_ == flychess_game::PlayerState::ROLLING;
+}
+
+bool FlychessServer::currentTurnCanUseAfterMoveCard() const {
+    return game_state_ == flychess_game::PlayerState::CARDING;
+}
+
+bool FlychessServer::needsDiscardChoice(int color) const {
+    auto it = player_hands_.find(color);
+    return it != player_hands_.end() && it->second.size() > 5;
+}
+
+bool FlychessServer::discardCardFromHand(int color, int card_id) {
+    auto it = player_hands_.find(color);
+    if (it == player_hands_.end()) {
+        return false;
+    }
+    auto& hand = it->second;
+    auto hand_it = std::find(hand.begin(), hand.end(), card_id);
+    if (hand_it == hand.end()) {
+        return false;
+    }
+    hand.erase(hand_it);
+    return true;
 }
 
 void FlychessServer::BroadCastPlayerList() {
@@ -640,6 +1051,9 @@ void FlychessServer::BroadCastAllFinished() {
 }
 
 void FlychessServer::BroadCastToRollDice(int color_to_roll) {
+    player_to_move_ = color_to_roll;
+    pendingExtraRoll_ = false;
+    pendingExtraRollColor_ = -1;
     for (int i = 0; i < game_room_->getPlayerCount(); i++) {
         auto p_info = game_room_->getPlayer(i);
         if (static_cast<int>(p_info.color) == color_to_roll) {
@@ -650,7 +1064,7 @@ void FlychessServer::BroadCastToRollDice(int color_to_roll) {
             // 同时发送出牌阶段，允许 BEFORE_ROLL 卡牌在掷骰前使用
             nlohmann::json card_msg;
             card_msg["type"] = "to_use_card";
-            card_msg["phase"] = "before_roll";  // 标记为掷骰前阶段
+            card_msg["phase"] = "before_roll";
             this->sendToClient(std::to_string(p_info.websocket_id), card_msg.dump());
 
             nlohmann::json roll_dice_broadcast_msg;
@@ -706,19 +1120,20 @@ void FlychessServer::GameStart() {
         return;
     }
 
-    // 重新加载卡牌配置（改 card.json 后下次开局即生效）
     card_config_ = flychess_game::load_card_config("config/card.json");
     if (card_config_.empty()) {
         card_config_ = flychess_game::load_card_config("../../config/card.json");
     }
 
     game_ = new flychess_game::FlychessGame();
+    player_hands_.clear();
     const int cp_count = game_room_->getChessPerPlayer();
     game_->setChessCount(cp_count);
 
     for (int i = 0; i < player_count; i++) {
         const auto& player_info = game_room_->getPlayer(i);
         game_->AddNewPlayer(player_info.color, cp_count);
+        player_hands_[i] = {};
     }
 
     if (game_->GetPlayerCount() != player_count) {
@@ -734,6 +1149,10 @@ void FlychessServer::GameStart() {
     start_game_msg["type"] = "game_start";
     this->BroadCast(start_game_msg.dump());
 
+    for (int i = 0; i < player_count; ++i) {
+        sendHandState(i);
+    }
+
     this->finished_players.clear();
     resolution_stack_.clear();
     game_started_ = true;
@@ -741,7 +1160,7 @@ void FlychessServer::GameStart() {
 
     int color_to_roll = game_->GetPlayerToRollDice();
     if (color_to_roll != -1 && color_to_roll <= 3) {
-        BroadCastToRollDice(color_to_roll);
+        enterRollingPhase(color_to_roll);
     } else {
         std::cerr << "颜色值无效。" << std::endl;
     }

@@ -6,6 +6,9 @@ const CardUI = {
   selectedIdx: -1,  // 当前选中的卡牌索引
   container: null,
   maxHandSize: 5,   // 手牌上限
+  _pendingUse: null,
+  _discardMode: false,
+  _discardRequired: false,
 
   init(containerId) {
     this.container = document.getElementById(containerId);
@@ -14,46 +17,48 @@ const CardUI = {
   // 新增卡牌（服务端推送 get_card）
   // 返回 true 表示成功加入手牌，false 表示手牌已满需要弃牌
   addCard(cardInfo) {
-    if (this.cards.length >= this.maxHandSize) {
-      // 手牌已满，需要先弃牌
-      this._pendingCard = cardInfo;
-      this._showDiscardPrompt(cardInfo);
-      return false;
-    }
     this.cards.push(cardInfo);
     this.render();
     return true;
   },
 
-  // 显示弃牌提示（手牌满时）
-  _showDiscardPrompt(newCard) {
-    ChatUI.addSystem('game-chat',
-      `手牌已满（${this.maxHandSize}张），请点击一张卡牌丢弃，或右键取消获得新卡牌【${newCard.name}】`);
-    // 标记进入弃牌模式
+  setCards(cards) {
+    this.cards = Array.isArray(cards) ? [...cards] : [];
+    this.selectedIdx = -1;
+    this._pendingUse = null;
+    this.render();
+  },
+
+  requireDiscard(maxHandSize) {
+    this.maxHandSize = maxHandSize || this.maxHandSize;
     this._discardMode = true;
-    this._pendingCard = newCard;
+    this._discardRequired = true;
+    ChatUI.addSystem('game-chat', `手牌超过 ${this.maxHandSize} 张，请选择一张要弃掉的牌`);
+    this.render();
+  },
+
+  clearDiscardRequirement() {
+    this._discardMode = false;
+    this._discardRequired = false;
+    this._pendingCard = null;
     this.render();
   },
 
   // 完成弃牌（保留新卡，丢弃旧卡）
   _finishDiscard(discardIdx) {
+    if (!this._discardRequired) return;
     if (discardIdx >= 0 && discardIdx < this.cards.length) {
       const discarded = this.cards[discardIdx];
-      ChatUI.addSystem('game-chat', `弃掉了【${discarded.name}】`);
-      this.cards.splice(discardIdx, 1);
+      WS.send({ type: 'discard_card', card_id: discarded.id });
     }
-    if (this._pendingCard) {
-      this.cards.push(this._pendingCard);
-      ChatUI.addSystem('game-chat', `获得卡牌: ${this._pendingCard.name}`);
-    }
-    this._discardMode = false;
-    this._pendingCard = null;
-    this.selectedIdx = -1;
-    this.render();
   },
 
   // 取消获得新卡（不弃旧卡，放弃新卡）
   _cancelNewCard() {
+    if (this._discardRequired) {
+      ChatUI.addSystem('game-chat', '当前必须弃掉一张卡牌后才能继续');
+      return;
+    }
     if (this._pendingCard) {
       ChatUI.addSystem('game-chat', `放弃了新卡牌【${this._pendingCard.name}】`);
     }
@@ -65,6 +70,10 @@ const CardUI = {
 
   // 主动弃牌（右键点击卡牌）
   discardCard(index) {
+    if (this._discardRequired) {
+      this._finishDiscard(index);
+      return;
+    }
     if (index >= 0 && index < this.cards.length) {
       const card = this.cards[index];
       this.cards.splice(index, 1);
@@ -89,6 +98,26 @@ const CardUI = {
     }
   },
 
+  markPendingUse(index, cardId) {
+    if (index < 0 || index >= this.cards.length) return;
+    this._pendingUse = { index, card: this.cards[index], cardId };
+  },
+
+  commitPendingCard(cardId) {
+    if (!this._pendingUse) return;
+    if (this._pendingUse.cardId !== cardId) return;
+    const pendingIndex = this._pendingUse.index;
+    this._pendingUse = null;
+    this.removeCard(pendingIndex);
+  },
+
+  restorePendingCard(cardId) {
+    if (!this._pendingUse) return;
+    if (cardId != null && this._pendingUse.cardId !== cardId) return;
+    this._pendingUse = null;
+    this.render();
+  },
+
   // 获取当前选中的卡牌
   getSelected() {
     if (this.selectedIdx >= 0 && this.selectedIdx < this.cards.length) {
@@ -102,11 +131,21 @@ const CardUI = {
     return this.cards.length;
   },
 
+  getUsableCards(phaseType) {
+    return this.cards.filter(card => this._matchesPhase(card.function_time, phaseType));
+  },
+
+  getUsableCardCount(phaseType) {
+    return this.getUsableCards(phaseType).length;
+  },
+
   clear() {
     this.cards = [];
     this.selectedIdx = -1;
     this._discardMode = false;
+    this._discardRequired = false;
     this._pendingCard = null;
+    this._pendingUse = null;
     this.render();
   },
 
@@ -211,6 +250,21 @@ const CardUI = {
       case 3: return '移动前';
       case 4: return '移动后';
       default: return '';
+    }
+  },
+
+  _matchesPhase(functionTime, phaseType) {
+    switch (functionTime) {
+      case 0: // ANYTIME
+      case 1: // YOUR_TURN
+        return true;
+      case 2: // BEFORE_ROLL
+      case 3: // BEFORE_MOVE
+        return phaseType === 'before_roll';
+      case 4: // AFTER_MOVE
+        return phaseType === 'after_move';
+      default:
+        return false;
     }
   }
 };

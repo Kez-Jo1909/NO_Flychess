@@ -9,6 +9,72 @@ const GamePage = {
   cardPhaseType: null,    // 'before_roll' | 'after_move' | null
   cardData: null,         // 缓存的卡牌 JSON 配置
   _settlementTimer: null, // 结算倒计时句柄（避免重复触发）
+  waitingForServer: false,
+
+  _canFinishCardPhase() {
+    return this.myTurn && this.cardPhase;
+  },
+
+  _isWaitingForPieceSelection() {
+    return this.myTurn && this.diceRolled;
+  },
+
+  _setFinishCardButtonEnabled(enabled) {
+    const btn = document.getElementById('btn-finish-card');
+    if (btn) btn.disabled = !enabled;
+  },
+
+  _finishCardPhase() {
+    if (CardUI._discardRequired) {
+      ChatUI.addSystem('game-chat', '请先弃牌到 5 张再结束回合');
+      return false;
+    }
+    if (!this._canFinishCardPhase()) {
+      console.log('[FinishCard] 忽略非法结束出牌, myTurn=', this.myTurn,
+                  'cardPhase=', this.cardPhase,
+                  'phaseType=', this.cardPhaseType);
+      this._refreshFinishCardAvailability();
+      return false;
+    }
+    WS.send({ type: 'finish_use_card', color: this.myColor });
+    this.cardPhase = false;
+    this.cardPhaseType = null;
+    this._refreshFinishCardAvailability();
+    return true;
+  },
+
+  _refreshRollAvailability() {
+    if (CardUI._discardRequired) {
+      DiceUI.disableRoll('请先弃牌');
+      return;
+    }
+    if (this.cardPhase && this.cardPhaseType === 'before_roll' && !this.waitingForServer) {
+      DiceUI.enableRoll(() => {
+        if (!this.myTurn || this.diceRolled || this.waitingForServer) return;
+        this.waitingForServer = true;
+        WS.send({ type: 'rolldice' });
+        DiceUI.disableRoll('掷骰中...');
+      });
+      return;
+    }
+
+    if (this._isWaitingForPieceSelection()) {
+      DiceUI.disableRoll('选择棋子');
+      return;
+    }
+
+    DiceUI.disableRoll('等待中...');
+  },
+
+  _usableCardCount() {
+    return CardUI.getUsableCardCount(this.cardPhaseType);
+  },
+
+  _refreshFinishCardAvailability() {
+    this._setFinishCardButtonEnabled(
+      this.myTurn && this.cardPhase && this.cardPhaseType === 'after_move' && !CardUI._discardRequired
+    );
+  },
 
   async init() {
     this.myColor = App.userColor;
@@ -18,6 +84,7 @@ const GamePage = {
     this.diceRolled = false;
     this.cardPhase = false;
     this.cardPhaseType = null;
+    this.waitingForServer = false;
     CardUI.clear();
 
     // 通过 IPC 加载卡牌配置
@@ -46,10 +113,7 @@ const GamePage = {
     const newFinishBtn = oldFinishBtn.cloneNode(true);
     oldFinishBtn.parentNode.replaceChild(newFinishBtn, oldFinishBtn);
     newFinishBtn.addEventListener('click', () => {
-      WS.send({ type: 'finish_use_card', color: this.myColor });
-      newFinishBtn.disabled = true;
-      this.cardPhase = false;
-      this.cardPhaseType = null;
+      this._finishCardPhase();
     });
 
     // 游戏聊天（同样避免重复绑定）
@@ -78,18 +142,23 @@ const GamePage = {
                   'cards=', CardUI.cards.length);
       this.myTurn = true;
       this.diceRolled = false;
-      DiceUI.enableRoll(() => {
-        WS.send({ type: 'rolldice' });
-        DiceUI.disableRoll('掷骰中...');
-      });
-      document.getElementById('btn-finish-card').disabled = true;
       this.cardPhase = false;
-      this.cardPhaseType = null;
+      this.cardPhaseType = 'before_roll';
+      this.waitingForServer = false;
+      CardUI.clearDiscardRequirement();
+      this._refreshFinishCardAvailability();
+      this._refreshRollAvailability();
       ChatUI.addSystem('game-chat', '轮到你了，请掷骰子（或使用掷骰前卡牌）');
     });
 
     WS.on('to_roll_dice_broadcast', (msg) => {
       if (msg.color !== this.myColor) {
+        this.myTurn = false;
+        this.diceRolled = false;
+        this.cardPhase = false;
+        this.cardPhaseType = null;
+        this._refreshFinishCardAvailability();
+        this._refreshRollAvailability();
         const names = ['红', '蓝', '绿', '黄'];
         ChatUI.addSystem('game-chat', `等待 ${names[msg.color] || msg.color} 方掷骰子`);
       }
@@ -97,34 +166,23 @@ const GamePage = {
 
     WS.on('dice_result', (msg) => {
       DiceUI.setValue(msg.dice_result);
-      this.diceRolled = true;
+      this.waitingForServer = false;
       this.cardPhase = false;
       this.cardPhaseType = null;
-      document.getElementById('btn-finish-card').disabled = true;
+      this._refreshFinishCardAvailability();
+      this._refreshRollAvailability();
 
       if (msg.player_color !== this.myColor) {
+        this.diceRolled = false;
         ChatUI.addSystem('game-chat',
           `${msg.name} 掷出了 ${msg.dice_result}`);
       } else {
         this.myTurn = true;
-        DiceUI.disableRoll('选择棋子');
+        this.diceRolled = true;
+        this._refreshRollAvailability();
 
-        // 自动移动：剩余唯一可动棋子时自动选择
-        const myUnfinished = (Board.pieces || []).filter(
-          p => p.player_id === this.myColor && p.position !== -2
-        );
-        if (myUnfinished.length === 1) {
-          const piece = myUnfinished[0];
-          const canMove = piece.position >= 0 || msg.dice_result === 6;
-          if (canMove) {
-            console.log('[Auto] 唯一剩余棋子 id=', piece.id,
-                        'pos=', piece.position, 'dice=', msg.dice_result, '自动选择');
-            setTimeout(() => {
-              if (this.myTurn && this.diceRolled) {
-                this._onPieceClick(this.myColor, piece.id);
-              }
-            }, 400);
-          }
+        if (msg.dice_result === 5) {
+          ChatUI.addSystem('game-chat', '你掷出了 5，获得一张卡牌');
         }
       }
     });
@@ -142,26 +200,68 @@ const GamePage = {
       }
     });
 
+    WS.on('hand_state', (msg) => {
+      CardUI.setCards(msg.cards || []);
+      if ((msg.cards || []).length <= CardUI.maxHandSize) {
+        CardUI.clearDiscardRequirement();
+      }
+      this._refreshRollAvailability();
+      this._refreshFinishCardAvailability();
+    });
+
+    WS.on('discard_required', (msg) => {
+      CardUI.requireDiscard(msg.max_hand_size || 5);
+    });
+
+    WS.on('discard_rejected', (msg) => {
+      ChatUI.addSystem('game-chat', msg.reason || '弃牌失败');
+    });
+
     WS.on('to_use_card', (msg) => {
       console.log('[State] to_use_card phase=', msg.phase,
                   'cards=', CardUI.cards.length,
                   'myTurn=', this.myTurn, 'diceRolled=', this.diceRolled);
-      if (msg.phase !== 'before_roll' && CardUI.cards.length === 0) {
-        console.log('[State] 无手牌，自动跳过出牌阶段');
-        WS.send({ type: 'finish_use_card', color: this.myColor });
-        this.cardPhase = false;
-        this.cardPhaseType = null;
-        return;
-      }
+      this.myTurn = true;
       this.cardPhase = true;
       this.cardPhaseType = msg.phase || 'after_move';
-      document.getElementById('btn-finish-card').disabled = false;
+      this.waitingForServer = false;
+      if (this.cardPhaseType === 'before_roll') {
+        this.diceRolled = false;
+      }
+      this._refreshFinishCardAvailability();
+      this._refreshRollAvailability();
 
       if (this.cardPhaseType === 'before_roll') {
         ChatUI.addSystem('game-chat', '掷骰前阶段（可使用卡牌，或直接掷骰子）');
       } else {
         ChatUI.addSystem('game-chat', '出牌阶段（选择卡牌使用，或跳过）');
       }
+    });
+
+    WS.on('to_choose_piece', (msg) => {
+      this.myTurn = true;
+      this.diceRolled = true;
+      this.cardPhase = false;
+      this.cardPhaseType = null;
+      this.waitingForServer = false;
+      this._refreshFinishCardAvailability();
+      this._refreshRollAvailability();
+      ChatUI.addSystem('game-chat', `请选择要移动的棋子（点数 ${msg.dice}）`);
+    });
+
+    WS.on('card_rejected', (msg) => {
+      this.waitingForServer = false;
+      CardUI.restorePendingCard(msg.card_id);
+      ChatUI.addSystem('game-chat', msg.reason || '卡牌使用失败');
+      this._refreshRollAvailability();
+      this._refreshFinishCardAvailability();
+    });
+
+    WS.on('card_used', (msg) => {
+      if (msg.player_color !== this.myColor) return;
+      this.waitingForServer = false;
+      this._refreshRollAvailability();
+      this._refreshFinishCardAvailability();
     });
 
     WS.on('all_piece_info', (msg) => {
@@ -171,11 +271,15 @@ const GamePage = {
     });
 
     WS.on('no_avialable_piece', (msg) => {
-      ChatUI.addSystem('game-chat', '没有可用的棋子，跳过回合');
+      ChatUI.addSystem('game-chat', '没有可用的棋子，跳过选择阶段');
       this.myTurn = false;
+      this.diceRolled = false;
       this.cardPhase = false;
       this.cardPhaseType = null;
-      document.getElementById('btn-finish-card').disabled = true;
+      this.waitingForServer = false;
+      this._refreshFinishCardAvailability();
+      this._refreshRollAvailability();
+      WS.send({ type: 'finish_text_waiting' });
     });
 
     WS.on('someone_finished', (msg) => {
@@ -276,16 +380,15 @@ const GamePage = {
       }
     }
 
-    if (this.diceRolled && playerId === this.myColor) {
+    if (this.diceRolled && playerId === this.myColor && !this.waitingForServer) {
+      this.waitingForServer = true;
       WS.send({
         type: 'choose_chess_piece',
         id: pieceId,
         color: this.myColor
       });
-      this.diceRolled = false;
-      this.myTurn = false;
-      this.cardPhase = false;
-      this.cardPhaseType = null;
+      this._refreshFinishCardAvailability();
+      this._refreshRollAvailability();
       DiceUI.disableRoll('已选择');
     }
   },
@@ -297,19 +400,19 @@ const GamePage = {
       ChatUI.addSystem('game-chat', '请先选择一张卡牌');
       return;
     }
+    if (CardUI._discardRequired) {
+      ChatUI.addSystem('game-chat', '请先弃牌到 5 张');
+      return;
+    }
 
+    this.waitingForServer = true;
+    CardUI.markPendingUse(CardUI.selectedIdx, card.id);
     WS.send({
       type: 'use_card',
       card_id: card.id,
       target_id: playerId,
       piece_id: pieceId
     });
-
-    CardUI.removeCard(CardUI.selectedIdx);
-
-    if (CardUI.cards.length === 0 && GamePage.cardPhaseType === 'after_move') {
-      document.getElementById('btn-finish-card').click();
-    }
   }
 };
 
@@ -323,8 +426,18 @@ window._gamePageUseCard = function(card) {
     ChatUI.addSystem('game-chat', '当前不是出牌阶段');
     return;
   }
+  if (CardUI._discardRequired) {
+    ChatUI.addSystem('game-chat', '请先弃牌到 5 张');
+    return;
+  }
 
   const needTarget = card.target_selection && card.target_selection > 0;
+  const usableNow = CardUI.getUsableCards(GamePage.cardPhaseType)
+    .some(candidate => candidate.id === card.id);
+  if (!usableNow) {
+    ChatUI.addSystem('game-chat', `【${card.name}】当前阶段不可使用`);
+    return;
+  }
   if (needTarget) {
     ChatUI.addSystem('game-chat', `【${card.name}】需要选择目标，请点击棋盘上的棋子`);
     return;
@@ -334,6 +447,8 @@ window._gamePageUseCard = function(card) {
     DiceUI.disableRoll('卡牌生效中...');
   }
 
+  GamePage.waitingForServer = true;
+  CardUI.markPendingUse(CardUI.selectedIdx, card.id);
   console.log('[UseCard] 发送 use_card, id=', card.id);
   WS.send({
     type: 'use_card',
@@ -341,13 +456,6 @@ window._gamePageUseCard = function(card) {
     target_id: -1,
     piece_id: -1
   });
-
-  CardUI.removeCard(CardUI.selectedIdx);
-
-  if (CardUI.cards.length === 0 && GamePage.cardPhaseType === 'after_move') {
-    console.log('[UseCard] 手牌用尽，自动结束出牌');
-    document.getElementById('btn-finish-card').click();
-  }
 };
 
 // 兼容：双击仍然可用
