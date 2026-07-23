@@ -5,10 +5,7 @@
         "description": "使自己投出一个6",
         "function_time": 2,
         "image_path": "../assets/cards/6.jpg",
-        "target_selection": 0,
-        "effects": [
-            {"op": "set_dice", "value": 6}
-        ]
+        "target_selection": 0
     },
     {
         "id": 1,
@@ -16,9 +13,7 @@
         "description": "使用后使所有处于待飞区的飞机返回重生点",
         "function_time": 0,
         "image_path": "../assets/cards/extreme_weather.jpg",
-        "target_selection": 0,
-        "effects": [
-            {"op": "send_all_pre_to_start", "player": "$caster"}
-        ]
+        "target_selection": 0
     }
 ]
+  
